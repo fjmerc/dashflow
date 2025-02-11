@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Help and documentation for the Dashboard application">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Dashboard - Help</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .help-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .feature-section {
+            margin-bottom: 30px;
+        }
+        .icon-explanation {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: var(--bg-secondary);
+        }
+        .icon-explanation i {
+            font-size: 24px;
+            margin-right: 15px;
+            width: 30px;
+            text-align: center;
+        }
+        .back-button {
+            display: inline-block;
+            margin: 20px;
+            padding: 10px 20px;
+            background-color: var(--primary-color, #4f46e5);
+            color: var(--text-on-primary, white);
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .back-button:hover {
+            opacity: 0.9;
+        }
+        .section-title {
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-button">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+
+    <div class="help-container">
+        <h1>Dashboard Help & Documentation</h1>
+        
+        <section class="feature-section">
+            <h2 class="section-title">About the Dashboard</h2>
+            <p>The Dashboard is a personal web application designed to help you organize and manage your favorite links efficiently. You can create custom sections, add links, and organize them according to your preferences. The application works offline and provides various features to enhance your browsing experience.</p>
+        </section>
+
+        <section class="feature-section">
+            <h2 class="section-title">Header Icons & Functions</h2>
+            
+            <div class="icon-explanation">
+                <i class="fas fa-palette"></i>
+                <div>
+                    <strong>Theme Color:</strong> Change the application's primary color theme to personalize your experience.
+                </div>
+            </div>
+
+            <div class="icon-explanation">
+                <i class="fas fa-moon"></i>
+                <div>
+                    <strong>Dark Mode:</strong> Toggle between light and dark mode for comfortable viewing in different lighting conditions.
+                </div>
+            </div>
+
+            <div class="icon-explanation">
+                <i class="fas fa-user-edit"></i>
+                <div>
+                    <strong>Change Username:</strong> Personalize your dashboard by setting your preferred username.
+                </div>
+            </div>
+
+            <div class="icon-explanation">
+                <i class="fas fa-file-arrow-down"></i>
+                <div>
+                    <strong>Import:</strong> Import your dashboard data from a previously exported JSON file.
+                </div>
+            </div>
+
+            <div class="icon-explanation">
+                <i class="fas fa-file-export"></i>
+                <div>
+                    <strong>Export:</strong> Export your dashboard data to a JSON file for backup or transfer to another device.
+                </div>
+            </div>
+
+            <div class="icon-explanation">
+                <i class="fas fa-tasks"></i>
+                <div>
+                    <strong>To-do List:</strong> Access your to-do list to manage tasks and stay organized.
+                </div>
+            </div>
+
+            <div class="icon-explanation">
+                <i class="fas fa-undo"></i>
+                <div>
+                    <strong>Undo:</strong> Revert your last action (available when applicable).
+                </div>
+            </div>
+
+            <div class="icon-explanation">
+                <i class="fas fa-trash-alt"></i>
+                <div>
+                    <strong>Clear Storage:</strong> Reset the dashboard by clearing all stored data (use with caution).
+                </div>
+            </div>
+        </section>
+
+        <section class="feature-section">
+            <h2 class="section-title">Main Features</h2>
+            
+            <h3>Adding Sections</h3>
+            <p>Use the "Add New Section" form to create custom categories for organizing your links. Enter a section name and click "Add Section" to create a new section.</p>
+            
+            <h3>Adding Links</h3>
+            <p>To add a new link:</p>
+            <ol>
+                <li>Select the target section from the dropdown menu</li>
+                <li>Enter the link name (how you want it to appear)</li>
+                <li>Enter the complete URL (must start with http:// or https://)</li>
+                <li>Click "Add Link" to save</li>
+            </ol>
+
+            <h3>Favorites Section</h3>
+            <p>The Favorites section appears at the top of your dashboard for quick access to your most important links.</p>
+
+            <h3>Search Functionality</h3>
+            <p>Use the search bar to quickly find links across all sections. The search is performed in real-time as you type.</p>
+        </section>
+
+        <section class="feature-section">
+            <h2 class="section-title">Additional Features</h2>
+            <ul>
+                <li>Drag and drop links to reorder them within sections</li>
+                <li>Offline functionality - continue using the dashboard without an internet connection</li>
+                <li>Automatic data saving - all changes are saved immediately</li>
+                <li>Responsive design - works on desktop and mobile devices</li>
+            </ul>
+        </section>
+    </div>
+
+    <script src="theme.js"></script>
+</body>
+</html>
