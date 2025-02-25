@@ -22,7 +22,9 @@ A modern, feature-rich Progressive Web App (PWA) for organizing and managing you
   - Personalized username option
 
 - **Data Management**
-  - Import/Export functionality for backup
+  - Unified Import/Export system for all application data
+  - Combined backup of bookmarks, todos, and settings in a single file
+  - Backward compatibility with legacy backup formats
   - Local storage for persistent data
   - Undo functionality for actions
   - Clear storage option
@@ -75,6 +77,7 @@ dashboard/
 ├── script.js      # Main application logic
 ├── todo.js        # Todo list functionality
 ├── theme.js       # Theme management
+├── export-utils.js # Unified data export/import utilities
 └── styles.css     # Application styles
 ```
 
@@ -100,8 +103,9 @@ dashboard/
    - Update username through settings
 
 5. **Data Management**
-   - Export data for backup
-   - Import previously exported data
+   - Export all data (bookmarks, todos, settings) for comprehensive backup
+   - Import data from unified or legacy backup formats
+   - Cross-page integration between dashboard and todo list
    - Use undo for reversing actions
    - Clear storage if needed
 
