@@ -219,6 +219,7 @@ function filterTodos(searchText = '', priorityFilter = 'all') {
 }
 
 function renderTodos(searchText = '', priorityFilter = 'all') {
+    console.log('Rendering todos with filter:', searchText, priorityFilter);
     todoList.innerHTML = '';
     const filteredTodos = filterTodos(searchText, priorityFilter);
     filteredTodos.forEach((todo, index) => {
@@ -246,13 +247,13 @@ function renderTodos(searchText = '', priorityFilter = 'all') {
                 <button class="todo-btn complete-btn" data-action="complete" data-index="${index}" title="Toggle Complete">
                     <i class="fas fa-check"></i>
                 </button>
-                <button class="todo-btn edit-btn" data-action="edit" data-index="${index}" title="Edit Task">
+                <button class="todo-btn edit-btn" data-action="edit" data-index="${index}" title="Edit Task" style="background-color: #eab308;">
                     <i class="fas fa-edit"></i>
                 </button>
                 <button class="todo-btn delete-btn" data-action="delete" data-index="${index}" title="Delete Task">
                     <i class="fas fa-trash"></i>
                 </button>
-                <button class="todo-btn summary-btn" data-action="summary" data-index="${index}" title="Edit Summary">
+                <button class="todo-btn summary-btn" data-action="summary" data-index="${index}" title="Edit Summary" style="background-color: #3498db;">
                     <i class="fas fa-comment"></i>
                 </button>
                 <button class="todo-btn date-btn" data-action="date" data-index="${index}" title="Set Due Date">
@@ -600,26 +601,33 @@ todoList.addEventListener('click', (e) => {
         // Execute the appropriate action based on button clicked
         switch(action) {
             case 'complete':
+                console.log('Toggle complete for index:', index);
                 toggleComplete(index);
                 break;
             case 'edit':
+                console.log('Edit todo for index:', index);
                 editTodo(index);
                 break;
             case 'delete':
+                console.log('Delete todo for index:', index);
                 deleteTodo(index);
                 break;
             case 'summary':
+                console.log('Edit summary for index:', index);
                 editSummary(index);
                 break;
             case 'date':
+                console.log('Edit due date for index:', index);
                 editDueDate(index);
                 break;
             case 'priority':
+                console.log('Toggle priority for index:', index);
                 togglePriority(index);
                 break;
         }
     } else if (showMoreLink) {
         const index = parseInt(showMoreLink.getAttribute('data-index'), 10);
+        console.log('View full notes for index:', index);
         viewFullNotes(index);
     }
 });
