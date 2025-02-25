@@ -314,9 +314,11 @@ function toggleComplete(index) {
 }
 
 function editTodo(index) {
+    console.log('editTodo called for index:', index);
     // Create a modal for editing the entire task
     const modal = document.createElement('div');
     modal.className = 'modal';
+    modal.style.display = 'block';
     modal.innerHTML = `
         <div class="modal-content">
             <div class="modal-header">
@@ -416,9 +418,11 @@ function deleteTodo(index) {
 }
 
 function viewFullNotes(index) {
+    console.log('viewFullNotes called for index:', index);
     // Create a modal to display the full notes
     const modal = document.createElement('div');
     modal.className = 'modal';
+    modal.style.display = 'block';
     const notesContent = todos[index].summary || todos[index].notes || 'No notes available.';
     modal.innerHTML = `
         <div class="modal-content">
@@ -460,9 +464,11 @@ function viewFullNotes(index) {
 }
 
 function editSummary(index) {
+    console.log('editSummary called for index:', index);
     // Create a modal for editing notes
     const modal = document.createElement('div');
     modal.className = 'modal';
+    modal.style.display = 'block';
     modal.innerHTML = `
         <div class="modal-content">
             <div class="modal-header">
