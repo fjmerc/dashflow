@@ -3,6 +3,7 @@ const addLinkForm = document.getElementById('addLinkForm');
 const linkList = document.getElementById('linkList');
 const favoritesList = document.getElementById('favoritesList');
 const searchInput = document.getElementById('searchInput');
+const clearSearchBtn = document.getElementById('clearSearchBtn');
 const existingSections = document.getElementById('existingSections');
 const importBtn = document.getElementById('importBtn');
 const exportBtn = document.getElementById('exportBtn');
@@ -595,6 +596,11 @@ function initializePage() {
     updateSectionDropdown();
     renderLinks();
     updateTitle();
+    
+    // Initialize clear search button visibility
+    if (searchInput.value) {
+        clearSearchBtn.classList.add('visible');
+    }
 }
 
 // Function to show import reminder
@@ -686,7 +692,36 @@ document.addEventListener('click', (e) => {
 
 addSectionForm.addEventListener('submit', addSection);
 addLinkForm.addEventListener('submit', addLink);
-searchInput.addEventListener('input', (e) => renderLinks(e.target.value));
+// Handle search input changes
+searchInput.addEventListener('input', (e) => {
+    const searchValue = e.target.value;
+    renderLinks(searchValue);
+    
+    // Toggle visibility of clear button based on input content
+    if (searchValue) {
+        clearSearchBtn.classList.add('visible');
+    } else {
+        clearSearchBtn.classList.remove('visible');
+    }
+});
+
+// Add keyboard support for escape key to clear search
+searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && searchInput.value) {
+        searchInput.value = '';
+        clearSearchBtn.classList.remove('visible');
+        renderLinks('');
+        e.preventDefault(); // Prevent the event from bubbling
+    }
+});
+
+// Handle clear button click
+clearSearchBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    clearSearchBtn.classList.remove('visible');
+    renderLinks(''); // Reset search results
+    searchInput.focus(); // Return focus to search input
+});
 importBtn.addEventListener('click', importBookmarks);
 exportBtn.addEventListener('click', () => {
     exportBookmarks(false); // false for non-silent export
