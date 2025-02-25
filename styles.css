@@ -561,7 +561,7 @@ button:hover {
 }
 
 .todo-item.priority-low {
-    border-left: 4px solid #22c55e;
+    border-left: 4px solid #0ea5e9;
 }
 
 .todo-content {
@@ -587,6 +587,10 @@ button:hover {
     opacity: 0.6;
 }
 
+.todo-item.completed-task {
+    border-left: 4px solid #22c55e !important; /* Green border for completed tasks */
+}
+
 .todo-text.overdue {
     color: #ef4444;
 }
@@ -607,8 +611,35 @@ button:hover {
     display: inline-block;
     font-size: 0.85em;
     color: var(--text-color);
-    opacity: 0.6;
+    opacity: 0.8;
     margin-top: 5px;
+}
+
+.priority-indicator {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.priority-indicator.priority-high {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #dc2626;
+}
+
+.priority-indicator.priority-medium {
+    background-color: rgba(234, 179, 8, 0.2);
+    color: #ca8a04;
+}
+
+.priority-indicator.priority-low {
+    background-color: rgba(14, 165, 233, 0.2);
+    color: #0284c7;
+}
+
+.priority-indicator.priority-none {
+    background-color: rgba(100, 116, 139, 0.2);
+    color: #64748b;
 }
 
 .todo-notes-input {
@@ -816,4 +847,41 @@ button:hover {
         width: 100%;
         flex: 1 1 auto;
     }
+}
+
+/* Priority button colors */
+.priority-high-btn {
+    background-color: #ef4444 !important;
+    color: white;
+}
+
+.priority-high-btn:hover {
+    background-color: #dc2626 !important;
+}
+
+.priority-medium-btn {
+    background-color: #eab308 !important;
+    color: white;
+}
+
+.priority-medium-btn:hover {
+    background-color: #ca8a04 !important;
+}
+
+.priority-low-btn {
+    background-color: #0ea5e9 !important;
+    color: white;
+}
+
+.priority-low-btn:hover {
+    background-color: #0284c7 !important;
+}
+
+.priority-none-btn {
+    background-color: #64748b !important;
+    color: white;
+}
+
+.priority-none-btn:hover {
+    background-color: #475569 !important;
 }

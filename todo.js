@@ -224,7 +224,7 @@ function renderTodos(searchText = '', priorityFilter = 'all') {
     const filteredTodos = filterTodos(searchText, priorityFilter);
     filteredTodos.forEach((todo, index) => {
         const li = document.createElement('li');
-        li.className = `todo-item priority-${todo.priority || 'none'}`;
+        li.className = `todo-item priority-${todo.priority || 'none'} ${todo.completed ? 'completed-task' : ''}`;
         li.setAttribute('data-index', index); // Add original index as a data attribute
         const dueDate = todo.dueDate ? new Date(todo.dueDate).toLocaleDateString() : 'No due date';
         const isOverdue = todo.dueDate && new Date(todo.dueDate) < new Date() && !todo.completed;
@@ -241,7 +241,7 @@ function renderTodos(searchText = '', priorityFilter = 'all') {
                         ${(todo.summary || todo.notes).length > 100 ? '<span class="todo-summary-expand" data-index="' + index + '">Show more</span>' : ''}
                     </div>` 
                 : ''}
-                <span class="todo-priority">Priority: ${todo.priority || 'None'}</span>
+                <span class="todo-priority">Priority: <span class="priority-indicator priority-${todo.priority || 'none'}">${todo.priority || 'None'}</span></span>
             </div>
             <div class="todo-actions">
                 <button class="todo-btn complete-btn" data-action="complete" data-index="${index}" title="Toggle Complete">
@@ -259,7 +259,7 @@ function renderTodos(searchText = '', priorityFilter = 'all') {
                 <button class="todo-btn date-btn" data-action="date" data-index="${index}" title="Set Due Date">
                     <i class="fas fa-calendar"></i>
                 </button>
-                <button class="todo-btn priority-btn" data-action="priority" data-index="${index}" title="Toggle Priority">
+                <button class="todo-btn priority-btn priority-${todo.priority || 'none'}-btn" data-action="priority" data-index="${index}" title="Toggle Priority">
                     <i class="fas fa-flag"></i>
                 </button>
             </div>
