@@ -89,14 +89,7 @@ const settingsBtn = document.getElementById('settingsBtn');
 const darkModeBtn = document.getElementById('darkModeBtn');
 const themeColorBtn = document.getElementById('themeColorBtn');
 const importTodosBtn = document.getElementById('importTodosBtn');
-const exportTodosBtn = document.getElementById('exportTodosBtn');
-
-// Create hidden file input for importing
-const importTodosInput = document.createElement('input');
-importTodosInput.type = 'file';
-importTodosInput.accept = '.json';
-importTodosInput.style.display = 'none';
-document.body.appendChild(importTodosInput);
+const importInput = document.getElementById('importInput');
 
 let todos = [];
 let username = localStorage.getItem('username') || 'User';
@@ -649,47 +642,30 @@ settingsBtn.addEventListener('click', changeUsername);
 
 // Import functionality
 importTodosBtn.addEventListener('click', () => {
-    importTodosInput.click();
+    importInput.click();
 });
 
-importTodosInput.addEventListener('change', (event) => {
+importInput.addEventListener('change', (event) => {
     const file = event.target.files[0];
     if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const importedTodos = JSON.parse(e.target.result);
-                if (Array.isArray(importedTodos)) {
-                    todos = importedTodos;
-                    saveTodos();
-                    renderTodos();
-                    alert('Todos imported successfully!');
-                } else {
-                    throw new Error('Invalid todo format.');
-                }
-            } catch (error) {
-                console.error('Import Error:', error);
-                alert('Failed to import todos. Please ensure the file is a valid JSON.');
-            }
-        };
-        reader.readAsText(file);
+        importAllData(file)
+            .then(() => {
+                console.log('Import completed successfully');
+                // No need for alert as importAllData already shows one
+                // Reload todos from localStorage since importAllData updates it
+                reloadTodos();
+            })
+            .catch(error => {
+                console.error('Error importing data:', error);
+                alert('Failed to import data: ' + error.message);
+            });
     }
 });
 
-// Export functionality
-exportTodosBtn.addEventListener('click', () => {
-    try {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(todos, null, 2));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", "todos_backup.json");
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
-    } catch (error) {
-        console.error('Export Error:', error);
-        alert('Failed to export todos.');
-    }
+
+// Export All functionality (both dashboard and todos)
+exportAllBtn.addEventListener('click', () => {
+    exportAllData(false); // false for non-silent export
 });
 
 // Log the initial state

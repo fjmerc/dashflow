@@ -21,10 +21,10 @@
                 <button id="settingsBtn" title="Change Username">
                     <i class="fas fa-user-edit"></i>
                 </button>
-                <button id="importTodosBtn" title="Import Todos" aria-label="Import Todos">
+                <button id="importTodosBtn" title="Import All Data" aria-label="Import All Data">
                     <i class="fas fa-file-arrow-down"></i>
                 </button>
-                <button id="exportTodosBtn" title="Export Todos" aria-label="Export Todos">
+                <button id="exportAllBtn" title="Export All Data" aria-label="Export All Data">
                     <i class="fas fa-file-export"></i>
                 </button>
                 <button id="backToDashboard" title="Home">
@@ -56,6 +56,8 @@
         </div>
     </main>
 
+    <input type="file" id="importInput" style="display: none;" accept=".json">
+
     <!-- Custom Modal Dialog -->
     <div id="customModal" class="modal" style="display: none;" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
         <div class="modal-content" role="document">
@@ -70,6 +72,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
     <script src="theme.js"></script>
+    <script src="export-utils.js"></script>
     <script src="todo.js"></script>
 </body>
 </html>

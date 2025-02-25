@@ -6,7 +6,7 @@ const searchInput = document.getElementById('searchInput');
 const clearSearchBtn = document.getElementById('clearSearchBtn');
 const existingSections = document.getElementById('existingSections');
 const importBtn = document.getElementById('importBtn');
-const exportBtn = document.getElementById('exportBtn');
+const exportAllBtn = document.getElementById('exportAllBtn');
 const undoBtn = document.getElementById('undoBtn');
 const importInput = document.getElementById('importInput');
 const todoListBtn = document.getElementById('todoListBtn');
@@ -521,61 +521,15 @@ setInterval(() => {
 function handleImport(event) {
     const file = event.target.files[0];
     if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const importedData = JSON.parse(e.target.result);
-                
-                // Validate imported data structure
-                if (!importedData.data) {
-                    // Handle legacy format (just bookmarks)
-                    links = importedData;
-                    saveState();
-                    updateSectionDropdown();
-                    renderLinks();
-                    return;
-                }
-
-                // Import bookmarks and settings
-                if (importedData.data.bookmarks) {
-                    links = importedData.data.bookmarks;
-                    saveState();
-                    updateSectionDropdown();
-                    renderLinks();
-                }
-
-                // Import settings
-                if (importedData.data.settings) {
-                    const settings = importedData.data.settings;
-                    
-                    // Update username
-                    if (settings.username) {
-                        username = settings.username;
-                        localStorage.setItem('username', username);
-                        updateTitle();
-                    }
-
-                    // Update theme settings
-                    if (settings.theme) {
-                        localStorage.setItem('theme', settings.theme);
-                    }
-                    if (settings.primaryColor) {
-                        localStorage.setItem('primaryColor', settings.primaryColor);
-                    }
-
-                    // Sync theme changes
-                    if (typeof themeManager !== 'undefined') {
-                        themeManager.syncThemeSettings();
-                    }
-                }
-
-                alert('Import completed successfully!');
-            } catch (error) {
-                console.error('Error parsing imported file:', error);
-                alert('Invalid file format. Please upload a valid JSON file.');
-            }
-        };
-        reader.readAsText(file);
+        importAllData(file)
+            .then(() => {
+                console.log('Import completed successfully');
+                // No need for alert as importAllData already shows one
+            })
+            .catch(error => {
+                console.error('Error importing data:', error);
+                alert('Failed to import data: ' + error.message);
+            });
     }
 }
 
@@ -653,7 +607,7 @@ function showExportReminder() {
             'Click "Yes" to download your data or "No" to skip.',
             // Yes callback
             () => {
-                exportBookmarks(false); // false for non-silent export
+                exportAllData(false); // Use exportAllData instead of exportBookmarks
             },
             // No callback
             () => {
@@ -723,8 +677,8 @@ clearSearchBtn.addEventListener('click', () => {
     searchInput.focus(); // Return focus to search input
 });
 importBtn.addEventListener('click', importBookmarks);
-exportBtn.addEventListener('click', () => {
-    exportBookmarks(false); // false for non-silent export
+exportAllBtn.addEventListener('click', () => {
+    exportAllData(false); // false for non-silent export
 });
 undoBtn.addEventListener('click', undo);
 importInput.addEventListener('change', handleImport);
