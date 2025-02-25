@@ -598,14 +598,15 @@ function initializePage() {
 // Function to show import reminder
 function showImportReminder() {
     // Check if we've already shown the reminder in this browser session
-    const hasShownReminder = localStorage.getItem('importReminderShown');
+    const hasShownReminder = sessionStorage.getItem('importReminderShown');
     
     // Only show the reminder if we haven't shown it yet and either there's no export timestamp
     // or the links object is empty
     const lastExport = localStorage.getItem('lastExportTimestamp');
     if (!hasShownReminder && (!lastExport || !links || Object.keys(links).length === 0)) {
-        // Mark that we've shown the reminder
-        localStorage.setItem('importReminderShown', 'true');
+        // Mark that we've shown the reminder (using sessionStorage instead of localStorage)
+        // This will persist across page navigations but reset when the browser is closed
+        sessionStorage.setItem('importReminderShown', 'true');
         
         showModal(
             'Import Data',
@@ -615,7 +616,8 @@ function showImportReminder() {
             '2. Create a dedicated folder on your computer (e.g., "Dashboard Backups") to store exports\n' +
             '3. Exports are saved to your browser\'s default downloads folder\n' +
             '4. Move exported files from downloads to your backup folder\n' +
-            '5. Import your data when you start your browser',
+            '5. Import your data when you start your browser\n\n' +
+            'Click "Yes" to open the file browser or "No" to continue.',
             // Yes callback
             () => {
                 importBookmarks();
@@ -639,7 +641,8 @@ function showExportReminder() {
             'Export Data',
             'Remember to export your dashboard data regularly to prevent data loss.\n\n' +
             'Note: Export files will be saved to your browser\'s downloads folder.\n' +
-            'Please move them to a dedicated backup folder for safekeeping.',
+            'Please move them to a dedicated backup folder for safekeeping.\n\n' +
+            'Click "Yes" to download your data or "No" to skip.',
             // Yes callback
             () => {
                 exportBookmarks(false); // false for non-silent export
@@ -729,10 +732,4 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Set up periodic export reminders
     setInterval(showExportReminder, 60 * 60 * 1000); // Check every hour
-    
-    // Reset the import reminder shown flag when the app is closed
-    // This will be set again when the user returns in a new session
-    window.addEventListener('unload', () => {
-        localStorage.removeItem('importReminderShown');
-    });
 });
