@@ -237,28 +237,28 @@ function renderTodos(searchText = '', priorityFilter = 'all') {
                 ${todo.summary || todo.notes ? 
                     `<div class="todo-notes-container">
                         <p class="todo-summary${todo.summary && todo.summary.length > 100 ? ' truncated' : ''}">${(todo.summary || todo.notes).slice(0, 100)}${(todo.summary || todo.notes).length > 100 ? '...' : ''}</p>
-                        ${(todo.summary || todo.notes).length > 100 ? '<span class="todo-summary-expand" onclick="viewFullNotes(' + index + ')">Show more</span>' : ''}
+                        ${(todo.summary || todo.notes).length > 100 ? '<span class="todo-summary-expand" data-index="' + index + '">Show more</span>' : ''}
                     </div>` 
                 : ''}
                 <span class="todo-priority">Priority: ${todo.priority || 'None'}</span>
             </div>
             <div class="todo-actions">
-                <button class="todo-btn complete-btn" onclick="toggleComplete(${index})" title="Toggle Complete">
+                <button class="todo-btn complete-btn" data-action="complete" data-index="${index}" title="Toggle Complete">
                     <i class="fas fa-check"></i>
                 </button>
-                <button class="todo-btn edit-btn" onclick="editTodo(${index})" title="Edit Task">
+                <button class="todo-btn edit-btn" data-action="edit" data-index="${index}" title="Edit Task">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="todo-btn delete-btn" onclick="deleteTodo(${index})" title="Delete Task">
+                <button class="todo-btn delete-btn" data-action="delete" data-index="${index}" title="Delete Task">
                     <i class="fas fa-trash"></i>
                 </button>
-                <button class="todo-btn summary-btn" onclick="editSummary(${index})" title="Edit Summary">
+                <button class="todo-btn summary-btn" data-action="summary" data-index="${index}" title="Edit Summary">
                     <i class="fas fa-comment"></i>
                 </button>
-                <button class="todo-btn date-btn" onclick="editDueDate(${index})" title="Set Due Date">
+                <button class="todo-btn date-btn" data-action="date" data-index="${index}" title="Set Due Date">
                     <i class="fas fa-calendar"></i>
                 </button>
-                <button class="todo-btn priority-btn" onclick="togglePriority(${index})" title="Toggle Priority">
+                <button class="todo-btn priority-btn" data-action="priority" data-index="${index}" title="Toggle Priority">
                     <i class="fas fa-flag"></i>
                 </button>
             </div>
@@ -586,6 +586,43 @@ function ensureTodosLoaded() {
 // Start the initialization process
 reloadTodos();
 ensureTodosLoaded();
+
+// Add event delegation for todo actions
+todoList.addEventListener('click', (e) => {
+    // Find the button or element clicked
+    const actionButton = e.target.closest('[data-action]');
+    const showMoreLink = e.target.closest('.todo-summary-expand');
+    
+    if (actionButton) {
+        const index = parseInt(actionButton.getAttribute('data-index'), 10);
+        const action = actionButton.getAttribute('data-action');
+        
+        // Execute the appropriate action based on button clicked
+        switch(action) {
+            case 'complete':
+                toggleComplete(index);
+                break;
+            case 'edit':
+                editTodo(index);
+                break;
+            case 'delete':
+                deleteTodo(index);
+                break;
+            case 'summary':
+                editSummary(index);
+                break;
+            case 'date':
+                editDueDate(index);
+                break;
+            case 'priority':
+                togglePriority(index);
+                break;
+        }
+    } else if (showMoreLink) {
+        const index = parseInt(showMoreLink.getAttribute('data-index'), 10);
+        viewFullNotes(index);
+    }
+});
 
 // Add all event listeners
 todoForm.addEventListener('submit', addTodo);
