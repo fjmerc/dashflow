@@ -38,6 +38,7 @@
         <div class="todo-container">
             <form id="todoForm" class="todo-form">
                 <input type="text" id="todoInput" placeholder="Enter a new task" required>
+                <textarea id="todoNotes" placeholder="Add notes or details (optional)" class="todo-notes-input"></textarea>
                 <button type="submit" id="addTodoBtn">Add Task</button>
             </form>
             
@@ -54,6 +55,18 @@
             <ul id="todoList"></ul>
         </div>
     </main>
+
+    <!-- Custom Modal Dialog -->
+    <div id="customModal" class="modal" style="display: none;" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
+        <div class="modal-content" role="document">
+            <h3 id="modalTitle" class="modal-title">Modal Title</h3>
+            <p id="modalMessage" class="modal-message">Modal content goes here.</p>
+            <div class="modal-buttons">
+                <button id="modalNo" class="modal-btn" autofocus>No</button>
+                <button id="modalYes" class="modal-btn primary">Yes</button>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
     <script src="theme.js"></script>

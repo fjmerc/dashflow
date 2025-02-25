@@ -66,6 +66,84 @@ const initializeApp = () => {
     initializeState();
 };
 
+// Custom modal dialog functions
+function showModal(title, message, yesCallback, noCallback) {
+    const modal = document.getElementById('customModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalYes = document.getElementById('modalYes');
+    const modalNo = document.getElementById('modalNo');
+    
+    modalTitle.textContent = title;
+    
+    // Sanitize the message first, then replace newlines with <br> tags
+    const sanitized = sanitizeInput(message);
+    modalMessage.innerHTML = sanitized.replace(/\n/g, '<br>');
+    
+    // Remove any existing event listeners
+    const newYesBtn = modalYes.cloneNode(true);
+    const newNoBtn = modalNo.cloneNode(true);
+    modalYes.parentNode.replaceChild(newYesBtn, modalYes);
+    modalNo.parentNode.replaceChild(newNoBtn, modalNo);
+    
+    // Add new event listeners
+    newYesBtn.addEventListener('click', () => {
+        hideModal();
+        if (yesCallback) yesCallback();
+    });
+    
+    newNoBtn.addEventListener('click', () => {
+        hideModal();
+        if (noCallback) noCallback();
+    });
+    
+    // Handle Escape key to close the modal
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            hideModal();
+            if (noCallback) noCallback();
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+    
+    // Handle Enter key to trigger Yes button only if we're not in an input field
+    const handleEnter = (e) => {
+        // Don't trigger on input fields, textareas, etc.
+        if (e.key === 'Enter' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+            hideModal();
+            if (yesCallback) yesCallback();
+            document.removeEventListener('keydown', handleEnter);
+        }
+    };
+    document.addEventListener('keydown', handleEnter);
+    
+        // Store references to event handlers for proper cleanup
+    window.modalKeyHandlers = {
+        escape: handleEscape,
+        enter: handleEnter
+    };
+    
+    // Show the modal
+    modal.style.display = 'block';
+    
+    // Set focus to the No button for better keyboard navigation
+    // (so users don't accidentally confirm destructive actions)
+    setTimeout(() => newNoBtn.focus(), 50);
+}
+
+function hideModal() {
+    const modal = document.getElementById('customModal');
+    modal.style.display = 'none';
+    
+    // Remove keyboard event listeners when closing
+    if (window.modalKeyHandlers) {
+        document.removeEventListener('keydown', window.modalKeyHandlers.escape);
+        document.removeEventListener('keydown', window.modalKeyHandlers.enter);
+        window.modalKeyHandlers = null;
+    }
+}
+
 function updateTitle() {
     document.title = `${username}'s Dashboard`;
     document.querySelector('h1').textContent = `${username}'s Dashboard`;
@@ -88,6 +166,10 @@ function saveState() {
             history.push(JSON.stringify(links));
             localStorage.setItem('links', JSON.stringify(links));
             undoBtn.classList.add('active');
+            // Auto-export on every save
+            exportBookmarks(true).catch(e => {
+                console.error('Auto-export failed:', e);
+            });
         } catch (e) {
             console.error('Error saving to localStorage:', e);
             alert('Failed to save changes. Please ensure you have enough storage space.');
@@ -311,15 +393,24 @@ function editLink(section, index) {
 }
 
 function deleteLink(section, index) {
-    if (confirm('Are you sure you want to delete this link?')) {
-        links[section].splice(index, 1);
-        if (links[section].length === 0) {
-            delete links[section];
+    showModal(
+        'Delete Link',
+        'Are you sure you want to delete this link?',
+        // Yes callback
+        () => {
+            links[section].splice(index, 1);
+            if (links[section].length === 0) {
+                delete links[section];
+            }
+            saveState();
+            renderLinks();
+            updateSectionDropdown();
+        },
+        // No callback
+        () => {
+            // Do nothing
         }
-        saveState();
-        renderLinks();
-        updateSectionDropdown();
-    }
+    );
 }
 
 function toggleFavorite(section, index) {
@@ -331,11 +422,22 @@ function toggleFavorite(section, index) {
 function deleteSection(section) {
     if (links[section] && links[section].length > 0) {
         alert('Cannot delete a section that contains links. Please remove all links from this section first.');
-    } else if (confirm(`Are you sure you want to delete the section "${section}"?`)) {
-        delete links[section];
-        saveState();
-        renderLinks();
-        updateSectionDropdown();
+    } else {
+        showModal(
+            'Delete Section',
+            `Are you sure you want to delete the section "${section}"?`,
+            // Yes callback
+            () => {
+                delete links[section];
+                saveState();
+                renderLinks();
+                updateSectionDropdown();
+            },
+            // No callback
+            () => {
+                // Do nothing
+            }
+        );
     }
 }
 
@@ -354,7 +456,7 @@ function importBookmarks() {
     importInput.click();
 }
 
-async function exportBookmarks() {
+async function exportBookmarks(silent = true) {
     try {
         // Collect application data
         const exportData = {
@@ -373,13 +475,27 @@ async function exportBookmarks() {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", "dashboard_backup.json");
+        
+        // Generate filename with timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        downloadAnchorNode.setAttribute("download", `dashboard_backup_${timestamp}.json`);
+        
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
+        
+        // Update last export timestamp
+        localStorage.setItem('lastExportTimestamp', new Date().getTime().toString());
+        
+        if (!silent) {
+            alert('Export completed successfully!');
+        }
     } catch (e) {
         console.error('[Export Debug] Error exporting data:', e);
-        alert('Failed to export data. Please try again.');
+        if (!silent) {
+            alert('Failed to export data. Please try again.');
+        }
+        throw e;
     }
 }
 
@@ -479,6 +595,63 @@ function initializePage() {
     updateTitle();
 }
 
+// Function to show import reminder
+function showImportReminder() {
+    // Check if we've already shown the reminder in this browser session
+    const hasShownReminder = localStorage.getItem('importReminderShown');
+    
+    // Only show the reminder if we haven't shown it yet and either there's no export timestamp
+    // or the links object is empty
+    const lastExport = localStorage.getItem('lastExportTimestamp');
+    if (!hasShownReminder && (!lastExport || !links || Object.keys(links).length === 0)) {
+        // Mark that we've shown the reminder
+        localStorage.setItem('importReminderShown', 'true');
+        
+        showModal(
+            'Import Data',
+            'Would you like to import your previously exported dashboard data?\n\n' +
+            'Note: Due to browser cache clearing policies, it is recommended to:\n' +
+            '1. Export your data regularly\n' +
+            '2. Create a dedicated folder on your computer (e.g., "Dashboard Backups") to store exports\n' +
+            '3. Exports are saved to your browser\'s default downloads folder\n' +
+            '4. Move exported files from downloads to your backup folder\n' +
+            '5. Import your data when you start your browser',
+            // Yes callback
+            () => {
+                importBookmarks();
+            },
+            // No callback
+            () => {
+                // Do nothing
+            }
+        );
+    }
+}
+
+// Function to show export reminder
+function showExportReminder() {
+    const lastExport = localStorage.getItem('lastExportTimestamp');
+    const now = new Date().getTime();
+    const hoursSinceLastExport = lastExport ? (now - parseInt(lastExport)) / (1000 * 60 * 60) : 24;
+    
+    if (hoursSinceLastExport >= 1) { // Show reminder if last export was more than 1 hour ago
+        showModal(
+            'Export Data',
+            'Remember to export your dashboard data regularly to prevent data loss.\n\n' +
+            'Note: Export files will be saved to your browser\'s downloads folder.\n' +
+            'Please move them to a dedicated backup folder for safekeeping.',
+            // Yes callback
+            () => {
+                exportBookmarks(false); // false for non-silent export
+            },
+            // No callback
+            () => {
+                // Do nothing
+            }
+        );
+    }
+}
+
 // Event Delegation for link and section actions
 document.addEventListener('click', (e) => {
     const linkItem = e.target.closest('.link-item');
@@ -511,7 +684,7 @@ addLinkForm.addEventListener('submit', addLink);
 searchInput.addEventListener('input', (e) => renderLinks(e.target.value));
 importBtn.addEventListener('click', importBookmarks);
 exportBtn.addEventListener('click', () => {
-    exportBookmarks();
+    exportBookmarks(false); // false for non-silent export
 });
 undoBtn.addEventListener('click', undo);
 importInput.addEventListener('change', handleImport);
@@ -522,14 +695,20 @@ darkModeBtn.addEventListener('click', () => themeManager.toggleDarkMode());
 themeColorBtn.addEventListener('click', () => themeManager.changeThemeColor());
 settingsBtn.addEventListener('click', changeUsername);
 clearStorageBtn.addEventListener('click', () => {
-    const userInput = prompt('Type "delete" to confirm clearing all data:');
-    if (userInput === 'delete') {
-        localStorage.clear();
-        alert('Local storage has been cleared.');
-        location.reload();
-    } else {
-        alert('Confirmation failed. Local storage was not cleared.');
-    }
+    showModal(
+        'Clear All Data',
+        'Are you sure you want to clear all dashboard data? This action cannot be undone.',
+        // Yes callback
+        () => {
+            localStorage.clear();
+            alert('Local storage has been cleared.');
+            location.reload();
+        },
+        // No callback
+        () => {
+            // Do nothing
+        }
+    );
 });
 
 const helpBtn = document.getElementById('helpBtn');
@@ -537,7 +716,23 @@ helpBtn.addEventListener('click', () => {
     window.location.href = 'help.html';
 });
 
+// Initialize app with import/export reminders
 document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
     initializePage();
+    showImportReminder();
+    
+    // Show export reminder when user is about to leave
+    window.addEventListener('beforeunload', () => {
+        showExportReminder();
+    });
+    
+    // Set up periodic export reminders
+    setInterval(showExportReminder, 60 * 60 * 1000); // Check every hour
+    
+    // Reset the import reminder shown flag when the app is closed
+    // This will be set again when the user returns in a new session
+    window.addEventListener('unload', () => {
+        localStorage.removeItem('importReminderShown');
+    });
 });

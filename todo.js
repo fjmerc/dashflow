@@ -1,5 +1,86 @@
+// Custom modal dialog functions
+function showModal(title, message, yesCallback, noCallback) {
+    const modal = document.getElementById('customModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalYes = document.getElementById('modalYes');
+    const modalNo = document.getElementById('modalNo');
+    
+    modalTitle.textContent = title;
+    
+    // Sanitize the message first, then replace newlines with <br> tags
+    const div = document.createElement('div');
+    div.textContent = message;
+    const sanitized = div.innerHTML;
+    modalMessage.innerHTML = sanitized.replace(/\n/g, '<br>');
+    
+    // Remove any existing event listeners
+    const newYesBtn = modalYes.cloneNode(true);
+    const newNoBtn = modalNo.cloneNode(true);
+    modalYes.parentNode.replaceChild(newYesBtn, modalYes);
+    modalNo.parentNode.replaceChild(newNoBtn, modalNo);
+    
+    // Add new event listeners
+    newYesBtn.addEventListener('click', () => {
+        hideModal();
+        if (yesCallback) yesCallback();
+    });
+    
+    newNoBtn.addEventListener('click', () => {
+        hideModal();
+        if (noCallback) noCallback();
+    });
+    
+    // Handle Escape key to close the modal
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            hideModal();
+            if (noCallback) noCallback();
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+    
+    // Handle Enter key to trigger Yes button only if we're not in an input field
+    const handleEnter = (e) => {
+        // Don't trigger on input fields, textareas, etc.
+        if (e.key === 'Enter' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+            hideModal();
+            if (yesCallback) yesCallback();
+            document.removeEventListener('keydown', handleEnter);
+        }
+    };
+    document.addEventListener('keydown', handleEnter);
+    
+    // Store references to event handlers for proper cleanup
+    window.modalKeyHandlers = {
+        escape: handleEscape,
+        enter: handleEnter
+    };
+    
+    // Show the modal
+    modal.style.display = 'block';
+    
+    // Set focus to the No button for better keyboard navigation
+    // (so users don't accidentally confirm destructive actions)
+    setTimeout(() => newNoBtn.focus(), 50);
+}
+
+function hideModal() {
+    const modal = document.getElementById('customModal');
+    modal.style.display = 'none';
+    
+    // Remove keyboard event listeners when closing
+    if (window.modalKeyHandlers) {
+        document.removeEventListener('keydown', window.modalKeyHandlers.escape);
+        document.removeEventListener('keydown', window.modalKeyHandlers.enter);
+        window.modalKeyHandlers = null;
+    }
+}
+
 const todoForm = document.getElementById('todoForm');
 const todoInput = document.getElementById('todoInput');
+const todoNotes = document.getElementById('todoNotes');
 const todoList = document.getElementById('todoList');
 const backToDashboard = document.getElementById('backToDashboard');
 const settingsBtn = document.getElementById('settingsBtn');
@@ -121,7 +202,8 @@ function saveTodos() {
 function filterTodos(searchText = '', priorityFilter = 'all') {
     return todos.filter(todo => {
         const matchesSearch = todo.text.toLowerCase().includes(searchText.toLowerCase()) ||
-                            (todo.summary && todo.summary.toLowerCase().includes(searchText.toLowerCase()));
+                            (todo.summary && todo.summary.toLowerCase().includes(searchText.toLowerCase())) ||
+                            (todo.notes && todo.notes.toLowerCase().includes(searchText.toLowerCase()));
         const matchesPriority = priorityFilter === 'all' || todo.priority === priorityFilter;
         return matchesSearch && matchesPriority;
     });
@@ -133,6 +215,7 @@ function renderTodos(searchText = '', priorityFilter = 'all') {
     filteredTodos.forEach((todo, index) => {
         const li = document.createElement('li');
         li.className = `todo-item priority-${todo.priority || 'none'}`;
+        li.setAttribute('data-index', index); // Add original index as a data attribute
         const dueDate = todo.dueDate ? new Date(todo.dueDate).toLocaleDateString() : 'No due date';
         const isOverdue = todo.dueDate && new Date(todo.dueDate) < new Date() && !todo.completed;
         
@@ -142,7 +225,12 @@ function renderTodos(searchText = '', priorityFilter = 'all') {
                     <span class="todo-text ${todo.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}">${todo.text}</span>
                     <span class="todo-due-date ${isOverdue ? 'overdue' : ''}">${dueDate}</span>
                 </div>
-                ${todo.summary ? `<p class="todo-summary">${todo.summary}</p>` : ''}
+                ${todo.summary || todo.notes ? 
+                    `<div class="todo-notes-container">
+                        <p class="todo-summary${todo.summary && todo.summary.length > 100 ? ' truncated' : ''}">${(todo.summary || todo.notes).slice(0, 100)}${(todo.summary || todo.notes).length > 100 ? '...' : ''}</p>
+                        ${(todo.summary || todo.notes).length > 100 ? '<span class="todo-summary-expand" onclick="viewFullNotes(' + index + ')">Show more</span>' : ''}
+                    </div>` 
+                : ''}
                 <span class="todo-priority">Priority: ${todo.priority || 'None'}</span>
             </div>
             <div class="todo-actions">
@@ -173,16 +261,19 @@ function renderTodos(searchText = '', priorityFilter = 'all') {
 function addTodo(event) {
     event.preventDefault();
     const todoText = todoInput.value.trim();
+    const notes = todoNotes.value.trim();
     if (todoText) {
         todos.push({
             text: todoText,
             completed: false,
-            summary: '',
+            summary: notes, // Use the notes field for summary
+            notes: notes,  // Add a dedicated notes field for future compatibility
             priority: PRIORITIES.MEDIUM,
             dueDate: null
         });
         saveTodos();
         todoInput.value = '';
+        todoNotes.value = '';
         renderTodos();
     }
 }
@@ -213,29 +304,201 @@ function toggleComplete(index) {
 }
 
 function editTodo(index) {
-    const newText = prompt('Edit task:', todos[index].text);
-    if (newText !== null) {
-        todos[index].text = newText.trim();
+    // Create a modal for editing the entire task
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Task</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="editTaskText">Task</label>
+                    <input type="text" id="editTaskText" value="${todos[index].text}" required>
+                </div>
+                <div class="form-group">
+                    <label for="editTaskNotes">Notes</label>
+                    <textarea id="editTaskNotes" rows="4" placeholder="Add notes or details about this task">${todos[index].summary || todos[index].notes || ''}</textarea>
+                </div>
+                <div class="form-group">
+                    <label for="editTaskPriority">Priority</label>
+                    <select id="editTaskPriority">
+                        <option value="low" ${todos[index].priority === 'low' ? 'selected' : ''}>Low</option>
+                        <option value="medium" ${todos[index].priority === 'medium' ? 'selected' : ''}>Medium</option>
+                        <option value="high" ${todos[index].priority === 'high' ? 'selected' : ''}>High</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editTaskDueDate">Due Date</label>
+                    <input type="date" id="editTaskDueDate" value="${todos[index].dueDate ? new Date(todos[index].dueDate).toISOString().split('T')[0] : ''}">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveTaskBtn" class="btn primary">Save</button>
+                <button id="cancelTaskBtn" class="btn">Cancel</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Add event listeners
+    modal.querySelector('.close').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+
+    modal.querySelector('#cancelTaskBtn').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+
+    modal.querySelector('#saveTaskBtn').addEventListener('click', () => {
+        const taskText = document.getElementById('editTaskText').value.trim();
+        
+        if (!taskText) {
+            alert('Task text cannot be empty');
+            return;
+        }
+
+        const taskNotes = document.getElementById('editTaskNotes').value.trim();
+        const taskPriority = document.getElementById('editTaskPriority').value;
+        const taskDueDate = document.getElementById('editTaskDueDate').value;
+
+        todos[index].text = taskText;
+        todos[index].summary = taskNotes;
+        todos[index].notes = taskNotes;
+        todos[index].priority = taskPriority;
+        todos[index].dueDate = taskDueDate ? new Date(taskDueDate).toISOString() : null;
+
         saveTodos();
         renderTodos();
-    }
+        document.body.removeChild(modal);
+    });
+
+    // Allow clicking outside modal to close
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
+
+    // Focus the task text input
+    setTimeout(() => {
+        document.getElementById('editTaskText').focus();
+    }, 0);
 }
 
 function deleteTodo(index) {
-    if (confirm('Are you sure you want to delete this task?')) {
-        todos.splice(index, 1);
-        saveTodos();
-        renderTodos();
-    }
+    showModal(
+        'Delete Task',
+        'Are you sure you want to delete this task?',
+        // Yes callback
+        () => {
+            todos.splice(index, 1);
+            saveTodos();
+            renderTodos();
+        },
+        // No callback
+        () => {
+            // Do nothing
+        }
+    );
+}
+
+function viewFullNotes(index) {
+    // Create a modal to display the full notes
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    const notesContent = todos[index].summary || todos[index].notes || 'No notes available.';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>${todos[index].text}</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body notes-view">
+                <p>${notesContent.replace(/\n/g, '<br>')}</p>
+            </div>
+            <div class="modal-footer">
+                <button id="editNotesBtn" class="btn primary">Edit Notes</button>
+                <button id="closeNotesBtn" class="btn">Close</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Add event listeners
+    modal.querySelector('.close').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+
+    modal.querySelector('#closeNotesBtn').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+
+    modal.querySelector('#editNotesBtn').addEventListener('click', () => {
+        document.body.removeChild(modal);
+        editSummary(index);
+    });
+
+    // Allow clicking outside modal to close
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
 }
 
 function editSummary(index) {
-    const newSummary = prompt('Edit summary/notes:', todos[index].summary);
-    if (newSummary !== null) {
-        todos[index].summary = newSummary.trim();
+    // Create a modal for editing notes
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Notes</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <textarea id="editNotesTextarea" rows="6" placeholder="Add detailed notes about this task">${todos[index].summary || ''}</textarea>
+            </div>
+            <div class="modal-footer">
+                <button id="saveNotesBtn" class="btn primary">Save</button>
+                <button id="cancelNotesBtn" class="btn">Cancel</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Add event listeners
+    modal.querySelector('.close').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+
+    modal.querySelector('#cancelNotesBtn').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+
+    modal.querySelector('#saveNotesBtn').addEventListener('click', () => {
+        const newNotes = document.getElementById('editNotesTextarea').value.trim();
+        todos[index].summary = newNotes;
+        todos[index].notes = newNotes; // Update both fields for compatibility
         saveTodos();
         renderTodos();
-    }
+        document.body.removeChild(modal);
+    });
+
+    // Allow clicking outside modal to close
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
+
+    // Focus the textarea
+    setTimeout(() => {
+        document.getElementById('editNotesTextarea').focus();
+    }, 0);
 }
 
 // Get new filter elements
@@ -256,23 +519,27 @@ new Sortable(todoList, {
     animation: 150,
     ghostClass: 'todo-item-ghost',
     onEnd: () => {
-        todos = Array.from(todoList.children).map(li => {
-            const text = li.querySelector('.todo-text').textContent;
-            const completed = li.querySelector('.todo-text').classList.contains('completed');
-            const summary = li.querySelector('.todo-summary')?.textContent || '';
-            const priority = li.className.includes('priority-high') ? 'high' :
-                           li.className.includes('priority-medium') ? 'medium' :
-                           li.className.includes('priority-low') ? 'low' : null;
-            const dueDate = li.querySelector('.todo-due-date').textContent;
-            return {
-                text,
-                completed,
-                summary,
-                priority,
-                dueDate: dueDate !== 'No due date' ? new Date(dueDate).toISOString() : null
-            };
+        // Extract data attributes to maintain original indices
+        const newOrder = Array.from(todoList.children).map((li, newIndex) => {
+            // Try to get the original index from the data attribute
+            const originalIndex = parseInt(li.getAttribute('data-index'), 10);
+            return { originalIndex, newIndex };
         });
+
+        // Reorder the todos array based on the new order
+        const reorderedTodos = [];
+        newOrder.forEach(item => {
+            if (!isNaN(item.originalIndex) && todos[item.originalIndex]) {
+                reorderedTodos[item.newIndex] = todos[item.originalIndex];
+            }
+        });
+
+        // Update todos with valid entries only
+        todos = reorderedTodos.filter(Boolean);
+        
+        // Save and re-render
         saveTodos();
+        renderTodos();
     }
 });
 
