@@ -348,8 +348,8 @@ function editTodo(index) {
                 </div>
             </div>
             <div class="modal-footer">
-                <button id="saveTaskBtn" class="btn primary">Save</button>
-                <button id="cancelTaskBtn" class="btn">Cancel</button>
+                <button id="saveTaskBtn" class="modal-btn primary">Save</button>
+                <button id="cancelTaskBtn" class="modal-btn">Cancel</button>
             </div>
         </div>
     `;
@@ -434,8 +434,8 @@ function viewFullNotes(index) {
                 <p>${notesContent.replace(/\n/g, '<br>')}</p>
             </div>
             <div class="modal-footer">
-                <button id="editNotesBtn" class="btn primary">Edit Notes</button>
-                <button id="closeNotesBtn" class="btn">Close</button>
+                <button id="editNotesBtn" class="modal-btn primary">Edit Notes</button>
+                <button id="closeNotesBtn" class="modal-btn">Close</button>
             </div>
         </div>
     `;
@@ -479,8 +479,8 @@ function editSummary(index) {
                 <textarea id="editNotesTextarea" rows="6" placeholder="Add detailed notes about this task">${todos[index].summary || ''}</textarea>
             </div>
             <div class="modal-footer">
-                <button id="saveNotesBtn" class="btn primary">Save</button>
-                <button id="cancelNotesBtn" class="btn">Cancel</button>
+                <button id="saveNotesBtn" class="modal-btn primary">Save</button>
+                <button id="cancelNotesBtn" class="modal-btn">Cancel</button>
             </div>
         </div>
     `;
