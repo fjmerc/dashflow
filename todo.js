@@ -58,12 +58,14 @@ function showModal(title, message, yesCallback, noCallback) {
         enter: handleEnter
     };
     
-    // Show the modal
-    modal.style.display = 'block';
-    
-    // Set focus to the No button for better keyboard navigation
-    // (so users don't accidentally confirm destructive actions)
-    setTimeout(() => newNoBtn.focus(), 50);
+    // Show the modal with a slight delay to prevent flash during page transitions
+    setTimeout(() => {
+        modal.style.display = 'block';
+        
+        // Set focus to the No button for better keyboard navigation
+        // (so users don't accidentally confirm destructive actions)
+        setTimeout(() => newNoBtn.focus(), 50);
+    }, 10);
 }
 
 function hideModal() {
@@ -154,6 +156,13 @@ localStorage.setItem = function(key, value) {
 // Initialize on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', function() {
     console.log('[Todo Debug] DOMContentLoaded event fired');
+    
+    // Make sure modal is hidden initially
+    const modal = document.getElementById('customModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    
     initializeTodos();
 });
 

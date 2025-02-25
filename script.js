@@ -124,12 +124,14 @@ function showModal(title, message, yesCallback, noCallback) {
         enter: handleEnter
     };
     
-    // Show the modal
-    modal.style.display = 'block';
-    
-    // Set focus to the No button for better keyboard navigation
-    // (so users don't accidentally confirm destructive actions)
-    setTimeout(() => newNoBtn.focus(), 50);
+    // Show the modal with a slight delay to prevent flash during page transitions
+    setTimeout(() => {
+        modal.style.display = 'block';
+        
+        // Set focus to the No button for better keyboard navigation
+        // (so users don't accidentally confirm destructive actions)
+        setTimeout(() => newNoBtn.focus(), 50);
+    }, 10);
 }
 
 function hideModal() {
@@ -719,11 +721,21 @@ helpBtn.addEventListener('click', () => {
     window.location.href = 'help.html';
 });
 
-// Initialize app with import/export reminders
+// Initialize modal state when page loads
 document.addEventListener('DOMContentLoaded', () => {
+    // Make sure modal is hidden initially by forcing display: none
+    const modal = document.getElementById('customModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    
     initializeApp();
     initializePage();
-    showImportReminder();
+    
+    // Only show import reminder after a short delay to prevent flashing during navigation
+    setTimeout(() => {
+        showImportReminder();
+    }, 100);
     
     // Show export reminder when user is about to leave
     window.addEventListener('beforeunload', () => {

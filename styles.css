@@ -1,6 +1,6 @@
 /* Modal Dialog Styles */
 .modal {
-    display: none;
+    display: none !important; /* Force hidden by default */
     position: fixed;
     z-index: 1000;
     left: 0;
@@ -10,6 +10,11 @@
     background-color: rgba(0, 0, 0, 0.5);
     overflow: auto;
     transition: opacity 0.3s ease;
+}
+
+/* Override when JavaScript explicitly shows it */
+.modal[style*="display: block"] {
+    display: block !important;
 }
 
 .modal-content {
