@@ -104,6 +104,47 @@
         width: 100%;
     }
 }
+
+/* Retirement Timer Styles */
+.timer-display {
+    font-size: 1.5rem;
+    text-align: center;
+    padding: 20px;
+    background-color: var(--bg-color);
+    border-radius: 8px;
+    margin-top: 15px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.timer-display.complete {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+    font-weight: bold;
+}
+
+#retirementTimerContainer.disabled .timer-display {
+    opacity: 0.5;
+}
+
+.checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
 :root {
     --primary-color: #4f46e5;
     --primary-hover: #4338ca;

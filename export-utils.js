@@ -24,14 +24,18 @@ async function exportAllData(silent = false) {
         // Get todo data
         const todoData = JSON.parse(localStorage.getItem('todos') || '[]');
         
+        // Get retirement timer data
+        const retirementTimerData = JSON.parse(localStorage.getItem('retirementTimer') || 'null');
+        
         // Combine data
         const exportData = {
-            version: '1.1', // Increment version to indicate combined format
+            version: '1.2', // Increment version to indicate retirement timer support
             timestamp: new Date().toISOString(),
             data: {
                 bookmarks: dashboardData.data.bookmarks,
                 todos: todoData,
-                settings: dashboardData.data.settings
+                settings: dashboardData.data.settings,
+                retirementTimer: retirementTimerData
             }
         };
         
@@ -118,6 +122,11 @@ async function importAllData(file) {
                         if (settings.primaryColor) {
                             localStorage.setItem('primaryColor', settings.primaryColor);
                         }
+                    }
+                    
+                    // Import retirement timer data (version 1.2+)
+                    if (parseFloat(importedData.version) >= 1.2 && importedData.data.retirementTimer) {
+                        localStorage.setItem('retirementTimer', JSON.stringify(importedData.data.retirementTimer));
                     }
                 } 
                 // Handle legacy format (version 1.0)

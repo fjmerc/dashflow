@@ -40,6 +40,9 @@
                 <button id="todoListBtn" title="To-do List">
                     <i class="fas fa-tasks"></i>
                 </button>
+                <button id="retirementTimerBtn" title="Retirement Timer">
+                    <i class="fas fa-hourglass-half"></i>
+                </button>
                 <!-- Moved undo to end since it's often disabled -->
                 <button id="undoBtn" title="Undo">
                     <i class="fas fa-undo"></i>
@@ -94,6 +97,22 @@
             <div id="favoritesList" class="link-list"></div>
         </div>
 
+        <!-- Retirement Timer Section (Hidden by default) -->
+        <div id="retirementTimerContainer" class="section" style="display: none;">
+            <div class="section-header">
+                <h2 class="section-title">Retirement Countdown</h2>
+                <div class="section-actions">
+                    <button id="retirementSettingsBtn" class="section-btn" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <button id="retirementToggleBtn" class="section-btn" title="Enable/Disable Timer">
+                        <i class="fas fa-toggle-off"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="retirementTimer" class="timer-display">Timer loading...</div>
+        </div>
+
         <div id="linkList"></div>
     </main>
 
@@ -115,6 +134,7 @@
     <script src="theme.js"></script>
     <script src="export-utils.js"></script>
     <script src="script.js"></script>
+    <script src="retirement-timer.js"></script>
     <script>
         // Register service worker for offline functionality
         if ('serviceWorker' in navigator) {

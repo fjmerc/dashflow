@@ -10,6 +10,7 @@ const exportAllBtn = document.getElementById('exportAllBtn');
 const undoBtn = document.getElementById('undoBtn');
 const importInput = document.getElementById('importInput');
 const todoListBtn = document.getElementById('todoListBtn');
+const retirementTimerBtn = document.getElementById('retirementTimerBtn');
 const settingsBtn = document.getElementById('settingsBtn');
 const darkModeBtn = document.getElementById('darkModeBtn');
 const themeColorBtn = document.getElementById('themeColorBtn');
@@ -684,6 +685,23 @@ undoBtn.addEventListener('click', undo);
 importInput.addEventListener('change', handleImport);
 todoListBtn.addEventListener('click', () => {
     window.location.href = 'todo.html';
+});
+
+retirementTimerBtn.addEventListener('click', () => {
+    const timerContainer = document.getElementById('retirementTimerContainer');
+    if (timerContainer.style.display === 'none') {
+        timerContainer.style.display = 'block';
+        retirementTimerBtn.title = 'Hide Retirement Timer';
+        retirementTimerBtn.innerHTML = '<i class="fas fa-hourglass-half" style="color: var(--primary-color);"></i>';
+        window.scrollTo({
+            top: timerContainer.offsetTop - 20,
+            behavior: 'smooth'
+        });
+    } else {
+        timerContainer.style.display = 'none';
+        retirementTimerBtn.title = 'Show Retirement Timer';
+        retirementTimerBtn.innerHTML = '<i class="fas fa-hourglass-half"></i>';
+    }
 });
 darkModeBtn.addEventListener('click', () => themeManager.toggleDarkMode());
 themeColorBtn.addEventListener('click', () => themeManager.changeThemeColor());
