@@ -720,11 +720,10 @@ retirementTimerBtn.addEventListener('click', () => {
         }
         
         // Add sortable functionality
-        new Sortable(timerContainer.querySelector('.link-list'), {
-            animation: 150,
-            ghostClass: 'dragging',
-            disabled: true // Just for consistency, not actually draggable
-        });
+        if (!timerContainer.querySelector('.retirement-content.sortable-initialized')) {
+            // Mark as initialized to avoid duplicating
+            timerContainer.querySelector('.retirement-content').classList.add('sortable-initialized');
+        }
         
         // Scroll to the timer container
         window.scrollTo({
