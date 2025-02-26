@@ -170,10 +170,10 @@ function saveState() {
             history.push(JSON.stringify(links));
             localStorage.setItem('links', JSON.stringify(links));
             undoBtn.classList.add('active');
-            // Auto-export on every save
-            exportBookmarks(true).catch(e => {
-                console.error('Auto-export failed:', e);
-            });
+            // Auto-export disabled - uncomment to enable
+            // exportBookmarks(true).catch(e => {
+            //     console.error('Auto-export failed:', e);
+            // });
         } catch (e) {
             console.error('Error saving to localStorage:', e);
             alert('Failed to save changes. Please ensure you have enough storage space.');
