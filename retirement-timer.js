@@ -281,53 +281,10 @@ class RetirementTimer {
      * Show settings modal for the timer
      */
     showSettings() {
-        // Format date for input
-        const year = this.targetDate.getFullYear();
-        const month = String(this.targetDate.getMonth() + 1).padStart(2, '0');
-        const day = String(this.targetDate.getDate()).padStart(2, '0');
-        const formattedDate = `${year}-${month}-${day}`;
-        
-        // Use the existing showModal function from the main app
+        // Use the existing showModal function from the main app, but with minimal content
         window.showModal(
             'Retirement Timer Settings',
-            `
-            <form id="retirementSettingsForm">
-                <div class="form-group">
-                    <label for="retirementDate">Retirement Date:</label>
-                    <input type="date" id="retirementDate" value="${formattedDate}" required>
-                </div>
-                
-                <div class="form-group">
-                    <label>Display Options:</label>
-                    <div class="checkbox-group">
-                        <label>
-                            <input type="checkbox" id="showYears" ${this.showYears ? 'checked' : ''}>
-                            Show Years
-                        </label>
-                        <label>
-                            <input type="checkbox" id="showMonths" ${this.showMonths ? 'checked' : ''}>
-                            Show Months
-                        </label>
-                        <label>
-                            <input type="checkbox" id="showDays" ${this.showDays ? 'checked' : ''}>
-                            Show Days
-                        </label>
-                        <label>
-                            <input type="checkbox" id="showHours" ${this.showHours ? 'checked' : ''}>
-                            Show Hours
-                        </label>
-                        <label>
-                            <input type="checkbox" id="showMinutes" ${this.showMinutes ? 'checked' : ''}>
-                            Show Minutes
-                        </label>
-                        <label>
-                            <input type="checkbox" id="showSeconds" ${this.showSeconds ? 'checked' : ''}>
-                            Show Seconds
-                        </label>
-                    </div>
-                </div>
-            </form>
-            `,
+            'Loading settings form...',
             // Yes callback
             () => {
                 this.saveSettings();
@@ -337,7 +294,90 @@ class RetirementTimer {
                 // Do nothing
             }
         );
-    }
+        
+        // After modal is shown, replace its content with our form
+        setTimeout(() => this.buildSettingsForm(), 50);
+    },
+    
+    /**
+     * Build the settings form in the modal
+     */
+    buildSettingsForm() {
+        // Format date for input
+        const year = this.targetDate.getFullYear();
+        const month = String(this.targetDate.getMonth() + 1).padStart(2, '0');
+        const day = String(this.targetDate.getDate()).padStart(2, '0');
+        const formattedDate = `${year}-${month}-${day}`;
+        
+        const modalMessage = document.getElementById('modalMessage');
+        if (!modalMessage) return;
+        
+        // Clear existing content
+        modalMessage.innerHTML = '';
+        
+        // Create form element
+        const form = document.createElement('form');
+        form.id = 'retirementSettingsForm';
+        
+        // Create date input group
+        const dateGroup = document.createElement('div');
+        dateGroup.className = 'form-group';
+        
+        const dateLabel = document.createElement('label');
+        dateLabel.htmlFor = 'retirementDate';
+        dateLabel.textContent = 'Retirement Date:';
+        
+        const dateInput = document.createElement('input');
+        dateInput.type = 'date';
+        dateInput.id = 'retirementDate';
+        dateInput.value = formattedDate;
+        dateInput.required = true;
+        
+        dateGroup.appendChild(dateLabel);
+        dateGroup.appendChild(dateInput);
+        form.appendChild(dateGroup);
+        
+        // Create display options group
+        const optionsGroup = document.createElement('div');
+        optionsGroup.className = 'form-group';
+        
+        const optionsLabel = document.createElement('label');
+        optionsLabel.textContent = 'Display Options:';
+        optionsGroup.appendChild(optionsLabel);
+        
+        const checkboxGroup = document.createElement('div');
+        checkboxGroup.className = 'checkbox-group';
+        
+        // Create checkbox options
+        const options = [
+            { id: 'showYears', label: 'Show Years', checked: this.showYears },
+            { id: 'showMonths', label: 'Show Months', checked: this.showMonths },
+            { id: 'showDays', label: 'Show Days', checked: this.showDays },
+            { id: 'showHours', label: 'Show Hours', checked: this.showHours },
+            { id: 'showMinutes', label: 'Show Minutes', checked: this.showMinutes },
+            { id: 'showSeconds', label: 'Show Seconds', checked: this.showSeconds }
+        ];
+        
+        options.forEach(option => {
+            const wrapper = document.createElement('label');
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = option.id;
+            checkbox.checked = option.checked;
+            
+            wrapper.appendChild(checkbox);
+            wrapper.appendChild(document.createTextNode(' ' + option.label));
+            
+            checkboxGroup.appendChild(wrapper);
+        });
+        
+        optionsGroup.appendChild(checkboxGroup);
+        form.appendChild(optionsGroup);
+        
+        // Add the form to the modal
+        modalMessage.appendChild(form);
+    },
     
     /**
      * Save settings from the modal

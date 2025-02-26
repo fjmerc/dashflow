@@ -152,6 +152,50 @@
     width: auto;
     margin: 0;
 }
+
+/* Retirement settings form styles */
+#retirementSettingsForm {
+    width: 100%;
+}
+
+#retirementSettingsForm .form-group {
+    margin-bottom: 15px;
+}
+
+#retirementSettingsForm label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+#retirementSettingsForm input[type="date"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin-bottom: 10px;
+}
+
+#retirementSettingsForm .checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 5px;
+}
+
+#retirementSettingsForm .checkbox-group label {
+    display: flex;
+    align-items: center;
+    font-weight: normal;
+    margin-bottom: 0;
+}
+
+#retirementSettingsForm .checkbox-group input[type="checkbox"] {
+    margin-right: 8px;
+}
 :root {
     --primary-color: #4f46e5;
     --primary-hover: #4338ca;
