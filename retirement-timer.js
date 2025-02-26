@@ -297,7 +297,7 @@ class RetirementTimer {
         
         // After modal is shown, replace its content with our form
         setTimeout(() => this.buildSettingsForm(), 50);
-    },
+    }
     
     /**
      * Build the settings form in the modal
@@ -377,7 +377,7 @@ class RetirementTimer {
         
         // Add the form to the modal
         modalMessage.appendChild(form);
-    },
+    }
     
     /**
      * Save settings from the modal
