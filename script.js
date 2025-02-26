@@ -10,6 +10,7 @@ const exportAllBtn = document.getElementById('exportAllBtn');
 const undoBtn = document.getElementById('undoBtn');
 const importInput = document.getElementById('importInput');
 const todoListBtn = document.getElementById('todoListBtn');
+const retirementTimerBtn = document.getElementById('retirementTimerBtn');
 const settingsBtn = document.getElementById('settingsBtn');
 const darkModeBtn = document.getElementById('darkModeBtn');
 const themeColorBtn = document.getElementById('themeColorBtn');
@@ -169,10 +170,10 @@ function saveState() {
             history.push(JSON.stringify(links));
             localStorage.setItem('links', JSON.stringify(links));
             undoBtn.classList.add('active');
-            // Auto-export on every save
-            exportBookmarks(true).catch(e => {
-                console.error('Auto-export failed:', e);
-            });
+            // Auto-export disabled - uncomment to enable
+            // exportBookmarks(true).catch(e => {
+            //     console.error('Auto-export failed:', e);
+            // });
         } catch (e) {
             console.error('Error saving to localStorage:', e);
             alert('Failed to save changes. Please ensure you have enough storage space.');
@@ -262,6 +263,7 @@ function renderLinks(filter = '') {
     new Sortable(linkList, {
         animation: 150,
         ghostClass: 'dragging',
+        draggable: '.section',  // Only allow dragging sections
         onEnd: (evt) => {
             const { oldIndex, newIndex } = evt;
             const sections = Object.keys(links);
@@ -275,6 +277,17 @@ function renderLinks(filter = '') {
             saveState();
         }
     });
+    
+    // Make retirement timer container draggable
+    const retirementContainer = document.getElementById('retirementTimerContainer');
+    if (retirementContainer) {
+        retirementContainer.addEventListener('mousedown', function(e) {
+            // Only trigger dragging from the header, not the content
+            if (e.target.closest('.section-header')) {
+                e.stopPropagation();
+            }
+        });
+    }
 
     new Sortable(favoritesList, {
         animation: 150,
@@ -684,6 +697,51 @@ undoBtn.addEventListener('click', undo);
 importInput.addEventListener('change', handleImport);
 todoListBtn.addEventListener('click', () => {
     window.location.href = 'todo.html';
+});
+
+retirementTimerBtn.addEventListener('click', () => {
+    const timerContainer = document.getElementById('retirementTimerContainer');
+    const linkList = document.getElementById('linkList');
+    
+    if (timerContainer.style.display === 'none') {
+        // Show the timer section
+        timerContainer.style.display = 'block';
+        retirementTimerBtn.title = 'Hide Retirement Timer';
+        retirementTimerBtn.innerHTML = '<i class="fas fa-hourglass-half" style="color: var(--primary-color);"></i>';
+        
+        // Move timer container to be part of the section layout
+        // If sections exist, insert before the first one
+        const firstSection = linkList.querySelector('.section');
+        if (firstSection) {
+            linkList.insertBefore(timerContainer, firstSection);
+        } else {
+            // If no sections exist, append to link list
+            linkList.appendChild(timerContainer);
+        }
+        
+        // Add sortable functionality
+        if (!timerContainer.querySelector('.retirement-content.sortable-initialized')) {
+            // Mark as initialized to avoid duplicating
+            timerContainer.querySelector('.retirement-content').classList.add('sortable-initialized');
+        }
+        
+        // Scroll to the timer container
+        window.scrollTo({
+            top: timerContainer.offsetTop - 20,
+            behavior: 'smooth'
+        });
+    } else {
+        // Hide the timer section
+        timerContainer.style.display = 'none';
+        retirementTimerBtn.title = 'Show Retirement Timer';
+        retirementTimerBtn.innerHTML = '<i class="fas fa-hourglass-half"></i>';
+        
+        // Remove from DOM flow to prevent empty space
+        if (timerContainer.parentNode === linkList) {
+            linkList.removeChild(timerContainer);
+            document.querySelector('main').appendChild(timerContainer); // Store in main but hidden
+        }
+    }
 });
 darkModeBtn.addEventListener('click', () => themeManager.toggleDarkMode());
 themeColorBtn.addEventListener('click', () => themeManager.changeThemeColor());

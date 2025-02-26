@@ -21,6 +21,13 @@ A modern, feature-rich Progressive Web App (PWA) for organizing and managing you
   - User settings management
   - Personalized username option
 
+- **Retirement Countdown**
+  - Track time until retirement
+  - Customizable retirement date
+  - Real-time countdown display
+  - Enable/disable functionality
+  - Settings persistence
+
 - **Data Management**
   - Unified Import/Export system for all application data
   - Combined backup of bookmarks, todos, and settings in a single file
@@ -69,16 +76,17 @@ A modern, feature-rich Progressive Web App (PWA) for organizing and managing you
 
 ```
 dashboard/
-├── index.html      # Main application page
-├── help.html       # Help documentation
-├── todo.html       # Todo list feature
-├── manifest.json   # PWA configuration
-├── sw.js          # Service Worker
-├── script.js      # Main application logic
-├── todo.js        # Todo list functionality
-├── theme.js       # Theme management
-├── export-utils.js # Unified data export/import utilities
-└── styles.css     # Application styles
+├── index.html          # Main application page
+├── help.html           # Help documentation
+├── todo.html           # Todo list feature
+├── manifest.json       # PWA configuration
+├── sw.js               # Service Worker
+├── script.js           # Main application logic
+├── todo.js             # Todo list functionality
+├── theme.js            # Theme management
+├── export-utils.js     # Unified data export/import utilities
+├── retirement-timer.js # Retirement countdown logic
+└── styles.css          # Application styles
 ```
 
 ## Usage
@@ -102,7 +110,13 @@ dashboard/
    - Change theme colors using the palette icon
    - Update username through settings
 
-5. **Data Management**
+5. **Retirement Countdown**
+   - Click the hourglass icon to show/hide the countdown
+   - Use settings to set your retirement date
+   - View real-time countdown display
+   - Settings are included in data backups
+
+6. **Data Management**
    - Export all data (bookmarks, todos, settings) for comprehensive backup
    - Import data from unified or legacy backup formats
    - Cross-page integration between dashboard and todo list
