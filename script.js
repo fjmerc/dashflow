@@ -263,6 +263,7 @@ function renderLinks(filter = '') {
     new Sortable(linkList, {
         animation: 150,
         ghostClass: 'dragging',
+        draggable: '.section',  // Only allow dragging sections
         onEnd: (evt) => {
             const { oldIndex, newIndex } = evt;
             const sections = Object.keys(links);
@@ -276,6 +277,17 @@ function renderLinks(filter = '') {
             saveState();
         }
     });
+    
+    // Make retirement timer container draggable
+    const retirementContainer = document.getElementById('retirementTimerContainer');
+    if (retirementContainer) {
+        retirementContainer.addEventListener('mousedown', function(e) {
+            // Only trigger dragging from the header, not the content
+            if (e.target.closest('.section-header')) {
+                e.stopPropagation();
+            }
+        });
+    }
 
     new Sortable(favoritesList, {
         animation: 150,
@@ -689,18 +701,47 @@ todoListBtn.addEventListener('click', () => {
 
 retirementTimerBtn.addEventListener('click', () => {
     const timerContainer = document.getElementById('retirementTimerContainer');
+    const linkList = document.getElementById('linkList');
+    
     if (timerContainer.style.display === 'none') {
+        // Show the timer section
         timerContainer.style.display = 'block';
         retirementTimerBtn.title = 'Hide Retirement Timer';
         retirementTimerBtn.innerHTML = '<i class="fas fa-hourglass-half" style="color: var(--primary-color);"></i>';
+        
+        // Move timer container to be part of the section layout
+        // If sections exist, insert before the first one
+        const firstSection = linkList.querySelector('.section');
+        if (firstSection) {
+            linkList.insertBefore(timerContainer, firstSection);
+        } else {
+            // If no sections exist, append to link list
+            linkList.appendChild(timerContainer);
+        }
+        
+        // Add sortable functionality
+        new Sortable(timerContainer.querySelector('.link-list'), {
+            animation: 150,
+            ghostClass: 'dragging',
+            disabled: true // Just for consistency, not actually draggable
+        });
+        
+        // Scroll to the timer container
         window.scrollTo({
             top: timerContainer.offsetTop - 20,
             behavior: 'smooth'
         });
     } else {
+        // Hide the timer section
         timerContainer.style.display = 'none';
         retirementTimerBtn.title = 'Show Retirement Timer';
         retirementTimerBtn.innerHTML = '<i class="fas fa-hourglass-half"></i>';
+        
+        // Remove from DOM flow to prevent empty space
+        if (timerContainer.parentNode === linkList) {
+            linkList.removeChild(timerContainer);
+            document.querySelector('main').appendChild(timerContainer); // Store in main but hidden
+        }
     }
 });
 darkModeBtn.addEventListener('click', () => themeManager.toggleDarkMode());

@@ -398,4 +398,21 @@ const retirementTimer = new RetirementTimer();
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     retirementTimer.init();
-});
+        
+        // Add logic to position the timer container properly
+        const timerContainer = document.getElementById('retirementTimerContainer');
+        if (timerContainer && timerContainer.style.display === 'block') {
+            // Ensure the container's position in the DOM is correct for proper section styling
+            const linkList = document.getElementById('linkList');
+            if (linkList) {
+                // Move the timer container to be before the first regular section if it exists
+                const firstSection = linkList.querySelector('.section');
+                if (firstSection) {
+                    linkList.insertBefore(timerContainer, firstSection);
+                } else {
+                    // If no sections exist, just append it to the link list
+                    linkList.appendChild(timerContainer);
+                }
+            }
+        }
+    });

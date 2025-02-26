@@ -112,9 +112,10 @@
     padding: 20px;
     background-color: var(--bg-color);
     border-radius: 8px;
-    margin-top: 15px;
     border: 1px solid var(--border-color);
     transition: all 0.3s ease;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .timer-display.complete {
