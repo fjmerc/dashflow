@@ -266,7 +266,7 @@ function addTodo(event) {
     const todoText = todoInput.value.trim();
     const notes = todoNotes.value.trim();
     if (todoText) {
-        todos.push({
+        todos.unshift({
             text: todoText,
             completed: false,
             summary: notes, // Use the notes field for summary
