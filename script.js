@@ -492,15 +492,34 @@ setInterval(() => {
 function handleImport(event) {
     const file = event.target.files[0];
     if (file) {
-        importAllData(file)
-            .then(() => {
-                Logger.debug('Import completed successfully');
-                // No need for alert as importAllData already shows one
-            })
-            .catch(error => {
-                Logger.error('Error importing data:', error);
-                alert('Failed to import data: ' + error.message);
-            });
+        const fileName = file.name.toLowerCase();
+        
+        // Determine import type based on file extension
+        if (fileName.endsWith('.json')) {
+            // Handle JSON dashboard data import
+            importAllData(file)
+                .then(() => {
+                    Logger.debug('Dashboard data import completed successfully');
+                })
+                .catch(error => {
+                    Logger.error('Error importing dashboard data:', error);
+                    alert('Failed to import dashboard data: ' + error.message);
+                });
+        } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
+            // Handle HTML bookmark import
+            importBrowserBookmarks(file)
+                .then(() => {
+                    Logger.debug('Browser bookmark import completed successfully');
+                })
+                .catch(error => {
+                    Logger.error('Error importing browser bookmarks:', error);
+                    alert('Failed to import bookmarks: ' + error.message);
+                });
+        } else {
+            // Unknown file type
+            alert('Unsupported file type. Please select a JSON file (dashboard data) or HTML file (browser bookmarks).');
+            Logger.warn('Unsupported file type selected:', fileName);
+        }
     }
 }
 

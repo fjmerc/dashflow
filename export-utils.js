@@ -202,3 +202,229 @@ async function importAllData(file) {
         reader.readAsText(file);
     });
 }
+
+/**
+ * Import browser bookmarks from HTML file (Netscape Bookmark File Format)
+ * @param {File} file - The HTML bookmark file
+ * @param {string} fileName - Optional filename for error reporting
+ * @returns {Promise<boolean>} Success status
+ */
+async function importBrowserBookmarks(file, fileName = null) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        fileName = fileName || file.name;
+        
+        reader.onload = function(event) {
+            try {
+                const htmlContent = event.target.result;
+                Logger.debug('Parsing browser bookmarks from file:', fileName);
+                
+                // Parse the HTML bookmark file
+                const bookmarkData = parseBrowserBookmarks(htmlContent);
+                
+                if (!bookmarkData || Object.keys(bookmarkData).length === 0) {
+                    reject(new Error('No valid bookmarks found in file'));
+                    return;
+                }
+                
+                // Get current links data
+                const currentLinks = JSON.parse(localStorage.getItem('links') || '{}');
+                
+                // Merge bookmark data with existing links
+                const mergedLinks = mergeBrowserBookmarks(currentLinks, bookmarkData);
+                
+                // Save to localStorage
+                localStorage.setItem('links', JSON.stringify(mergedLinks));
+                
+                Logger.info('Browser bookmarks imported successfully:', {
+                    sectionsAdded: Object.keys(bookmarkData).length,
+                    totalSections: Object.keys(mergedLinks).length
+                });
+                
+                // Show success message
+                if (typeof showModal === 'function') {
+                    const sectionCount = Object.keys(bookmarkData).length;
+                    const linkCount = Object.values(bookmarkData).reduce((total, section) => total + section.length, 0);
+                    
+                    showModal(
+                        'Bookmarks Imported Successfully!',
+                        `Imported ${linkCount} bookmarks across ${sectionCount} sections.\n\nThe page will now refresh to show your imported bookmarks.`,
+                        () => {
+                            window.location.reload();
+                        }
+                    );
+                } else {
+                    alert('Bookmarks imported successfully! The page will now refresh.');
+                    window.location.reload();
+                }
+                
+                resolve(true);
+            } catch (error) {
+                Logger.error('Error parsing browser bookmarks:', error);
+                if (window.errorHandler) {
+                    const errorId = window.errorHandler.handleError(error, 'file', {
+                        operation: 'import_browser_bookmarks',
+                        fileName: fileName
+                    });
+                }
+                reject(new Error('Invalid bookmark file format. Please ensure this is an HTML bookmark export from your browser.'));
+            }
+        };
+        
+        reader.onerror = function(error) {
+            Logger.error('Error reading bookmark file:', error);
+            if (window.errorHandler) {
+                window.errorHandler.handleError(new Error('Failed to read bookmark file'), 'file', {
+                    operation: 'read_bookmark_file',
+                    fileName: fileName
+                });
+            }
+            reject(error);
+        };
+        
+        reader.readAsText(file, 'UTF-8');
+    });
+}
+
+/**
+ * Parse HTML bookmark file content into dashboard format
+ * @param {string} htmlContent - Raw HTML content from bookmark file
+ * @returns {Object} Parsed bookmark data in dashboard format
+ */
+function parseBrowserBookmarks(htmlContent) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlContent, 'text/html');
+    
+    const bookmarkData = {};
+    let currentSection = 'Imported Bookmarks'; // Default section for loose bookmarks
+    
+    // Find the main bookmark container (usually starts after the title)
+    const allElements = doc.querySelectorAll('*');
+    
+    for (const element of allElements) {
+        // Check for folder headings (H3 elements)
+        if (element.tagName === 'H3') {
+            const sectionName = element.textContent.trim();
+            if (sectionName && sectionName !== 'Bookmarks' && sectionName !== 'Bookmarks bar') {
+                currentSection = sanitizeSectionName(sectionName);
+                if (!bookmarkData[currentSection]) {
+                    bookmarkData[currentSection] = [];
+                }
+            }
+        }
+        
+        // Check for bookmark links (A elements with HREF)
+        else if (element.tagName === 'A' && element.href) {
+            const linkName = element.textContent.trim();
+            const linkUrl = element.href;
+            
+            // Validate the link
+            if (linkName && linkUrl && isValidBookmarkUrl(linkUrl)) {
+                // Ensure current section exists
+                if (!bookmarkData[currentSection]) {
+                    bookmarkData[currentSection] = [];
+                }
+                
+                // Add bookmark to current section
+                bookmarkData[currentSection].push({
+                    name: sanitizeLinkName(linkName),
+                    url: linkUrl,
+                    favorite: false
+                });
+            }
+        }
+    }
+    
+    // Remove empty sections
+    Object.keys(bookmarkData).forEach(section => {
+        if (bookmarkData[section].length === 0) {
+            delete bookmarkData[section];
+        }
+    });
+    
+    Logger.debug('Parsed bookmark structure:', {
+        sections: Object.keys(bookmarkData),
+        totalLinks: Object.values(bookmarkData).reduce((total, section) => total + section.length, 0)
+    });
+    
+    return bookmarkData;
+}
+
+/**
+ * Merge browser bookmarks with existing dashboard links
+ * @param {Object} currentLinks - Existing dashboard links
+ * @param {Object} bookmarkData - Parsed bookmark data
+ * @returns {Object} Merged links data
+ */
+function mergeBrowserBookmarks(currentLinks, bookmarkData) {
+    const mergedLinks = { ...currentLinks };
+    
+    Object.keys(bookmarkData).forEach(sectionName => {
+        if (mergedLinks[sectionName]) {
+            // Section exists - merge links, avoiding duplicates
+            const existingUrls = new Set(mergedLinks[sectionName].map(link => link.url));
+            const newLinks = bookmarkData[sectionName].filter(link => !existingUrls.has(link.url));
+            mergedLinks[sectionName].push(...newLinks);
+            
+            if (newLinks.length > 0) {
+                Logger.debug(`Merged ${newLinks.length} new links into existing section: ${sectionName}`);
+            }
+        } else {
+            // New section - add all links
+            mergedLinks[sectionName] = [...bookmarkData[sectionName]];
+            Logger.debug(`Created new section: ${sectionName} with ${bookmarkData[sectionName].length} links`);
+        }
+    });
+    
+    return mergedLinks;
+}
+
+/**
+ * Sanitize section name for dashboard use
+ * @param {string} name - Raw section name
+ * @returns {string} Sanitized section name
+ */
+function sanitizeSectionName(name) {
+    if (window.inputValidator && typeof window.inputValidator.sanitizeHtml === 'function') {
+        return window.inputValidator.sanitizeHtml(name).substring(0, 50);
+    }
+    
+    // Fallback sanitization
+    return name.replace(/[<>"/\\]/g, '').trim().substring(0, 50) || 'Imported Bookmarks';
+}
+
+/**
+ * Sanitize link name for dashboard use
+ * @param {string} name - Raw link name
+ * @returns {string} Sanitized link name
+ */
+function sanitizeLinkName(name) {
+    if (window.inputValidator && typeof window.inputValidator.sanitizeHtml === 'function') {
+        return window.inputValidator.sanitizeHtml(name).substring(0, 100);
+    }
+    
+    // Fallback sanitization
+    return name.replace(/[<>"/\\]/g, '').trim().substring(0, 100) || 'Untitled';
+}
+
+/**
+ * Validate if URL is suitable for bookmark import
+ * @param {string} url - URL to validate
+ * @returns {boolean} Whether URL is valid for import
+ */
+function isValidBookmarkUrl(url) {
+    try {
+        const urlObj = new URL(url);
+        
+        // Block dangerous or invalid protocols
+        const blockedProtocols = ['javascript:', 'data:', 'file:', 'vbscript:', 'about:'];
+        if (blockedProtocols.some(protocol => url.toLowerCase().startsWith(protocol))) {
+            return false;
+        }
+        
+        // Only allow HTTP and HTTPS
+        return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+    } catch (e) {
+        return false;
+    }
+}

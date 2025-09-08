@@ -110,7 +110,7 @@
             <div class="icon-explanation">
                 <i class="fas fa-file-arrow-down"></i>
                 <div>
-                    <strong>Import All Data:</strong> Import your dashboard and todo data from a previously exported JSON file. Supports both unified backups and legacy formats.
+                    <strong>Import Data:</strong> Import your dashboard and todo data from a JSON backup file, or import browser bookmarks from an HTML bookmark export file. Supports both unified backups and legacy formats.
                 </div>
             </div>
 
@@ -247,6 +247,36 @@
                 <li><strong>Settings:</strong> Click the gear icon in the countdown section to set or update your retirement date</li>
                 <li><strong>Display:</strong> Shows years, months, days, hours, minutes, and seconds until retirement</li>
                 <li><strong>Persistence:</strong> Your retirement date settings are saved and included in data backups</li>
+            </ul>
+        </section>
+
+        <section class="feature-section">
+            <h2 class="section-title">Browser Bookmark Import</h2>
+            <p>Import your existing browser bookmarks directly into the dashboard:</p>
+            
+            <h3>How to Import Browser Bookmarks</h3>
+            <ol>
+                <li><strong>Export from your browser:</strong>
+                    <ul>
+                        <li><strong>Chrome:</strong> Bookmarks → Bookmark manager → Export bookmarks</li>
+                        <li><strong>Firefox:</strong> Library → Bookmarks → Show All Bookmarks → Import and Backup → Export Bookmarks to HTML</li>
+                        <li><strong>Edge:</strong> Favorites → Manage favorites → Export favorites</li>
+                        <li><strong>Safari:</strong> File → Export Bookmarks</li>
+                    </ul>
+                </li>
+                <li>In the dashboard, click the <i class="fas fa-file-arrow-down"></i> import button</li>
+                <li>Select the HTML bookmark file you exported</li>
+                <li>Your bookmarks will be automatically organized into sections based on your browser folders</li>
+                <li>Loose bookmarks (not in folders) will be placed in an "Imported Bookmarks" section</li>
+            </ol>
+            
+            <h3>Import Features</h3>
+            <ul>
+                <li><strong>Automatic Organization:</strong> Browser bookmark folders become dashboard sections</li>
+                <li><strong>Duplicate Prevention:</strong> Existing bookmarks won't be duplicated if you import again</li>
+                <li><strong>Smart Merging:</strong> New bookmarks are added to existing sections when possible</li>
+                <li><strong>Security Filtering:</strong> Dangerous or invalid bookmark URLs are automatically filtered out</li>
+                <li><strong>Universal Support:</strong> Works with bookmark exports from all major browsers</li>
             </ul>
         </section>
 
