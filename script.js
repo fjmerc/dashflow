@@ -15,21 +15,35 @@ const settingsBtn = document.getElementById('settingsBtn');
 const darkModeBtn = document.getElementById('darkModeBtn');
 const themeColorBtn = document.getElementById('themeColorBtn');
 const clearStorageBtn = document.getElementById('clearStorageBtn');
+const backupSettingsBtn = document.getElementById('backupSettingsBtn');
 
 // State management
 let links;
 let history = [];
 let username;
 let debounceTimer;
+let searchDebounceTimer;
 
-// Utility functions for input sanitization
+// Enhanced utility functions for input sanitization
 const sanitizeInput = (str) => {
+    // Use the enhanced validator if available, fallback to basic sanitization
+    if (window.validateAndSanitize && window.validateAndSanitize.html) {
+        return window.validateAndSanitize.html(str);
+    }
+    
+    // Fallback sanitization
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
 };
 
 const validateUrl = (url) => {
+    // Use enhanced validator if available
+    if (window.validateAndSanitize && window.validateAndSanitize.url) {
+        return window.validateAndSanitize.url(url);
+    }
+    
+    // Fallback validation
     try {
         new URL(url);
         return true;
@@ -51,14 +65,14 @@ const initializeState = () => {
             }));
         }
     } catch (e) {
-        console.error('Error parsing links from localStorage:', e);
+        Logger.error('Error parsing links from localStorage:', e);
         links = {};
     }
     
     try {
         username = sanitizeInput(localStorage.getItem('username')) || 'User';
     } catch (e) {
-        console.error('Error getting username from localStorage:', e);
+        Logger.error('Error getting username from localStorage:', e);
         username = 'User';
     }
 };
@@ -69,84 +83,9 @@ const initializeApp = () => {
 };
 
 // Custom modal dialog functions
-function showModal(title, message, yesCallback, noCallback) {
-    const modal = document.getElementById('customModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalMessage = document.getElementById('modalMessage');
-    const modalYes = document.getElementById('modalYes');
-    const modalNo = document.getElementById('modalNo');
-    
-    modalTitle.textContent = title;
-    
-    // Sanitize the message first, then replace newlines with <br> tags
-    const sanitized = sanitizeInput(message);
-    modalMessage.innerHTML = sanitized.replace(/\n/g, '<br>');
-    
-    // Remove any existing event listeners
-    const newYesBtn = modalYes.cloneNode(true);
-    const newNoBtn = modalNo.cloneNode(true);
-    modalYes.parentNode.replaceChild(newYesBtn, modalYes);
-    modalNo.parentNode.replaceChild(newNoBtn, modalNo);
-    
-    // Add new event listeners
-    newYesBtn.addEventListener('click', () => {
-        hideModal();
-        if (yesCallback) yesCallback();
-    });
-    
-    newNoBtn.addEventListener('click', () => {
-        hideModal();
-        if (noCallback) noCallback();
-    });
-    
-    // Handle Escape key to close the modal
-    const handleEscape = (e) => {
-        if (e.key === 'Escape') {
-            hideModal();
-            if (noCallback) noCallback();
-            document.removeEventListener('keydown', handleEscape);
-        }
-    };
-    document.addEventListener('keydown', handleEscape);
-    
-    // Handle Enter key to trigger Yes button only if we're not in an input field
-    const handleEnter = (e) => {
-        // Don't trigger on input fields, textareas, etc.
-        if (e.key === 'Enter' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
-            hideModal();
-            if (yesCallback) yesCallback();
-            document.removeEventListener('keydown', handleEnter);
-        }
-    };
-    document.addEventListener('keydown', handleEnter);
-    
-        // Store references to event handlers for proper cleanup
-    window.modalKeyHandlers = {
-        escape: handleEscape,
-        enter: handleEnter
-    };
-    
-    // Show the modal with a slight delay to prevent flash during page transitions
-    setTimeout(() => {
-        modal.style.display = 'block';
-        
-        // Set focus to the No button for better keyboard navigation
-        // (so users don't accidentally confirm destructive actions)
-        setTimeout(() => newNoBtn.focus(), 50);
-    }, 10);
-}
+// Modal showModal function now provided by modal-manager.js
 
-function hideModal() {
-    const modal = document.getElementById('customModal');
-    modal.style.display = 'none';
-    
-    // Remove keyboard event listeners when closing
-    if (window.modalKeyHandlers) {
-        document.removeEventListener('keydown', window.modalKeyHandlers.escape);
-        document.removeEventListener('keydown', window.modalKeyHandlers.enter);
-        window.modalKeyHandlers = null;
-    }
-}
+// Modal hideModal function now provided by modal-manager.js
 
 function updateTitle() {
     document.title = `${username}'s Dashboard`;
@@ -175,24 +114,43 @@ function saveState() {
             //     console.error('Auto-export failed:', e);
             // });
         } catch (e) {
-            console.error('Error saving to localStorage:', e);
-            alert('Failed to save changes. Please ensure you have enough storage space.');
+            Logger.error('Error saving to localStorage:', e);
+            if (window.errorHandler) {
+                window.errorHandler.handleError(e, 'storage', {
+                    operation: 'save_links',
+                    dataSize: JSON.stringify(links).length
+                });
+            } else {
+                alert('Failed to save changes. Please ensure you have enough storage space.');
+            }
         }
     }, 300);
 }
 
 function updateSectionDropdown() {
     existingSections.innerHTML = '<option value="">Select section</option>';
-    for (const section in links) {
+    
+    // Get section names and sort them alphabetically
+    const sortedSections = Object.keys(links).sort((a, b) => 
+        a.toLowerCase().localeCompare(b.toLowerCase())
+    );
+    
+    // Add sorted sections to dropdown
+    sortedSections.forEach(section => {
         existingSections.innerHTML += `<option value="${section}">${section}</option>`;
-    }
+    });
 }
 
 function renderLinks(filter = '') {
     linkList.innerHTML = '';
     favoritesList.innerHTML = '';
 
-    for (const section in links) {
+    // Sort sections alphabetically
+    const sortedSections = Object.keys(links).sort((a, b) => 
+        a.toLowerCase().localeCompare(b.toLowerCase())
+    );
+    
+    for (const section of sortedSections) {
         const filteredLinks = links[section].filter(link => 
             link.name.toLowerCase().includes(filter.toLowerCase()) ||
             link.url.toLowerCase().includes(filter.toLowerCase())
@@ -340,7 +298,7 @@ function addSection(event) {
             alert('Section already exists or invalid name');
         }
     } catch (e) {
-        console.error('Error adding section:', e);
+        Logger.error('Error adding section:', e);
         alert('Failed to add section. Please try again.');
     }
 }
@@ -388,7 +346,7 @@ function addLink(event) {
         renderLinks();
         addLinkForm.reset();
     } catch (e) {
-        console.error('Error adding link:', e);
+        Logger.error('Error adding link:', e);
         alert('Failed to add link. Please try again.');
     }
 }
@@ -507,7 +465,7 @@ async function exportBookmarks(silent = true) {
             alert('Export completed successfully!');
         }
     } catch (e) {
-        console.error('[Export Debug] Error exporting data:', e);
+        Logger.error('Error exporting data:', e);
         if (!silent) {
             alert('Failed to export data. Please try again.');
         }
@@ -517,7 +475,7 @@ async function exportBookmarks(silent = true) {
 
 // Add error boundary
 window.addEventListener('error', function(event) {
-    console.error('Global error caught:', event.error);
+    Logger.error('Global error caught:', event.error);
     alert('An error occurred. Please refresh the page and try again.');
 });
 
@@ -527,7 +485,7 @@ setInterval(() => {
         const backup = JSON.stringify(links);
         localStorage.setItem('links_backup', backup);
     } catch (e) {
-        console.error('Error creating backup:', e);
+        Logger.error('Error creating backup:', e);
     }
 }, 5 * 60 * 1000); // Every 5 minutes
 
@@ -536,11 +494,11 @@ function handleImport(event) {
     if (file) {
         importAllData(file)
             .then(() => {
-                console.log('Import completed successfully');
+                Logger.debug('Import completed successfully');
                 // No need for alert as importAllData already shows one
             })
             .catch(error => {
-                console.error('Error importing data:', error);
+                Logger.error('Error importing data:', error);
                 alert('Failed to import data: ' + error.message);
             });
     }
@@ -662,14 +620,21 @@ addLinkForm.addEventListener('submit', addLink);
 // Handle search input changes
 searchInput.addEventListener('input', (e) => {
     const searchValue = e.target.value;
-    renderLinks(searchValue);
     
-    // Toggle visibility of clear button based on input content
+    // Debounce search to improve performance
+    clearTimeout(searchDebounceTimer);
+    
+    // Toggle visibility of clear button immediately for better UX
     if (searchValue) {
         clearSearchBtn.classList.add('visible');
     } else {
         clearSearchBtn.classList.remove('visible');
     }
+    
+    // Debounce the actual rendering
+    searchDebounceTimer = setTimeout(() => {
+        renderLinks(searchValue);
+    }, 300); // Wait 300ms after user stops typing
 });
 
 // Add keyboard support for escape key to clear search
@@ -762,6 +727,14 @@ clearStorageBtn.addEventListener('click', () => {
         }
     );
 });
+
+if (backupSettingsBtn) {
+    backupSettingsBtn.addEventListener('click', () => {
+        if (typeof showBackupSettings === 'function') {
+            showBackupSettings();
+        }
+    });
+}
 
 const helpBtn = document.getElementById('helpBtn');
 helpBtn.addEventListener('click', () => {

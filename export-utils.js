@@ -61,7 +61,7 @@ async function exportAllData(silent = false) {
         
         return true;
     } catch (e) {
-        console.error('[Export Debug] Error exporting combined data:', e);
+        Logger.error('Error exporting combined data:', e);
         if (!silent) {
             alert('Failed to export data. Please try again.');
         }
@@ -177,12 +177,25 @@ async function importAllData(file) {
                     reject(new Error('Invalid file format or no valid data found'));
                 }
             } catch (error) {
-                console.error('Error parsing imported file:', error);
+                Logger.error('Error parsing imported file:', error);
+                if (window.errorHandler) {
+                    const errorId = window.errorHandler.handleError(error, 'file', {
+                        operation: 'import_file',
+                        fileName: fileName
+                    });
+                }
                 reject(new Error('Invalid file format. Please upload a valid JSON file.'));
             }
         };
         
         reader.onerror = function(error) {
+            Logger.error('Error reading imported file:', error);
+            if (window.errorHandler) {
+                window.errorHandler.handleError(new Error('Failed to read file'), 'file', {
+                    operation: 'read_file',
+                    fileName: fileName
+                });
+            }
             reject(error);
         };
         

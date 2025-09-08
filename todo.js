@@ -1,84 +1,7 @@
 // Custom modal dialog functions
-function showModal(title, message, yesCallback, noCallback) {
-    const modal = document.getElementById('customModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalMessage = document.getElementById('modalMessage');
-    const modalYes = document.getElementById('modalYes');
-    const modalNo = document.getElementById('modalNo');
-    
-    modalTitle.textContent = title;
-    
-    // Sanitize the message first, then replace newlines with <br> tags
-    const div = document.createElement('div');
-    div.textContent = message;
-    const sanitized = div.innerHTML;
-    modalMessage.innerHTML = sanitized.replace(/\n/g, '<br>');
-    
-    // Remove any existing event listeners
-    const newYesBtn = modalYes.cloneNode(true);
-    const newNoBtn = modalNo.cloneNode(true);
-    modalYes.parentNode.replaceChild(newYesBtn, modalYes);
-    modalNo.parentNode.replaceChild(newNoBtn, modalNo);
-    
-    // Add new event listeners
-    newYesBtn.addEventListener('click', () => {
-        hideModal();
-        if (yesCallback) yesCallback();
-    });
-    
-    newNoBtn.addEventListener('click', () => {
-        hideModal();
-        if (noCallback) noCallback();
-    });
-    
-    // Handle Escape key to close the modal
-    const handleEscape = (e) => {
-        if (e.key === 'Escape') {
-            hideModal();
-            if (noCallback) noCallback();
-            document.removeEventListener('keydown', handleEscape);
-        }
-    };
-    document.addEventListener('keydown', handleEscape);
-    
-    // Handle Enter key to trigger Yes button only if we're not in an input field
-    const handleEnter = (e) => {
-        // Don't trigger on input fields, textareas, etc.
-        if (e.key === 'Enter' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
-            hideModal();
-            if (yesCallback) yesCallback();
-            document.removeEventListener('keydown', handleEnter);
-        }
-    };
-    document.addEventListener('keydown', handleEnter);
-    
-    // Store references to event handlers for proper cleanup
-    window.modalKeyHandlers = {
-        escape: handleEscape,
-        enter: handleEnter
-    };
-    
-    // Show the modal with a slight delay to prevent flash during page transitions
-    setTimeout(() => {
-        modal.style.display = 'block';
-        
-        // Set focus to the No button for better keyboard navigation
-        // (so users don't accidentally confirm destructive actions)
-        setTimeout(() => newNoBtn.focus(), 50);
-    }, 10);
-}
+// Modal showModal function now provided by modal-manager.js
 
-function hideModal() {
-    const modal = document.getElementById('customModal');
-    modal.style.display = 'none';
-    
-    // Remove keyboard event listeners when closing
-    if (window.modalKeyHandlers) {
-        document.removeEventListener('keydown', window.modalKeyHandlers.escape);
-        document.removeEventListener('keydown', window.modalKeyHandlers.enter);
-        window.modalKeyHandlers = null;
-    }
-}
+// Modal hideModal function now provided by modal-manager.js
 
 const todoForm = document.getElementById('todoForm');
 const todoInput = document.getElementById('todoInput');
@@ -93,25 +16,31 @@ const importInput = document.getElementById('importInput');
 
 let todos = [];
 let username = localStorage.getItem('username') || 'User';
+let searchDebounceTimer;
 
 // Function to reload todos from localStorage with enhanced debugging
 function reloadTodos() {
     try {
         const storedTodos = localStorage.getItem('todos');
-        console.log('[Todo Debug] Current localStorage todos:', storedTodos);
+        Logger.debug('Current localStorage todos:', storedTodos);
         
         if (!storedTodos) {
-            console.log('[Todo Debug] No todos found in localStorage');
+            Logger.debug('No todos found in localStorage');
             todos = [];
         } else {
             todos = JSON.parse(storedTodos);
-            console.log('[Todo Debug] Successfully parsed todos:', todos);
+            Logger.debug('Successfully parsed todos:', todos);
         }
         
         renderTodos();
-        console.log('[Todo Debug] Todos rendered, current count:', todos.length);
+        Logger.debug('Todos rendered, current count:', todos.length);
     } catch (error) {
-        console.error('[Todo Debug] Error loading todos:', error);
+        Logger.error('Error loading todos:', error);
+        if (window.errorHandler) {
+            window.errorHandler.handleError(error, 'storage', {
+                operation: 'load_todos'
+            });
+        }
         todos = [];
         renderTodos();
     }
@@ -119,14 +48,14 @@ function reloadTodos() {
 
 // Enhanced initialization
 function initializeTodos() {
-    console.log('[Todo Debug] Initializing todos page');
+    Logger.debug('Initializing todos page');
     reloadTodos();
     updateTitle();
 }
 
 // Listen for changes to localStorage (e.g., from import)
 window.addEventListener('storage', function(e) {
-    console.log('[Todo Debug] Storage event received:', e.key, e.newValue);
+    Logger.debug('Storage event received:', e.key, e.newValue);
     if (e.key === 'todos') {
         reloadTodos();
     } else if (e.key === 'username') {
@@ -136,19 +65,20 @@ window.addEventListener('storage', function(e) {
 });
 
 // Create a proxy for localStorage to detect changes in the same window
+// Use a flag to prevent infinite loops from our own updates
+let isUpdatingTodos = false;
 const originalSetItem = localStorage.setItem;
 localStorage.setItem = function(key, value) {
-    console.log('[Todo Debug] localStorage.setItem called:', key, value);
     originalSetItem.apply(this, arguments);
-    if (key === 'todos') {
-        console.log('[Todo Debug] Todos updated in localStorage, reloading...');
-        reloadTodos();
+    if (key === 'todos' && !isUpdatingTodos) {
+        // Set flag to prevent loop and reload todos after a brief delay
+        setTimeout(() => reloadTodos(), 50);
     }
 };
 
 // Initialize on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('[Todo Debug] DOMContentLoaded event fired');
+    Logger.debug('DOMContentLoaded event fired');
     
     // Make sure modal is hidden initially
     const modal = document.getElementById('customModal');
@@ -162,17 +92,17 @@ document.addEventListener('DOMContentLoaded', function() {
 // Reload when page becomes visible
 document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
-        console.log('[Todo Debug] Page became visible, reloading todos');
+        Logger.debug('Page became visible, reloading todos');
         reloadTodos();
     }
 });
 
 // Enhanced todosUpdated event listener
 window.addEventListener('todosUpdated', function(e) {
-    console.log('[Todo Debug] todosUpdated event received:', e.detail);
+    Logger.debug('todosUpdated event received:', e.detail);
     // Force a direct localStorage check
     const currentTodos = localStorage.getItem('todos');
-    console.log('[Todo Debug] Current localStorage state:', currentTodos);
+    Logger.debug('Current localStorage state:', currentTodos);
     reloadTodos();
 });
 
@@ -198,7 +128,12 @@ const PRIORITIES = {
 };
 
 function saveTodos() {
+    isUpdatingTodos = true;
     localStorage.setItem('todos', JSON.stringify(todos));
+    // Clear flag after storage is complete
+    setTimeout(() => {
+        isUpdatingTodos = false;
+    }, 100);
 }
 
 function filterTodos(searchText = '', priorityFilter = 'all') {
@@ -212,7 +147,7 @@ function filterTodos(searchText = '', priorityFilter = 'all') {
 }
 
 function renderTodos(searchText = '', priorityFilter = 'all') {
-    console.log('Rendering todos with filter:', searchText, priorityFilter);
+    Logger.debug('Rendering todos with filter:', searchText, priorityFilter);
     todoList.innerHTML = '';
     const filteredTodos = filterTodos(searchText, priorityFilter);
     filteredTodos.forEach((todo, index) => {
@@ -307,7 +242,7 @@ function toggleComplete(index) {
 }
 
 function editTodo(index) {
-    console.log('editTodo called for index:', index);
+    Logger.debug('editTodo called for index:', index);
     // Create a modal for editing the entire task
     const modal = document.createElement('div');
     modal.className = 'modal';
@@ -411,7 +346,7 @@ function deleteTodo(index) {
 }
 
 function viewFullNotes(index) {
-    console.log('viewFullNotes called for index:', index);
+    Logger.debug('viewFullNotes called for index:', index);
     // Create a modal to display the full notes
     const modal = document.createElement('div');
     modal.className = 'modal';
@@ -457,7 +392,7 @@ function viewFullNotes(index) {
 }
 
 function editSummary(index) {
-    console.log('editSummary called for index:', index);
+    Logger.debug('editSummary called for index:', index);
     // Create a modal for editing notes
     const modal = document.createElement('div');
     modal.className = 'modal';
@@ -514,9 +449,12 @@ function editSummary(index) {
 const searchTodo = document.getElementById('searchTodo');
 const priorityFilter = document.getElementById('priorityFilter');
 
-// Add event listeners for filters
+// Add event listeners for filters with debouncing
 searchTodo.addEventListener('input', (e) => {
-    renderTodos(e.target.value, priorityFilter.value);
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+        renderTodos(e.target.value, priorityFilter.value);
+    }, 300); // Wait 300ms after user stops typing
 });
 
 priorityFilter.addEventListener('change', (e) => {
@@ -562,24 +500,29 @@ if (!localStorage.getItem('todos')) {
 
 // Ensure todos are loaded, with retry mechanism
 function ensureTodosLoaded() {
-    console.log('[Todo Debug] Ensuring todos are loaded...');
+    Logger.debug('Ensuring todos are loaded...');
     const storedTodos = localStorage.getItem('todos');
     if (storedTodos) {
         try {
             const parsed = JSON.parse(storedTodos);
             if (Array.isArray(parsed) && parsed.length > 0) {
-                console.log('[Todo Debug] Found valid todos in localStorage:', parsed.length);
+                Logger.debug('Found valid todos in localStorage:', parsed.length);
                 todos = parsed;
                 renderTodos();
                 return;
             }
         } catch (e) {
-            console.error('[Todo Debug] Error parsing stored todos:', e);
+            Logger.error('Error parsing stored todos:', e);
+            if (window.errorHandler) {
+                window.errorHandler.handleError(e, 'storage', {
+                    operation: 'parse_todos'
+                });
+            }
         }
     }
     
     // If we get here, either no todos or invalid format
-    console.log('[Todo Debug] No valid todos found, will retry in 1 second...');
+    Logger.debug('No valid todos found, will retry in 1 second...');
     setTimeout(ensureTodosLoaded, 1000); // Retry after 1 second
 }
 
@@ -600,41 +543,39 @@ todoList.addEventListener('click', (e) => {
         // Execute the appropriate action based on button clicked
         switch(action) {
             case 'complete':
-                console.log('Toggle complete for index:', index);
+                Logger.debug('Toggle complete for index:', index);
                 toggleComplete(index);
                 break;
             case 'edit':
-                console.log('Edit todo for index:', index);
+                Logger.debug('Edit todo for index:', index);
                 editTodo(index);
                 break;
             case 'delete':
-                console.log('Delete todo for index:', index);
+                Logger.debug('Delete todo for index:', index);
                 deleteTodo(index);
                 break;
             case 'summary':
-                console.log('Edit summary for index:', index);
+                Logger.debug('Edit summary for index:', index);
                 editSummary(index);
                 break;
             case 'date':
-                console.log('Edit due date for index:', index);
+                Logger.debug('Edit due date for index:', index);
                 editDueDate(index);
                 break;
             case 'priority':
-                console.log('Toggle priority for index:', index);
+                Logger.debug('Toggle priority for index:', index);
                 togglePriority(index);
                 break;
         }
     } else if (showMoreLink) {
         const index = parseInt(showMoreLink.getAttribute('data-index'), 10);
-        console.log('View full notes for index:', index);
+        Logger.debug('View full notes for index:', index);
         viewFullNotes(index);
     }
 });
 
 // Add all event listeners
 todoForm.addEventListener('submit', addTodo);
-searchTodo.addEventListener('input', (e) => renderTodos(e.target.value, priorityFilter.value));
-priorityFilter.addEventListener('change', (e) => renderTodos(searchTodo.value, e.target.value));
 backToDashboard.addEventListener('click', () => window.location.href = 'index.html');
 darkModeBtn.addEventListener('click', () => themeManager.toggleDarkMode());
 themeColorBtn.addEventListener('click', () => themeManager.changeThemeColor());
@@ -650,13 +591,13 @@ importInput.addEventListener('change', (event) => {
     if (file) {
         importAllData(file)
             .then(() => {
-                console.log('Import completed successfully');
+                Logger.debug('Import completed successfully');
                 // No need for alert as importAllData already shows one
                 // Reload todos from localStorage since importAllData updates it
                 reloadTodos();
             })
             .catch(error => {
-                console.error('Error importing data:', error);
+                Logger.error('Error importing data:', error);
                 alert('Failed to import data: ' + error.message);
             });
     }
@@ -669,5 +610,5 @@ exportAllBtn.addEventListener('click', () => {
 });
 
 // Log the initial state
-console.log('[Todo Debug] Initial todos state:', todos);
-console.log('[Todo Debug] Initial localStorage state:', localStorage.getItem('todos'));
+Logger.debug('Initial todos state:', todos);
+Logger.debug('Initial localStorage state:', localStorage.getItem('todos'));

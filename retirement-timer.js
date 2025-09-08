@@ -59,7 +59,7 @@ class RetirementTimer {
             this.showMinutes = timerState.showMinutes !== false;
             this.showSeconds = timerState.showSeconds !== false;
             
-            console.log('Retirement timer state loaded:', {
+            Logger.debug('Retirement timer state loaded:', {
                 enabled: this.enabled,
                 targetDate: this.targetDate,
                 displayOptions: {
@@ -72,7 +72,7 @@ class RetirementTimer {
                 }
             });
         } catch (e) {
-            console.error('Error loading retirement timer state:', e);
+            Logger.error('Error loading retirement timer state:', e);
             // Set defaults
             this.enabled = false;
             
@@ -109,9 +109,9 @@ class RetirementTimer {
             };
             
             localStorage.setItem('retirementTimer', JSON.stringify(timerState));
-            console.log('Retirement timer state saved');
+            Logger.debug('Retirement timer state saved');
         } catch (e) {
-            console.error('Error saving retirement timer state:', e);
+            Logger.error('Error saving retirement timer state:', e);
         }
     }
     
@@ -126,7 +126,7 @@ class RetirementTimer {
         this.toggleBtn = document.getElementById('retirementToggleBtn');
         
         if (!this.timerContainer || !this.timerElement || !this.settingsBtn || !this.toggleBtn) {
-            console.error('Required retirement timer elements not found in DOM');
+            Logger.error('Required retirement timer elements not found in DOM');
             return;
         }
         
@@ -392,7 +392,7 @@ class RetirementTimer {
         const showSecondsInput = document.getElementById('showSeconds');
         
         if (!dateInput) {
-            console.error('Retirement date input not found');
+            Logger.error('Retirement date input not found');
             return;
         }
         

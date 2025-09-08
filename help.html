@@ -50,6 +50,17 @@
             padding-bottom: 10px;
             margin-top: 30px;
         }
+        kbd {
+            display: inline-block;
+            padding: 2px 6px;
+            background-color: var(--bg-secondary, #f8f9fa);
+            border: 1px solid var(--border-color, #dee2e6);
+            border-radius: 3px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85em;
+            color: var(--text-color);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -111,6 +122,13 @@
             </div>
 
             <div class="icon-explanation">
+                <i class="fas fa-cogs"></i>
+                <div>
+                    <strong>Backup Settings:</strong> Configure automatic backup schedules and reminders to protect your data with regular backups.
+                </div>
+            </div>
+
+            <div class="icon-explanation">
                 <i class="fas fa-tasks"></i>
                 <div>
                     <strong>To-do List:</strong> Access your to-do list to manage tasks and stay organized.
@@ -152,6 +170,57 @@
 
             <h3>Search Functionality</h3>
             <p>Use the search bar to quickly find links across all sections. The search is performed in real-time as you type.</p>
+            <p><strong>Global Search:</strong> Press <kbd>Ctrl+K</kbd> (or <kbd>Cmd+K</kbd> on Mac) from anywhere to open a powerful global search that can find content across both your dashboard links and todo items, even when you're on different pages.</p>
+        </section>
+
+        <section class="feature-section">
+            <h2 class="section-title">Keyboard Shortcuts</h2>
+            <p>Use these keyboard shortcuts to navigate and interact with the dashboard more efficiently:</p>
+            
+            <h3>Global Shortcuts</h3>
+            <ul>
+                <li><kbd>Ctrl+K</kbd> (or <kbd>Cmd+K</kbd> on Mac) - Open global search</li>
+                <li><kbd>Ctrl+/</kbd> (or <kbd>Cmd+/</kbd> on Mac) - Show keyboard shortcuts help</li>
+                <li><kbd>Escape</kbd> - Close modals, cancel current action, or clear search</li>
+            </ul>
+            
+            <h3>Navigation Shortcuts</h3>
+            <ul>
+                <li><kbd>Arrow Keys</kbd> - Navigate through search results and interactive elements</li>
+                <li><kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> - Move forward/backward through focusable elements</li>
+                <li><kbd>Enter</kbd> - Activate buttons, confirm actions, or open selected items</li>
+            </ul>
+            
+            <h3>Form Shortcuts</h3>
+            <ul>
+                <li><kbd>Tab</kbd> - Move to next form field</li>
+                <li><kbd>Enter</kbd> - Submit forms (when not in textarea)</li>
+                <li><kbd>Escape</kbd> - Cancel form input or close modals</li>
+            </ul>
+        </section>
+
+        <section class="feature-section">
+            <h2 class="section-title">Automatic Backup System</h2>
+            <p>Protect your data with the integrated automatic backup system:</p>
+            
+            <h3>Features</h3>
+            <ul>
+                <li><strong>Scheduled Backups:</strong> Set automatic backups to run hourly, daily, weekly, or monthly</li>
+                <li><strong>Smart Reminders:</strong> Get notified when it's time to create a backup</li>
+                <li><strong>Easy Configuration:</strong> Use the backup settings modal to customize your preferences</li>
+                <li><strong>Test Function:</strong> Test your backup system anytime with the "Test Backup Now" button</li>
+            </ul>
+            
+            <h3>How to Configure</h3>
+            <ol>
+                <li>Click the <i class="fas fa-cogs"></i> backup settings icon in the header</li>
+                <li>Enable automatic backups using the toggle switch</li>
+                <li>Choose your preferred backup frequency</li>
+                <li>Optionally enable backup reminders</li>
+                <li>Click "Save Settings" to apply your preferences</li>
+            </ol>
+            
+            <p>The system will automatically create backups according to your schedule and notify you of successful or failed backup attempts.</p>
         </section>
 
         <section class="feature-section">
@@ -162,6 +231,11 @@
                 <li>Offline functionality - continue using the dashboard without an internet connection</li>
                 <li>Automatic data saving - all changes are saved immediately</li>
                 <li>Responsive design - works on desktop and mobile devices</li>
+                <li>Enhanced error handling - user-friendly error messages with helpful suggestions</li>
+                <li>Improved input validation - real-time feedback and security protection</li>
+                <li>Smart search with debouncing - efficient searching without performance lag</li>
+                <li>Memory leak prevention - optimized performance for long-term use</li>
+                <li>Accessibility improvements - better keyboard navigation and screen reader support</li>
             </ul>
         </section>
 
