@@ -1,116 +1,120 @@
-// Custom modal dialog functions
-// Modal showModal function now provided by modal-manager.js
+/**
+ * Enterprise Task List - Main Application Logic
+ * Integrates with TaskDataManager for data persistence
+ */
 
-// Modal hideModal function now provided by modal-manager.js
+// DOM Elements
+const taskSidebar = document.getElementById('taskSidebar');
+const sidebarToggle = document.getElementById('sidebarToggle');
+const projectsList = document.getElementById('projectsList');
+const smartViewsList = document.getElementById('smartViewsList');
+const addProjectBtn = document.getElementById('addProjectBtn');
+const taskList = document.getElementById('taskList');
+const kanbanBoard = document.getElementById('kanbanBoard');
+const todoColumn = document.getElementById('todoColumn');
+const inProgressColumn = document.getElementById('inProgressColumn');
+const doneColumn = document.getElementById('doneColumn');
+const blockedColumn = document.getElementById('blockedColumn');
+const quickAddForm = document.getElementById('quickAddForm');
+const quickAddInput = document.getElementById('quickAddInput');
+const emptyState = document.getElementById('emptyState');
+const viewTitle = document.getElementById('viewTitle');
+const viewSubtitle = document.getElementById('viewSubtitle');
+const taskDetailPanel = document.getElementById('taskDetailPanel');
+const closeDetailPanel = document.getElementById('closeDetailPanel');
+const detailPanelContent = document.getElementById('detailPanelContent');
 
-const todoForm = document.getElementById('todoForm');
-const todoInput = document.getElementById('todoInput');
-const todoNotes = document.getElementById('todoNotes');
-const todoList = document.getElementById('todoList');
+// Header buttons
 const backToDashboard = document.getElementById('backToDashboard');
 const settingsBtn = document.getElementById('settingsBtn');
 const darkModeBtn = document.getElementById('darkModeBtn');
 const themeColorBtn = document.getElementById('themeColorBtn');
 const importTodosBtn = document.getElementById('importTodosBtn');
+const exportAllBtn = document.getElementById('exportAllBtn');
 const importInput = document.getElementById('importInput');
 
-let todos = [];
+// Command Palette elements
+const commandPalette = document.getElementById('commandPalette');
+const commandPaletteInput = document.getElementById('commandPaletteInput');
+const commandPaletteResults = document.getElementById('commandPaletteResults');
+
+// State
+let taskDataManager;
+let currentView = 'my-day';
+let currentProjectId = null;
+let currentTag = null;
+let selectedTaskId = null;
+let currentLayout = localStorage.getItem('taskLayout') || 'list'; // 'list' or 'board'
 let username = localStorage.getItem('username') || 'User';
-let searchDebounceTimer;
 
-// Function to reload todos from localStorage with enhanced debugging
-function reloadTodos() {
-    try {
-        const storedTodos = localStorage.getItem('todos');
-        Logger.debug('Current localStorage todos:', storedTodos);
+// Command Palette state
+let commandPaletteOpen = false;
+let selectedCommandIndex = 0;
+let filteredCommands = [];
 
-        if (!storedTodos) {
-            Logger.debug('No todos found in localStorage');
-            todos = [];
-        } else {
-            todos = JSON.parse(storedTodos);
-            Logger.debug('Successfully parsed todos:', todos);
-        }
-
-        renderTodos();
-        Logger.debug('Todos rendered, current count:', todos.length);
-    } catch (error) {
-        Logger.error('Error loading todos:', error);
-        if (window.errorHandler) {
-            window.errorHandler.handleError(error, 'storage', {
-                operation: 'load_todos'
-            });
-        }
-        todos = [];
-        renderTodos();
-    }
-}
-
-// Enhanced initialization
-function initializeTodos() {
-    Logger.debug('Initializing todos page');
-    reloadTodos();
-    updateTitle();
-}
-
-// Listen for changes to localStorage (e.g., from import)
-window.addEventListener('storage', function(e) {
-    Logger.debug('Storage event received:', e.key, e.newValue);
-    if (e.key === 'todos') {
-        reloadTodos();
-    } else if (e.key === 'username') {
-        username = e.newValue || 'User';
-        updateTitle();
-    }
-});
-
-// Create a proxy for localStorage to detect changes in the same window
-// Use a flag to prevent infinite loops from our own updates
-let isUpdatingTodos = false;
-const originalSetItem = localStorage.setItem;
-localStorage.setItem = function(key, value) {
-    originalSetItem.apply(this, arguments);
-    if (key === 'todos' && !isUpdatingTodos) {
-        // Set flag to prevent loop and reload todos after a brief delay
-        setTimeout(() => reloadTodos(), 50);
-    }
-};
-
-// Initialize on DOMContentLoaded
+// Initialize
 document.addEventListener('DOMContentLoaded', function() {
-    Logger.debug('DOMContentLoaded event fired');
+    Logger.debug('Task List App: Initializing');
 
-    // Make sure modal is hidden initially
-    const modal = document.getElementById('customModal');
-    if (modal) {
-        modal.style.display = 'none';
+    // Initialize TaskDataManager
+    taskDataManager = new TaskDataManager();
+
+    // Create and insert backdrop for detail panel
+    const backdrop = document.createElement('div');
+    backdrop.className = 'detail-panel-backdrop';
+    backdrop.id = 'detailPanelBackdrop';
+    document.body.appendChild(backdrop);
+
+    // Setup event listeners first
+    setupEventListeners();
+
+    // Render UI
+    renderSidebar();
+
+    // Restore saved layout (after event listeners are set up)
+    restoreSavedLayout();
+
+    // Update title
+    updateTitle();
+
+    // Initialize sidebar state for mobile
+    if (window.innerWidth <= 768) {
+        taskSidebar.classList.add('collapsed');
     }
 
-    initializeTodos();
+    Logger.debug('Task List App: Initialized');
 });
 
-// Reload when page becomes visible
-document.addEventListener('visibilitychange', function() {
-    if (!document.hidden) {
-        Logger.debug('Page became visible, reloading todos');
-        reloadTodos();
-    }
-});
-
-// Enhanced todosUpdated event listener
-window.addEventListener('todosUpdated', function(e) {
-    Logger.debug('todosUpdated event received:', e.detail);
-    // Force a direct localStorage check
-    const currentTodos = localStorage.getItem('todos');
-    Logger.debug('Current localStorage state:', currentTodos);
-    reloadTodos();
-});
-
+/**
+ * Update page title
+ */
 function updateTitle() {
     document.title = `${username}'s Task List`;
     document.querySelector('h1').textContent = `${username}'s Task List`;
 }
 
+/**
+ * Restore saved layout preference
+ */
+function restoreSavedLayout() {
+    Logger.debug('Restoring layout:', currentLayout);
+
+    // Update active button
+    document.querySelectorAll('.view-switcher-btn').forEach(btn => {
+        if (btn.dataset.layout === currentLayout) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    // Switch to saved layout
+    switchViewLayout(currentLayout);
+}
+
+/**
+ * Change username
+ */
 function changeUsername() {
     const newUsername = prompt('Enter your name:', username);
     if (newUsername && newUsername.trim()) {
@@ -120,495 +124,2328 @@ function changeUsername() {
     }
 }
 
-// Priority levels
-const PRIORITIES = {
-    LOW: 'low',
-    MEDIUM: 'medium',
-    HIGH: 'high'
-};
+/**
+ * Setup Event Listeners
+ */
+function setupEventListeners() {
+    // Quick add form
+    quickAddForm.addEventListener('submit', handleQuickAdd);
 
-function saveTodos() {
-    isUpdatingTodos = true;
-    localStorage.setItem('todos', JSON.stringify(todos));
-    // Clear flag after storage is complete
-    setTimeout(() => {
-        isUpdatingTodos = false;
-    }, 100);
-}
+    // Sidebar view items
+    smartViewsList.addEventListener('click', handleViewClick);
 
-function filterTodos(searchText = '', priorityFilter = 'all') {
-    return todos.filter(todo => {
-        const matchesSearch = todo.text.toLowerCase().includes(searchText.toLowerCase()) ||
-                            (todo.summary && todo.summary.toLowerCase().includes(searchText.toLowerCase())) ||
-                            (todo.notes && todo.notes.toLowerCase().includes(searchText.toLowerCase()));
-        const matchesPriority = priorityFilter === 'all' || todo.priority === priorityFilter;
-        return matchesSearch && matchesPriority;
+    // Projects list
+    projectsList.addEventListener('click', handleProjectClick);
+
+    // Tags list
+    const tagsList = document.getElementById('tagsList');
+    tagsList.addEventListener('click', handleTagClick);
+
+    // Add project button
+    addProjectBtn.addEventListener('click', showAddProjectModal);
+
+    // Task list (event delegation)
+    taskList.addEventListener('click', handleTaskClick);
+
+    // Kanban board (event delegation for My Day toggles)
+    kanbanBoard.addEventListener('click', (e) => {
+        const myDayBtn = e.target.closest('.my-day-toggle-btn');
+        if (myDayBtn) {
+            const card = e.target.closest('.kanban-card');
+            if (card) {
+                const taskId = card.dataset.taskId;
+                toggleTaskMyDay(taskId);
+                e.stopPropagation();
+            }
+        }
     });
+
+    // Detail panel close
+    closeDetailPanel.addEventListener('click', hideDetailPanel);
+
+    // Header buttons
+    backToDashboard.addEventListener('click', () => window.location.href = 'index.html');
+    darkModeBtn.addEventListener('click', () => themeManager.toggleDarkMode());
+    themeColorBtn.addEventListener('click', () => themeManager.changeThemeColor());
+    settingsBtn.addEventListener('click', changeUsername);
+
+    // Import/Export
+    importTodosBtn.addEventListener('click', () => importInput.click());
+    importInput.addEventListener('change', handleImport);
+    exportAllBtn.addEventListener('click', () => exportAllData(false));
+
+    // Header Menu Toggle
+    const todoHeaderMenuBtn = document.getElementById('todoHeaderMenuBtn');
+    const todoHeaderMenu = document.getElementById('todoHeaderMenu');
+
+    function toggleTodoHeaderMenu() {
+        const isOpen = todoHeaderMenu.classList.contains('show');
+        if (isOpen) {
+            todoHeaderMenu.classList.remove('show');
+            todoHeaderMenuBtn.setAttribute('aria-expanded', 'false');
+            todoHeaderMenu.setAttribute('aria-hidden', 'true');
+        } else {
+            todoHeaderMenu.classList.add('show');
+            todoHeaderMenuBtn.setAttribute('aria-expanded', 'true');
+            todoHeaderMenu.setAttribute('aria-hidden', 'false');
+        }
+    }
+
+    function closeTodoHeaderMenu() {
+        todoHeaderMenu.classList.remove('show');
+        todoHeaderMenuBtn.setAttribute('aria-expanded', 'false');
+        todoHeaderMenu.setAttribute('aria-hidden', 'true');
+    }
+
+    todoHeaderMenuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleTodoHeaderMenu();
+    });
+
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!todoHeaderMenu.contains(e.target) && !todoHeaderMenuBtn.contains(e.target)) {
+            closeTodoHeaderMenu();
+        }
+    });
+
+    // Menu item handlers
+    const todoMenuSettingsBtn = document.getElementById('todoMenuSettingsBtn');
+    const todoMenuImportBtn = document.getElementById('todoMenuImportBtn');
+    const todoMenuExportBtn = document.getElementById('todoMenuExportBtn');
+    const todoMenuBackupBtn = document.getElementById('todoMenuBackupBtn');
+    const todoMenuClearBtn = document.getElementById('todoMenuClearBtn');
+
+    todoMenuSettingsBtn.addEventListener('click', () => {
+        closeTodoHeaderMenu();
+        changeUsername();
+    });
+
+    todoMenuImportBtn.addEventListener('click', () => {
+        closeTodoHeaderMenu();
+        importTodosBtn.click();
+    });
+
+    todoMenuExportBtn.addEventListener('click', () => {
+        closeTodoHeaderMenu();
+        exportAllData(false);
+    });
+
+    todoMenuBackupBtn.addEventListener('click', () => {
+        closeTodoHeaderMenu();
+        if (typeof showBackupSettings === 'function') {
+            showBackupSettings();
+        }
+    });
+
+    todoMenuClearBtn.addEventListener('click', () => {
+        closeTodoHeaderMenu();
+        if (confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
+            localStorage.clear();
+            alert('Local storage has been cleared.');
+            location.reload();
+        }
+    });
+
+    // Help button
+    const todoHelpBtn = document.getElementById('todoHelpBtn');
+    todoHelpBtn.addEventListener('click', () => {
+        window.location.href = 'help.html';
+    });
+
+    // Command Palette keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        // Ctrl+K or Cmd+K to open command palette
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            if (!commandPaletteOpen) {
+                openCommandPalette();
+            }
+        }
+
+        // Command palette is open
+        if (commandPaletteOpen) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                closeCommandPalette();
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                navigateCommands('down');
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                navigateCommands('up');
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                executeSelectedCommand();
+            }
+        }
+    });
+
+    // Command palette input - filter on typing
+    commandPaletteInput.addEventListener('input', (e) => {
+        filterCommands(e.target.value);
+    });
+
+    // Command palette backdrop click - close
+    commandPalette.querySelector('.command-palette-backdrop').addEventListener('click', () => {
+        closeCommandPalette();
+    });
+
+    // View switcher - Toggle between list and board
+    document.querySelectorAll('.view-switcher-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const layout = btn.dataset.layout;
+
+            // Update active button
+            document.querySelectorAll('.view-switcher-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Switch layout
+            currentLayout = layout;
+            switchViewLayout(layout);
+        });
+    });
+
+    // Edit and delete project buttons in header (using event delegation)
+    document.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-project');
+        if (editBtn) {
+            const projectId = editBtn.dataset.projectId;
+            showEditProjectModal(projectId);
+        }
+
+        const deleteBtn = e.target.closest('.delete-project');
+        if (deleteBtn) {
+            const projectId = deleteBtn.dataset.projectId;
+            deleteProject(projectId);
+        }
+    });
+
+    // Sidebar toggle for mobile
+    sidebarToggle.addEventListener('click', () => {
+        taskSidebar.classList.toggle('collapsed');
+    });
+
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768) {
+            if (!taskSidebar.contains(e.target) && !sidebarToggle.contains(e.target)) {
+                taskSidebar.classList.add('collapsed');
+            }
+        }
+    });
+
+    // Backdrop click to close detail panel
+    const backdrop = document.getElementById('detailPanelBackdrop');
+    if (backdrop) {
+        backdrop.addEventListener('click', hideDetailPanel);
+    }
+
+    Logger.debug('Event listeners setup complete');
 }
 
-function renderTodos(searchText = '', priorityFilter = 'all') {
-    Logger.debug('Rendering todos with filter:', searchText, priorityFilter);
-    todoList.innerHTML = '';
-    const filteredTodos = filterTodos(searchText, priorityFilter);
-    filteredTodos.forEach((todo, index) => {
-        const li = document.createElement('li');
-        li.className = `todo-item priority-${todo.priority || 'none'} ${todo.completed ? 'completed-task' : ''}`;
-        li.setAttribute('data-index', index); // Add original index as a data attribute
-        const dueDate = todo.dueDate ? new Date(todo.dueDate).toLocaleDateString() : 'No due date';
-        const isOverdue = todo.dueDate && new Date(todo.dueDate) < new Date() && !todo.completed;
+/**
+ * Render Sidebar
+ */
+function renderSidebar() {
+    Logger.debug('Rendering sidebar');
 
-        li.innerHTML = `
-            <div class="todo-content">
-                <div class="todo-header">
-                    <span class="todo-text ${todo.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}">${todo.text}</span>
-                    <span class="todo-due-date ${isOverdue ? 'overdue' : ''}">${dueDate}</span>
-                </div>
-                ${todo.summary || todo.notes ?
-                    `<div class="todo-notes-container">
-                        <p class="todo-summary${todo.summary && todo.summary.length > 100 ? ' truncated' : ''}">${(todo.summary || todo.notes).slice(0, 100)}${(todo.summary || todo.notes).length > 100 ? '...' : ''}</p>
-                        ${(todo.summary || todo.notes).length > 100 ? '<span class="todo-summary-expand" data-index="' + index + '">Show more</span>' : ''}
-                    </div>`
-                : ''}
-                <span class="todo-priority">Priority: <span class="priority-indicator priority-${todo.priority || 'none'}">${todo.priority || 'None'}</span></span>
-            </div>
-            <div class="todo-actions">
-                <button class="todo-btn complete-btn" data-action="complete" data-index="${index}" title="Toggle Complete">
-                    <i class="fas fa-check"></i>
-                </button>
-                <button class="todo-btn edit-btn" data-action="edit" data-index="${index}" title="Edit Task" style="background-color: #eab308;">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="todo-btn delete-btn" data-action="delete" data-index="${index}" title="Delete Task">
-                    <i class="fas fa-trash"></i>
-                </button>
-                <button class="todo-btn summary-btn" data-action="summary" data-index="${index}" title="Edit Summary" style="background-color: #3498db;">
-                    <i class="fas fa-comment"></i>
-                </button>
-                <button class="todo-btn date-btn" data-action="date" data-index="${index}" title="Set Due Date">
-                    <i class="fas fa-calendar"></i>
-                </button>
-                <button class="todo-btn priority-btn priority-${todo.priority || 'none'}-btn" data-action="priority" data-index="${index}" title="Toggle Priority">
-                    <i class="fas fa-flag"></i>
-                </button>
+    // Update counts for smart views
+    const myDayTasks = taskDataManager.getMyDayTasks();
+    const inboxTasks = taskDataManager.getTasksByProject(DEFAULT_PROJECTS.INBOX);
+    const allTasks = taskDataManager.getAllTasks().filter(t => !t.completed);
+    const importantTasks = taskDataManager.getImportantTasks();
+    const upcomingTasks = taskDataManager.getUpcomingTasks();
+    const completedTasks = taskDataManager.getCompletedTasks();
+
+    document.getElementById('myDayCount').textContent = myDayTasks.length;
+    document.getElementById('inboxCount').textContent = inboxTasks.filter(t => !t.completed).length;
+    document.getElementById('allCount').textContent = allTasks.length;
+    document.getElementById('importantCount').textContent = importantTasks.length;
+    document.getElementById('upcomingCount').textContent = upcomingTasks.length;
+    document.getElementById('completedCount').textContent = completedTasks.length;
+
+    // Render projects
+    const projects = taskDataManager.getAllProjects();
+    projectsList.innerHTML = '';
+
+    projects.forEach(project => {
+        const projectTasks = taskDataManager.getTasksByProject(project.id).filter(t => !t.completed);
+        const projectItem = document.createElement('div');
+        projectItem.className = 'sidebar-item project-item';
+        projectItem.dataset.projectId = project.id;
+        projectItem.style.setProperty('--project-color', project.color);
+
+        // Check if this project is currently selected
+        if (currentView === 'project' && currentProjectId === project.id) {
+            projectItem.classList.add('active');
+        }
+
+        projectItem.innerHTML = `
+            <div class="sidebar-item-icon">${project.icon}</div>
+            <div class="sidebar-item-text">${project.name}</div>
+            <span class="sidebar-item-count">${projectTasks.length}</span>
+        `;
+
+        projectsList.appendChild(projectItem);
+    });
+
+    // Render tags
+    const tags = taskDataManager.getAllTags();
+    const tagsList = document.getElementById('tagsList');
+    tagsList.innerHTML = '';
+
+    tags.forEach(tagData => {
+        const tagItem = document.createElement('div');
+        tagItem.className = 'sidebar-item tag-item';
+        tagItem.dataset.tag = tagData.tag;
+
+        // Check if this tag is currently selected
+        if (currentView === 'tag' && currentTag === tagData.tag) {
+            tagItem.classList.add('active');
+        }
+
+        tagItem.innerHTML = `
+            <div class="sidebar-item-icon">🏷️</div>
+            <div class="sidebar-item-text">${escapeHtml(tagData.tag)}</div>
+            <span class="sidebar-item-count">${tagData.count}</span>
+        `;
+
+        tagsList.appendChild(tagItem);
+    });
+
+    Logger.debug('Sidebar rendered with', projects.length, 'projects and', tags.length, 'tags');
+}
+
+/**
+ * Handle view click
+ */
+function handleViewClick(e) {
+    const viewItem = e.target.closest('.sidebar-item');
+    if (!viewItem) return;
+
+    const view = viewItem.dataset.view;
+    if (!view) return;
+
+    // Update active state
+    smartViewsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    viewItem.classList.add('active');
+
+    // Clear project selection
+    projectsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // Update current view
+    currentView = view;
+    currentProjectId = null;
+
+    // Update header
+    updateViewHeader();
+
+    // Re-render
+    reRenderCurrentView();
+}
+
+/**
+ * Handle project click
+ */
+function handleProjectClick(e) {
+    const projectItem = e.target.closest('.sidebar-item');
+    if (!projectItem) return;
+
+    const projectId = projectItem.dataset.projectId;
+    if (!projectId) return;
+
+    // Update active state
+    projectsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    projectItem.classList.add('active');
+
+    // Clear view selection
+    smartViewsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // Update current view
+    currentView = 'project';
+    currentProjectId = projectId;
+
+    // Update header
+    updateViewHeader();
+
+    // Re-render
+    reRenderCurrentView();
+}
+
+/**
+ * Handle tag click
+ */
+function handleTagClick(e) {
+    const tagItem = e.target.closest('.sidebar-item');
+    if (!tagItem) return;
+
+    const tag = tagItem.dataset.tag;
+    if (!tag) return;
+
+    // Update active state for tags
+    const tagsList = document.getElementById('tagsList');
+    tagsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    tagItem.classList.add('active');
+
+    // Clear view selection
+    smartViewsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // Clear project selection
+    projectsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // Use the existing filterByTag function
+    filterByTag(tag);
+}
+
+/**
+ * Update view header
+ */
+function updateViewHeader() {
+    let title = '';
+    let subtitle = '';
+
+    // Clear any existing header actions
+    const existingActions = document.querySelector('.view-header-actions');
+    if (existingActions) {
+        existingActions.remove();
+    }
+
+    switch (currentView) {
+        case 'my-day':
+            title = 'My Day';
+            subtitle = 'Focus on what matters today';
+            break;
+        case 'inbox':
+            title = 'Inbox';
+            subtitle = 'Organize your tasks';
+            break;
+        case 'all':
+            title = 'All Tasks';
+            subtitle = 'View all your tasks';
+            break;
+        case 'important':
+            title = 'Important';
+            subtitle = 'High priority tasks';
+            break;
+        case 'upcoming':
+            title = 'Upcoming';
+            subtitle = 'Tasks due in the next 7 days';
+            break;
+        case 'completed':
+            title = 'Completed';
+            subtitle = 'View your accomplishments';
+            break;
+        case 'project':
+            const project = taskDataManager.getProjectById(currentProjectId);
+            if (project) {
+                title = project.icon + ' ' + project.name;
+                subtitle = project.description || 'Project tasks';
+
+                // Add edit and delete buttons for non-Inbox projects
+                if (project.id !== DEFAULT_PROJECTS.INBOX) {
+                    const headerActions = document.createElement('div');
+                    headerActions.className = 'view-header-actions';
+                    headerActions.innerHTML = `
+                        <button class="header-action-btn edit-project" data-project-id="${project.id}" title="Edit Project">
+                            <i class="fas fa-pencil"></i>
+                            Edit
+                        </button>
+                        <button class="header-action-btn delete-project" data-project-id="${project.id}" title="Delete Project">
+                            <i class="fas fa-trash"></i>
+                            Delete
+                        </button>
+                    `;
+                    viewTitle.parentElement.appendChild(headerActions);
+                }
+            }
+            break;
+        case 'tag':
+            if (currentTag) {
+                title = '🏷️ ' + currentTag;
+                subtitle = `All tasks tagged with "${currentTag}"`;
+            }
+            break;
+    }
+
+    viewTitle.textContent = title;
+    viewSubtitle.textContent = subtitle;
+}
+
+/**
+ * Re-render current view with current layout
+ */
+function reRenderCurrentView() {
+    if (currentLayout === 'board') {
+        renderBoardView();
+    } else {
+        renderTasks();
+    }
+}
+
+/**
+ * Render Tasks
+ */
+function renderTasks() {
+    Logger.debug('Rendering tasks for view:', currentView);
+
+    let tasks = [];
+
+    switch (currentView) {
+        case 'my-day':
+            tasks = taskDataManager.getMyDayTasks();
+            break;
+        case 'inbox':
+            tasks = taskDataManager.getTasksByProject(DEFAULT_PROJECTS.INBOX);
+            break;
+        case 'all':
+            tasks = taskDataManager.getAllTasks();
+            break;
+        case 'important':
+            tasks = taskDataManager.getImportantTasks();
+            break;
+        case 'upcoming':
+            tasks = taskDataManager.getUpcomingTasks();
+            break;
+        case 'completed':
+            tasks = taskDataManager.getCompletedTasks();
+            break;
+        case 'project':
+            if (currentProjectId) {
+                tasks = taskDataManager.getTasksByProject(currentProjectId);
+            }
+            break;
+        case 'tag':
+            if (currentTag) {
+                tasks = taskDataManager.getTasksByTag(currentTag);
+            }
+            break;
+    }
+
+    // Sort: incomplete first, then by position
+    tasks.sort((a, b) => {
+        if (a.completed !== b.completed) {
+            return a.completed ? 1 : -1;
+        }
+        return b.position - a.position; // Newer tasks first
+    });
+
+    // Render
+    taskList.innerHTML = '';
+
+    if (tasks.length === 0) {
+        emptyState.style.display = 'block';
+    } else {
+        emptyState.style.display = 'none';
+
+        tasks.forEach(task => {
+            const taskItem = createTaskElement(task);
+            taskList.appendChild(taskItem);
+        });
+    }
+
+    // Update sidebar counts
+    renderSidebar();
+
+    Logger.debug('Rendered', tasks.length, 'tasks');
+}
+
+/**
+ * Switch between list and board layouts
+ */
+function switchViewLayout(layout) {
+    if (layout === 'board') {
+        // Show board, hide list
+        taskList.classList.add('hidden');
+        kanbanBoard.classList.remove('hidden');
+        renderBoardView();
+    } else {
+        // Show list, hide board
+        taskList.classList.remove('hidden');
+        kanbanBoard.classList.add('hidden');
+        renderTasks();
+    }
+
+    // Save layout preference
+    localStorage.setItem('taskLayout', layout);
+
+    Logger.debug('Switched to layout:', layout);
+}
+
+/**
+ * Render Kanban Board View
+ */
+function renderBoardView() {
+    Logger.debug('Rendering board view for:', currentView);
+
+    // Get tasks using same logic as list view
+    let tasks = [];
+
+    switch (currentView) {
+        case 'my-day':
+            tasks = taskDataManager.getMyDayTasks();
+            break;
+        case 'inbox':
+            tasks = taskDataManager.getTasksByProject(DEFAULT_PROJECTS.INBOX);
+            break;
+        case 'all':
+            tasks = taskDataManager.getAllTasks();
+            break;
+        case 'important':
+            tasks = taskDataManager.getImportantTasks();
+            break;
+        case 'upcoming':
+            tasks = taskDataManager.getUpcomingTasks();
+            break;
+        case 'completed':
+            tasks = taskDataManager.getCompletedTasks();
+            break;
+        case 'project':
+            if (currentProjectId) {
+                tasks = taskDataManager.getTasksByProject(currentProjectId);
+            }
+            break;
+        case 'tag':
+            if (currentTag) {
+                tasks = taskDataManager.getTasksByTag(currentTag);
+            }
+            break;
+    }
+
+    // Filter out completed tasks for board view
+    tasks = tasks.filter(t => !t.completed);
+
+    // Group tasks by status
+    const tasksByStatus = {
+        'todo': tasks.filter(t => t.status === 'todo'),
+        'in-progress': tasks.filter(t => t.status === 'in-progress'),
+        'done': tasks.filter(t => t.status === 'done'),
+        'blocked': tasks.filter(t => t.status === 'blocked')
+    };
+
+    // Clear columns
+    todoColumn.innerHTML = '';
+    inProgressColumn.innerHTML = '';
+    doneColumn.innerHTML = '';
+    blockedColumn.innerHTML = '';
+
+    // Render cards in each column
+    Object.keys(tasksByStatus).forEach(status => {
+        const columnTasks = tasksByStatus[status];
+        const column = getColumnElement(status);
+
+        columnTasks.forEach(task => {
+            const card = createKanbanCard(task);
+            column.appendChild(card);
+        });
+
+        // Update count
+        updateColumnCount(status, columnTasks.length);
+    });
+
+    // Show/hide empty state
+    if (tasks.length === 0) {
+        emptyState.style.display = 'block';
+    } else {
+        emptyState.style.display = 'none';
+    }
+
+    // Update sidebar counts
+    renderSidebar();
+
+    // Initialize SortableJS on columns
+    initializeSortable();
+
+    Logger.debug('Rendered board with', tasks.length, 'tasks');
+}
+
+/**
+ * Initialize SortableJS on Kanban columns
+ */
+function initializeSortable() {
+    const columns = [
+        { element: todoColumn, status: 'todo' },
+        { element: inProgressColumn, status: 'in-progress' },
+        { element: doneColumn, status: 'done' },
+        { element: blockedColumn, status: 'blocked' }
+    ];
+
+    columns.forEach(({ element, status }) => {
+        if (element._sortable) {
+            element._sortable.destroy();
+        }
+
+        const sortable = new Sortable(element, {
+            group: 'shared',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag',
+            onStart: function(evt) {
+                element.parentElement.classList.add('sortable-dragging');
+            },
+            onEnd: function(evt) {
+                // Remove dragging class from all columns
+                document.querySelectorAll('.kanban-column').forEach(col => {
+                    col.classList.remove('sortable-dragging');
+                });
+
+                // Get task ID and new status
+                const taskId = evt.item.dataset.taskId;
+                const newStatus = evt.to.parentElement.dataset.status;
+                const oldStatus = evt.from.parentElement.dataset.status;
+
+                // Only update if status changed
+                if (newStatus !== oldStatus && taskId) {
+                    Logger.debug('Task moved:', taskId, 'from', oldStatus, 'to', newStatus);
+
+                    // Update task status
+                    taskDataManager.updateTask(taskId, {
+                        status: newStatus,
+                        completed: newStatus === 'done'
+                    });
+
+                    // Re-render board to update counts
+                    renderBoardView();
+                }
+            }
+        });
+
+        element._sortable = sortable;
+    });
+
+    Logger.debug('Sortable initialized on all columns');
+}
+
+/**
+ * Get column element by status
+ */
+function getColumnElement(status) {
+    switch (status) {
+        case 'todo': return todoColumn;
+        case 'in-progress': return inProgressColumn;
+        case 'done': return doneColumn;
+        case 'blocked': return blockedColumn;
+        default: return todoColumn;
+    }
+}
+
+/**
+ * Update column count badge
+ */
+function updateColumnCount(status, count) {
+    const countId = {
+        'todo': 'todoCount',
+        'in-progress': 'inProgressCount',
+        'done': 'doneCount',
+        'blocked': 'blockedCount'
+    }[status];
+
+    const countEl = document.getElementById(countId);
+    if (countEl) {
+        countEl.textContent = count;
+    }
+}
+
+/**
+ * Create Kanban card element
+ */
+function createKanbanCard(task) {
+    const card = document.createElement('div');
+    card.className = 'kanban-card';
+    card.dataset.taskId = task.id;
+
+    // Due date
+    let dueDateHTML = '';
+    if (task.dueDate) {
+        const dueDate = new Date(task.dueDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const isOverdue = dueDate < today;
+
+        dueDateHTML = `
+            <div class="kanban-card-due ${isOverdue ? 'overdue' : ''}">
+                <i class="fas fa-calendar"></i>
+                ${dueDate.toLocaleDateString()}
             </div>
         `;
-        todoList.appendChild(li);
+    }
+
+    // Project
+    const project = taskDataManager.getProjectById(task.projectId);
+    const projectHTML = project ? `
+        <div class="kanban-card-project">
+            ${project.icon} ${project.name}
+        </div>
+    ` : '';
+
+    // My Day badge
+    const myDayBadgeHTML = task.isMyDay ? `<span class="my-day-badge" title="In My Day">✨</span>` : '';
+
+    card.innerHTML = `
+        <div class="kanban-card-header">
+            <div class="kanban-card-title">
+                ${myDayBadgeHTML}
+                ${escapeHtml(task.text)}
+            </div>
+            <button class="my-day-toggle-btn ${task.isMyDay ? 'active' : ''}"
+                    data-action="toggle-my-day"
+                    title="${task.isMyDay ? 'Remove from My Day' : 'Add to My Day'}">
+                <i class="fas fa-bookmark"></i>
+            </button>
+        </div>
+        <div class="kanban-card-meta">
+            <span class="kanban-card-priority ${task.priority}">${task.priority}</span>
+            ${dueDateHTML}
+            ${projectHTML}
+        </div>
+    `;
+
+    // Click to open detail panel (except for My Day button)
+    card.addEventListener('click', (e) => {
+        if (!e.target.closest('.my-day-toggle-btn')) {
+            showTaskDetails(task.id);
+        }
     });
+
+    return card;
 }
 
-function addTodo(event) {
-    event.preventDefault();
-    const todoText = todoInput.value.trim();
-    const notes = todoNotes.value.trim();
-    if (todoText) {
-        todos.unshift({
-            text: todoText,
-            completed: false,
-            summary: notes, // Use the notes field for summary
-            notes: notes,  // Add a dedicated notes field for future compatibility
-            priority: PRIORITIES.MEDIUM,
-            dueDate: null
+/**
+ * Create task element
+ */
+function createTaskElement(task) {
+    const li = document.createElement('li');
+    li.className = 'task-list-item';
+    li.dataset.taskId = task.id;
+
+    if (task.completed) {
+        li.classList.add('completed');
+    }
+
+    // Format due date
+    let dueDateHTML = '';
+    if (task.dueDate) {
+        const dueDate = new Date(task.dueDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const isOverdue = dueDate < today && !task.completed;
+        const dueDateStr = dueDate.toLocaleDateString();
+
+        dueDateHTML = `
+            <span class="task-list-item-meta-item ${isOverdue ? 'overdue' : ''}">
+                <i class="fas fa-calendar"></i>
+                ${dueDateStr}
+            </span>
+        `;
+    }
+
+    // Priority badge
+    const priorityHTML = `
+        <span class="task-priority-badge priority-${task.priority}">
+            ${task.priority}
+        </span>
+    `;
+
+    // Subtasks count
+    let subtasksHTML = '';
+    if (task.subtasks && task.subtasks.length > 0) {
+        const completedSubtasks = task.subtasks.filter(st => st.completed).length;
+        subtasksHTML = `
+            <span class="task-list-item-meta-item">
+                <i class="fas fa-list-check"></i>
+                ${completedSubtasks}/${task.subtasks.length}
+            </span>
+        `;
+    }
+
+    // My Day badge
+    const myDayBadgeHTML = task.isMyDay ? `<span class="my-day-badge" title="In My Day">✨</span>` : '';
+
+    // My Day toggle button
+    const myDayToggleHTML = `
+        <button class="my-day-toggle-btn ${task.isMyDay ? 'active' : ''}"
+                data-action="toggle-my-day"
+                title="${task.isMyDay ? 'Remove from My Day' : 'Add to My Day'}">
+            <i class="fas fa-bookmark"></i>
+        </button>
+    `;
+
+    li.innerHTML = `
+        <div class="task-checkbox ${task.completed ? 'checked' : ''}" data-action="toggle-complete"></div>
+        <div class="task-list-item-content">
+            <div class="task-list-item-title">
+                ${myDayBadgeHTML}
+                ${escapeHtml(task.text)}
+            </div>
+            ${task.description ? `<div class="task-list-item-description">${escapeHtml(task.description).substring(0, 100)}${task.description.length > 100 ? '...' : ''}</div>` : ''}
+            <div class="task-list-item-meta">
+                ${priorityHTML}
+                ${dueDateHTML}
+                ${subtasksHTML}
+            </div>
+        </div>
+        ${myDayToggleHTML}
+    `;
+
+    return li;
+}
+
+/**
+ * Handle task click
+ */
+function handleTaskClick(e) {
+    const taskItem = e.target.closest('.task-list-item');
+    if (!taskItem) return;
+
+    const taskId = taskItem.dataset.taskId;
+    const action = e.target.closest('[data-action]')?.dataset.action;
+
+    if (action === 'toggle-complete') {
+        toggleTaskComplete(taskId);
+    } else if (action === 'toggle-my-day') {
+        toggleTaskMyDay(taskId);
+        e.stopPropagation(); // Prevent opening detail panel
+    } else {
+        // Show task details
+        showTaskDetails(taskId);
+    }
+}
+
+/**
+ * Toggle task complete
+ */
+function toggleTaskComplete(taskId) {
+    const task = taskDataManager.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const updates = {
+        completed: !task.completed,
+        completedAt: !task.completed ? new Date().toISOString() : null,
+        status: !task.completed ? TaskStatus.DONE : TaskStatus.TODO
+    };
+
+    taskDataManager.updateTask(taskId, updates);
+    reRenderCurrentView();
+
+    Logger.debug('Task toggled:', taskId, updates.completed);
+}
+
+/**
+ * Toggle task My Day status
+ */
+function toggleTaskMyDay(taskId) {
+    const task = taskDataManager.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const updates = {
+        isMyDay: !task.isMyDay
+    };
+
+    taskDataManager.updateTask(taskId, updates);
+    reRenderCurrentView();
+
+    Logger.debug('Task My Day toggled:', taskId, updates.isMyDay);
+}
+
+/**
+ * Show task details
+ */
+function showTaskDetails(taskId) {
+    selectedTaskId = taskId;
+    const task = taskDataManager.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    // Get project
+    const project = taskDataManager.getProjectById(task.projectId);
+
+    // Format dates
+    const createdDate = new Date(task.createdAt).toLocaleDateString();
+    const dueDate = task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'Not set';
+
+    // Render detail panel
+    detailPanelContent.innerHTML = `
+        <div class="task-detail-section">
+            <label class="task-detail-label">Task</label>
+            <input type="text" class="task-detail-input" id="detailTaskText" value="${escapeHtml(task.text)}">
+        </div>
+
+        <div class="task-detail-section">
+            <label class="task-detail-label">Description</label>
+            <textarea class="task-detail-textarea" id="detailTaskDescription" rows="4" placeholder="Add a description...">${escapeHtml(task.description)}</textarea>
+        </div>
+
+        <div class="task-detail-section">
+            <label class="task-detail-label">Project</label>
+            <select class="task-detail-select" id="detailTaskProject">
+                ${taskDataManager.getAllProjects().map(p => `
+                    <option value="${p.id}" ${p.id === task.projectId ? 'selected' : ''}>
+                        ${p.icon} ${p.name}
+                    </option>
+                `).join('')}
+            </select>
+        </div>
+
+        <div class="task-detail-row">
+            <div class="task-detail-section">
+                <label class="task-detail-label">Status</label>
+                <select class="task-detail-select" id="detailTaskStatus">
+                    <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>📝 To Do</option>
+                    <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>⚡ In Progress</option>
+                    <option value="done" ${task.status === 'done' ? 'selected' : ''}>✅ Done</option>
+                    <option value="blocked" ${task.status === 'blocked' ? 'selected' : ''}>🚫 Blocked</option>
+                </select>
+            </div>
+
+            <div class="task-detail-section">
+                <label class="task-detail-label">Priority</label>
+                <select class="task-detail-select" id="detailTaskPriority">
+                    <option value="low" ${task.priority === 'low' ? 'selected' : ''}>Low</option>
+                    <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>Medium</option>
+                    <option value="high" ${task.priority === 'high' ? 'selected' : ''}>High</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="task-detail-section">
+            <label class="task-detail-label">Due Date</label>
+            <input type="date" class="task-detail-input" id="detailTaskDueDate"
+                value="${task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : ''}">
+        </div>
+
+        <div class="task-detail-section">
+            <label class="task-detail-label">
+                <input type="checkbox" id="detailTaskMyDay" ${task.isMyDay ? 'checked' : ''}>
+                Add to My Day
+            </label>
+        </div>
+
+        <div class="task-detail-section">
+            <label class="task-detail-label">Subtasks</label>
+            <div class="subtasks-list" id="subtasksList">
+                ${task.subtasks.map((subtask, index) => `<div class="subtask-item" data-subtask-id="${subtask.id}"><input type="checkbox" class="subtask-checkbox" ${subtask.completed ? 'checked' : ''} data-subtask-index="${index}"><span class="subtask-text ${subtask.completed ? 'completed' : ''}">${escapeHtml(subtask.text)}</span><button class="subtask-delete-btn" data-subtask-index="${index}" title="Delete subtask"><i class="fas fa-times"></i></button></div>`).join('')}
+            </div>
+            <div class="subtask-add-form">
+                <input type="text" class="subtask-input" id="subtaskInput" placeholder="Add a subtask..." />
+                <button class="subtask-add-btn" id="addSubtaskBtn" title="Add subtask">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="task-detail-section">
+            <label class="task-detail-label">Tags</label>
+            <div class="tags-list" id="tagsList">
+                ${task.tags.map(tag => `
+                    <span class="tag-chip" data-tag="${escapeHtml(tag)}" style="cursor: pointer;" title="Click to filter by this tag">
+                        <span class="tag-chip-text">${escapeHtml(tag)}</span>
+                        <button class="tag-remove-btn" title="Remove tag">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </span>
+                `).join('')}
+            </div>
+            <div class="tag-add-form">
+                <input type="text" class="tag-input" id="tagInput" placeholder="Add a tag..." />
+                <button class="tag-add-btn" id="addTagBtn" title="Add tag">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="task-detail-section">
+            <button class="task-detail-btn danger" id="deleteTaskBtn">
+                <i class="fas fa-trash"></i>
+                Delete Task
+            </button>
+        </div>
+
+        <div class="task-detail-meta">
+            <small>Created: ${createdDate}</small>
+            ${task.completedAt ? `<small>Completed: ${new Date(task.completedAt).toLocaleDateString()}</small>` : ''}
+        </div>
+    `;
+
+    // Add styles for detail panel elements (inline for now)
+    const style = document.createElement('style');
+    style.textContent = `
+        .task-detail-section { margin-bottom: 20px; }
+        .task-detail-label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 8px; color: var(--text-muted); }
+        .task-detail-label input[type="checkbox"] {
+            width: auto; margin-right: 8px; vertical-align: middle; cursor: pointer;
+        }
+        .task-detail-input, .task-detail-textarea, .task-detail-select {
+            width: 100%; padding: 10px; border: 1px solid var(--border-color);
+            border-radius: 6px; background: var(--background-color); color: var(--text-color);
+            font-size: 14px; font-family: inherit;
+        }
+        .task-detail-input:focus, .task-detail-textarea:focus, .task-detail-select:focus {
+            outline: none; border-color: var(--primary-color);
+        }
+        .task-detail-select option {
+            background: var(--background-color);
+            color: var(--text-color);
+        }
+        .task-detail-row { display: flex; gap: 12px; }
+        .task-detail-row .task-detail-section { flex: 1; }
+        .task-detail-btn {
+            width: 100%; padding: 10px; border: none; border-radius: 6px;
+            font-weight: 500; cursor: pointer; transition: all 0.15s ease;
+        }
+        .task-detail-btn.danger {
+            background: rgba(239, 68, 68, 0.1); color: #ef4444;
+        }
+        .task-detail-btn.danger:hover { background: #ef4444; color: white; }
+        .task-detail-meta { margin-top: 20px; padding-top: 20px;
+            border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 4px;
+        }
+        .task-detail-meta small { color: var(--text-muted); font-size: 12px; }
+
+        /* Subtasks styles */
+        .subtasks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-bottom: 16px;
+            padding-left: 8px;
+            border-left: 2px solid var(--border-color);
+            margin-left: 4px;
+        }
+        .subtask-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0 8px 12px;
+            transition: all 0.15s ease;
+            border-radius: 4px;
+        }
+        .subtask-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .subtask-checkbox {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+            margin: 0;
+            flex-shrink: 0;
+            accent-color: var(--primary-color);
+        }
+        .subtask-text {
+            flex: 1;
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-color);
+            white-space: normal;
+            min-width: 0;
+        }
+        .subtask-text.completed {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+        .subtask-delete-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 2px;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            opacity: 0;
+            border-radius: 4px;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        .subtask-item:hover .subtask-delete-btn { opacity: 0.5; }
+        .subtask-delete-btn:hover {
+            opacity: 1 !important;
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+        .subtask-add-form { display: flex; gap: 8px; }
+        .subtask-input { flex: 1; padding: 8px; border: 1px solid var(--border-color);
+            border-radius: 6px; background: var(--background-color); color: var(--text-color);
+            font-size: 14px;
+        }
+        .subtask-input:focus { outline: none; border-color: var(--primary-color); }
+        .subtask-add-btn { padding: 8px; width: 36px; height: 36px; display: flex;
+            align-items: center; justify-content: center; background: var(--primary-color);
+            color: white; border: none; border-radius: 6px; cursor: pointer;
+            transition: opacity 0.15s ease; flex-shrink: 0;
+        }
+        .subtask-add-btn:hover { opacity: 0.9; }
+
+        /* Tags styles */
+        .tags-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+        .tag-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px;
+            background: rgba(59, 130, 246, 0.12); color: var(--primary-color);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            border-radius: 12px; font-size: 12px; font-weight: 500;
+            transition: all 0.15s ease; line-height: 1.4; cursor: pointer;
+        }
+        .tag-chip:hover { background: rgba(59, 130, 246, 0.25); border-color: rgba(59, 130, 246, 0.5); transform: translateY(-1px); }
+        .tag-chip-text { flex: 1; }
+        .tag-remove-btn { background: none; border: none; color: var(--primary-color);
+            cursor: pointer; padding: 0; width: 14px; height: 14px; display: flex;
+            align-items: center; justify-content: center; border-radius: 50%;
+            opacity: 0.6; transition: all 0.15s ease; font-size: 11px;
+        }
+        .tag-remove-btn:hover { opacity: 1; background: rgba(59, 130, 246, 0.25); transform: scale(1.1); }
+        .tag-add-form { display: flex; gap: 8px; }
+        .tag-input { flex: 1; padding: 8px; border: 1px solid var(--border-color);
+            border-radius: 6px; background: var(--background-color); color: var(--text-color);
+            font-size: 14px;
+        }
+        .tag-input:focus { outline: none; border-color: var(--primary-color); }
+        .tag-add-btn { padding: 8px; width: 36px; height: 36px; display: flex;
+            align-items: center; justify-content: center; background: var(--primary-color);
+            color: white; border: none; border-radius: 6px; cursor: pointer;
+            transition: opacity 0.15s ease; flex-shrink: 0;
+        }
+        .tag-add-btn:hover { opacity: 0.9; }
+    `;
+    if (!document.getElementById('detailPanelStyles')) {
+        style.id = 'detailPanelStyles';
+        document.head.appendChild(style);
+    }
+
+    // Show panel and backdrop
+    taskDetailPanel.classList.remove('hidden');
+
+    // Show backdrop on small screens
+    if (window.innerWidth <= 900) {
+        const backdrop = document.getElementById('detailPanelBackdrop');
+        if (backdrop) {
+            setTimeout(() => backdrop.classList.add('active'), 10);
+        }
+    }
+
+    // Auto-save on changes
+    const inputs = ['detailTaskText', 'detailTaskDescription', 'detailTaskProject', 'detailTaskStatus', 'detailTaskPriority', 'detailTaskDueDate', 'detailTaskMyDay'];
+    inputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('change', () => saveTaskDetails(taskId));
+        }
+    });
+
+    // Subtask event listeners
+    // Add subtask
+    const addSubtaskBtn = document.getElementById('addSubtaskBtn');
+    const subtaskInput = document.getElementById('subtaskInput');
+
+    addSubtaskBtn.addEventListener('click', () => {
+        const text = subtaskInput.value.trim();
+        if (text) {
+            addSubtask(taskId, text);
+            subtaskInput.value = '';
+        }
+    });
+
+    subtaskInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const text = subtaskInput.value.trim();
+            if (text) {
+                addSubtask(taskId, text);
+                subtaskInput.value = '';
+            }
+        }
+    });
+
+    // Subtask checkboxes
+    document.querySelectorAll('.subtask-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+            const index = parseInt(e.target.dataset.subtaskIndex);
+            toggleSubtask(taskId, index);
         });
-        saveTodos();
-        todoInput.value = '';
-        todoNotes.value = '';
-        renderTodos();
+    });
+
+    // Subtask delete buttons
+    document.querySelectorAll('.subtask-delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const index = parseInt(btn.dataset.subtaskIndex);
+            deleteSubtask(taskId, index);
+        });
+    });
+
+    // Tag event listeners
+    // Add tag
+    const addTagBtn = document.getElementById('addTagBtn');
+    const tagInput = document.getElementById('tagInput');
+
+    addTagBtn.addEventListener('click', () => {
+        const tag = tagInput.value.trim();
+        if (tag) {
+            addTag(taskId, tag);
+            tagInput.value = '';
+        }
+    });
+
+    tagInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const tag = tagInput.value.trim();
+            if (tag) {
+                addTag(taskId, tag);
+                tagInput.value = '';
+            }
+        }
+    });
+
+    // Tag chip click - filter by tag
+    document.querySelectorAll('.tag-chip').forEach(chip => {
+        chip.addEventListener('click', (e) => {
+            // Don't trigger if clicking the remove button
+            if (e.target.closest('.tag-remove-btn')) return;
+
+            const tag = chip.dataset.tag;
+            filterByTag(tag);
+        });
+    });
+
+    // Tag remove buttons
+    document.querySelectorAll('.tag-remove-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent tag chip click
+            const tag = btn.closest('.tag-chip').dataset.tag;
+            removeTag(taskId, tag);
+        });
+    });
+
+    // Delete button
+    document.getElementById('deleteTaskBtn').addEventListener('click', () => {
+        if (confirm('Are you sure you want to delete this task?')) {
+            taskDataManager.deleteTask(taskId);
+            hideDetailPanel();
+            reRenderCurrentView();
+        }
+    });
+
+    Logger.debug('Showing task details:', taskId);
+}
+
+/**
+ * Save task details
+ */
+function saveTaskDetails(taskId) {
+    const text = document.getElementById('detailTaskText').value.trim();
+    const description = document.getElementById('detailTaskDescription').value.trim();
+    const projectId = document.getElementById('detailTaskProject').value;
+    const status = document.getElementById('detailTaskStatus').value;
+    const priority = document.getElementById('detailTaskPriority').value;
+    const dueDate = document.getElementById('detailTaskDueDate').value;
+    const isMyDay = document.getElementById('detailTaskMyDay').checked;
+
+    if (!text) {
+        alert('Task text cannot be empty');
+        return;
+    }
+
+    const updates = {
+        text,
+        description,
+        projectId,
+        status,
+        priority,
+        dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+        isMyDay
+    };
+
+    taskDataManager.updateTask(taskId, updates);
+    reRenderCurrentView();
+
+    Logger.debug('Task details saved:', taskId);
+}
+
+/**
+ * Hide detail panel
+ */
+function hideDetailPanel() {
+    taskDetailPanel.classList.add('hidden');
+    selectedTaskId = null;
+
+    // Hide backdrop
+    const backdrop = document.getElementById('detailPanelBackdrop');
+    if (backdrop) {
+        backdrop.classList.remove('active');
     }
 }
 
-function editDueDate(index) {
-    const currentDate = todos[index].dueDate ? new Date(todos[index].dueDate).toISOString().split('T')[0] : '';
-    const newDate = prompt('Enter due date (YYYY-MM-DD):', currentDate);
-    if (newDate !== null) {
-        todos[index].dueDate = newDate ? new Date(newDate).toISOString() : null;
-        saveTodos();
-        renderTodos();
+/**
+ * Add subtask to task
+ */
+function addSubtask(taskId, text) {
+    const task = taskDataManager.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const newSubtask = new Subtask({ text });
+    task.subtasks.push(newSubtask);
+
+    taskDataManager.updateTask(taskId, { subtasks: task.subtasks });
+    showTaskDetails(taskId); // Refresh detail panel
+    reRenderCurrentView();
+
+    Logger.debug('Added subtask to task:', taskId);
+}
+
+/**
+ * Toggle subtask completion
+ */
+function toggleSubtask(taskId, index) {
+    const task = taskDataManager.tasks.find(t => t.id === taskId);
+    if (!task || !task.subtasks[index]) return;
+
+    task.subtasks[index].completed = !task.subtasks[index].completed;
+
+    taskDataManager.updateTask(taskId, { subtasks: task.subtasks });
+    showTaskDetails(taskId); // Refresh detail panel
+    reRenderCurrentView();
+
+    Logger.debug('Toggled subtask:', index, 'for task:', taskId);
+}
+
+/**
+ * Delete subtask from task
+ */
+function deleteSubtask(taskId, index) {
+    const task = taskDataManager.tasks.find(t => t.id === taskId);
+    if (!task || !task.subtasks[index]) return;
+
+    task.subtasks.splice(index, 1);
+
+    taskDataManager.updateTask(taskId, { subtasks: task.subtasks });
+    showTaskDetails(taskId); // Refresh detail panel
+    reRenderCurrentView();
+
+    Logger.debug('Deleted subtask:', index, 'from task:', taskId);
+}
+
+/**
+ * Add tag to task
+ */
+function addTag(taskId, tag) {
+    const task = taskDataManager.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    // Don't add duplicate tags
+    if (task.tags.includes(tag)) {
+        return;
     }
+
+    task.tags.push(tag);
+
+    taskDataManager.updateTask(taskId, { tags: task.tags });
+    showTaskDetails(taskId); // Refresh detail panel
+    reRenderCurrentView();
+
+    Logger.debug('Added tag to task:', taskId, tag);
 }
 
-function togglePriority(index) {
-    const priorities = Object.values(PRIORITIES);
-    const currentPriorityIndex = priorities.indexOf(todos[index].priority || PRIORITIES.MEDIUM);
-    const nextPriorityIndex = (currentPriorityIndex + 1) % priorities.length;
-    todos[index].priority = priorities[nextPriorityIndex];
-    saveTodos();
-    renderTodos();
+/**
+ * Remove tag from task
+ */
+function removeTag(taskId, tag) {
+    const task = taskDataManager.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    task.tags = task.tags.filter(t => t !== tag);
+
+    taskDataManager.updateTask(taskId, { tags: task.tags });
+    showTaskDetails(taskId); // Refresh detail panel
+    reRenderCurrentView();
+
+    Logger.debug('Removed tag from task:', taskId, tag);
 }
 
-function toggleComplete(index) {
-    todos[index].completed = !todos[index].completed;
-    saveTodos();
-    renderTodos();
+/**
+ * Handle quick add
+ */
+function handleQuickAdd(e) {
+    e.preventDefault();
+
+    const text = quickAddInput.value.trim();
+    if (!text) return;
+
+    // Determine project ID
+    let projectId = currentProjectId || DEFAULT_PROJECTS.INBOX;
+    if (currentView === 'inbox') {
+        projectId = DEFAULT_PROJECTS.INBOX;
+    }
+
+    // Create task
+    const taskData = {
+        text,
+        projectId,
+        isMyDay: currentView === 'my-day'
+    };
+
+    taskDataManager.addTask(taskData);
+
+    // Clear input
+    quickAddInput.value = '';
+
+    // Re-render
+    reRenderCurrentView();
+
+    Logger.debug('Task added via quick add:', text);
 }
 
-function editTodo(index) {
-    Logger.debug('editTodo called for index:', index);
-    // Create a modal for editing the entire task
+/**
+ * Show add project modal
+ */
+function showAddProjectModal() {
+    // Create modal
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.display = 'block';
     modal.innerHTML = `
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 600px;">
             <div class="modal-header">
-                <h3>Edit Task</h3>
+                <h3>Create New Project</h3>
                 <span class="close">&times;</span>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label for="editTaskText">Task</label>
-                    <input type="text" id="editTaskText" value="${todos[index].text}" required>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Project Name</label>
+                    <input type="text" id="newProjectName"
+                        style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; background: var(--background-color); color: var(--text-color);"
+                        placeholder="Enter project name..." autofocus>
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Project Icon</label>
+                    <div id="iconSelector" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; max-height: 300px; overflow-y: auto; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--background-color);">
+                        <!-- Icons will be added here -->
+                    </div>
+                    <input type="hidden" id="selectedIcon" value="folder">
                 </div>
                 <div class="form-group">
-                    <label for="editTaskNotes">Notes</label>
-                    <textarea id="editTaskNotes" rows="4" placeholder="Add notes or details about this task">${todos[index].summary || todos[index].notes || ''}</textarea>
-                </div>
-                <div class="form-group">
-                    <label for="editTaskPriority">Priority</label>
-                    <select id="editTaskPriority">
-                        <option value="low" ${todos[index].priority === 'low' ? 'selected' : ''}>Low</option>
-                        <option value="medium" ${todos[index].priority === 'medium' ? 'selected' : ''}>Medium</option>
-                        <option value="high" ${todos[index].priority === 'high' ? 'selected' : ''}>High</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="editTaskDueDate">Due Date</label>
-                    <input type="date" id="editTaskDueDate" value="${todos[index].dueDate ? new Date(todos[index].dueDate).toISOString().split('T')[0] : ''}">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Project Color</label>
+                    <div id="colorSelector" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px;">
+                        <!-- Colors will be added here -->
+                    </div>
+                    <input type="hidden" id="selectedColor" value="#3b82f6">
                 </div>
             </div>
             <div class="modal-footer">
-                <button id="saveTaskBtn" class="modal-btn primary">Save</button>
-                <button id="cancelTaskBtn" class="modal-btn">Cancel</button>
+                <button id="cancelProjectBtn" class="modal-btn">Cancel</button>
+                <button id="createProjectBtn" class="modal-btn primary">Create Project</button>
             </div>
         </div>
     `;
+
     document.body.appendChild(modal);
 
-    // Add event listeners
+    // Popular FontAwesome icons
+    const icons = [
+        'folder', 'briefcase', 'home', 'graduation-cap', 'heart', 'star', 'code',
+        'laptop', 'mobile', 'book', 'lightbulb', 'rocket', 'shopping-cart',
+        'utensils', 'dumbbell', 'plane', 'car', 'bicycle', 'camera', 'music',
+        'gamepad', 'palette', 'flask', 'seedling', 'paw', 'coffee', 'pizza-slice',
+        'wallet', 'gift', 'bell', 'flag', 'chart-line', 'users', 'cog', 'wrench',
+        'hammer', 'screwdriver', 'paint-brush', 'pen', 'pencil', 'clipboard',
+        'tasks', 'list-check', 'calendar', 'clock', 'envelope', 'phone', 'globe'
+    ];
+
+    // Project colors
+    const colors = [
+        '#ef4444', '#f59e0b', '#eab308', '#84cc16', '#10b981', '#14b8a6',
+        '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
+        '#ec4899', '#f43f5e', '#64748b', '#6b7280'
+    ];
+
+    // Render icons
+    const iconSelector = document.getElementById('iconSelector');
+    icons.forEach(icon => {
+        const iconBtn = document.createElement('button');
+        iconBtn.type = 'button';
+        iconBtn.className = 'icon-option';
+        iconBtn.innerHTML = `<i class="fas fa-${icon}"></i>`;
+        iconBtn.style.cssText = 'padding: 12px; border: 2px solid transparent; border-radius: 6px; background: var(--card-background); cursor: pointer; transition: all 0.15s ease; font-size: 20px;';
+
+        if (icon === 'folder') {
+            iconBtn.style.borderColor = 'var(--primary-color)';
+        }
+
+        iconBtn.addEventListener('click', () => {
+            document.querySelectorAll('.icon-option').forEach(btn => {
+                btn.style.borderColor = 'transparent';
+            });
+            iconBtn.style.borderColor = 'var(--primary-color)';
+            document.getElementById('selectedIcon').value = icon;
+        });
+
+        iconSelector.appendChild(iconBtn);
+    });
+
+    // Render colors
+    const colorSelector = document.getElementById('colorSelector');
+    colors.forEach(color => {
+        const colorBtn = document.createElement('button');
+        colorBtn.type = 'button';
+        colorBtn.className = 'color-option';
+        colorBtn.style.cssText = `width: 40px; height: 40px; border: 3px solid transparent; border-radius: 8px; background: ${color}; cursor: pointer; transition: all 0.15s ease;`;
+
+        if (color === '#3b82f6') {
+            colorBtn.style.borderColor = 'var(--text-color)';
+        }
+
+        colorBtn.addEventListener('click', () => {
+            document.querySelectorAll('.color-option').forEach(btn => {
+                btn.style.borderColor = 'transparent';
+            });
+            colorBtn.style.borderColor = 'var(--text-color)';
+            document.getElementById('selectedColor').value = color;
+        });
+
+        colorSelector.appendChild(colorBtn);
+    });
+
+    // Event listeners
     modal.querySelector('.close').addEventListener('click', () => {
         document.body.removeChild(modal);
     });
 
-    modal.querySelector('#cancelTaskBtn').addEventListener('click', () => {
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
+
+    document.getElementById('cancelProjectBtn').addEventListener('click', () => {
         document.body.removeChild(modal);
     });
 
-    modal.querySelector('#saveTaskBtn').addEventListener('click', () => {
-        const taskText = document.getElementById('editTaskText').value.trim();
+    document.getElementById('createProjectBtn').addEventListener('click', () => {
+        const name = document.getElementById('newProjectName').value.trim();
+        const icon = document.getElementById('selectedIcon').value;
+        const color = document.getElementById('selectedColor').value;
 
-        if (!taskText) {
-            alert('Task text cannot be empty');
+        if (!name) {
+            alert('Please enter a project name');
             return;
         }
 
-        const taskNotes = document.getElementById('editTaskNotes').value.trim();
-        const taskPriority = document.getElementById('editTaskPriority').value;
-        const taskDueDate = document.getElementById('editTaskDueDate').value;
+        const projectData = {
+            name,
+            icon: `<i class="fas fa-${icon}"></i>`,
+            color
+        };
 
-        todos[index].text = taskText;
-        todos[index].summary = taskNotes;
-        todos[index].notes = taskNotes;
-        todos[index].priority = taskPriority;
-        todos[index].dueDate = taskDueDate ? new Date(taskDueDate).toISOString() : null;
-
-        saveTodos();
-        renderTodos();
+        taskDataManager.addProject(projectData);
+        renderSidebar();
         document.body.removeChild(modal);
+
+        Logger.debug('Project added:', name);
     });
 
-    // Allow clicking outside modal to close
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            document.body.removeChild(modal);
-        }
-    });
-
-    // Focus the task text input
+    // Focus name input
     setTimeout(() => {
-        document.getElementById('editTaskText').focus();
-    }, 0);
+        document.getElementById('newProjectName').focus();
+    }, 100);
 }
 
-function deleteTodo(index) {
-    showModal(
-        'Delete Task',
-        'Are you sure you want to delete this task?',
-        // Yes callback
-        () => {
-            todos.splice(index, 1);
-            saveTodos();
-            renderTodos();
-        },
-        // No callback
-        () => {
-            // Do nothing
-        }
-    );
+/**
+ * Handle import
+ */
+function handleImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    importAllData(file)
+        .then(() => {
+            Logger.info('Import completed successfully');
+            // Reinitialize with new data
+            taskDataManager = new TaskDataManager();
+            renderSidebar();
+            reRenderCurrentView();
+        })
+        .catch(error => {
+            Logger.error('Error importing data:', error);
+            alert('Failed to import data: ' + error.message);
+        });
 }
 
-function viewFullNotes(index) {
-    Logger.debug('viewFullNotes called for index:', index);
-    // Create a modal to display the full notes
-    const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.style.display = 'block';
-    const notesContent = todos[index].summary || todos[index].notes || 'No notes available.';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>${todos[index].text}</h3>
-                <span class="close">&times;</span>
-            </div>
-            <div class="modal-body notes-view">
-                <p>${notesContent.replace(/\n/g, '<br>')}</p>
-            </div>
-            <div class="modal-footer">
-                <button id="editNotesBtn" class="modal-btn primary">Edit Notes</button>
-                <button id="closeNotesBtn" class="modal-btn">Close</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
+/**
+ * Delete project
+ */
+function deleteProject(projectId) {
+    const project = taskDataManager.getProjectById(projectId);
+    if (!project) return;
 
-    // Add event listeners
-    modal.querySelector('.close').addEventListener('click', () => {
-        document.body.removeChild(modal);
-    });
+    const taskCount = taskDataManager.getTasksByProject(projectId).length;
+    const message = taskCount > 0
+        ? `Are you sure you want to delete "${project.name}"?\n\n${taskCount} task(s) will be moved to Inbox.`
+        : `Are you sure you want to delete "${project.name}"?`;
 
-    modal.querySelector('#closeNotesBtn').addEventListener('click', () => {
-        document.body.removeChild(modal);
-    });
+    if (!confirm(message)) return;
 
-    modal.querySelector('#editNotesBtn').addEventListener('click', () => {
-        document.body.removeChild(modal);
-        editSummary(index);
-    });
+    taskDataManager.deleteProject(projectId);
 
-    // Allow clicking outside modal to close
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            document.body.removeChild(modal);
-        }
-    });
+    // If currently viewing this project, switch to Inbox
+    if (currentProjectId === projectId) {
+        currentView = 'inbox';
+        currentProjectId = null;
+        updateViewHeader();
+    }
+
+    renderSidebar();
+    reRenderCurrentView();
+
+    Logger.debug('Project deleted:', projectId);
 }
 
-function editSummary(index) {
-    Logger.debug('editSummary called for index:', index);
-    // Create a modal for editing notes
+/**
+ * Show edit project modal
+ */
+function showEditProjectModal(projectId) {
+    const project = taskDataManager.getProjectById(projectId);
+    if (!project) return;
+
+    // Extract icon name from HTML (e.g., "<i class='fas fa-folder'></i>" -> "folder")
+    const iconMatch = project.icon.match(/fa-([a-z-]+)/);
+    const currentIconName = iconMatch ? iconMatch[1] : 'folder';
+
+    // Create modal (similar to add project modal)
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.display = 'block';
     modal.innerHTML = `
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 600px;">
             <div class="modal-header">
-                <h3>Edit Notes</h3>
+                <h3>Edit Project</h3>
                 <span class="close">&times;</span>
             </div>
             <div class="modal-body">
-                <textarea id="editNotesTextarea" rows="6" placeholder="Add detailed notes about this task">${todos[index].summary || ''}</textarea>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Project Name</label>
+                    <input type="text" id="editProjectName"
+                        style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; background: var(--background-color); color: var(--text-color);"
+                        placeholder="Enter project name..." value="${escapeHtml(project.name)}" autofocus>
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Project Icon</label>
+                    <div id="editIconSelector" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; max-height: 300px; overflow-y: auto; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--background-color);">
+                        <!-- Icons will be added here -->
+                    </div>
+                    <input type="hidden" id="editSelectedIcon" value="${currentIconName}">
+                </div>
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Project Color</label>
+                    <div id="editColorSelector" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px;">
+                        <!-- Colors will be added here -->
+                    </div>
+                    <input type="hidden" id="editSelectedColor" value="${project.color}">
+                </div>
             </div>
             <div class="modal-footer">
-                <button id="saveNotesBtn" class="modal-btn primary">Save</button>
-                <button id="cancelNotesBtn" class="modal-btn">Cancel</button>
+                <button id="cancelEditProjectBtn" class="modal-btn">Cancel</button>
+                <button id="saveEditProjectBtn" class="modal-btn primary">Save Changes</button>
             </div>
         </div>
     `;
+
     document.body.appendChild(modal);
 
-    // Add event listeners
+    // Popular FontAwesome icons
+    const icons = [
+        'folder', 'briefcase', 'home', 'graduation-cap', 'heart', 'star', 'code',
+        'laptop', 'mobile', 'book', 'lightbulb', 'rocket', 'shopping-cart',
+        'utensils', 'dumbbell', 'plane', 'car', 'bicycle', 'camera', 'music',
+        'gamepad', 'palette', 'flask', 'seedling', 'paw', 'coffee', 'pizza-slice',
+        'wallet', 'gift', 'bell', 'flag', 'chart-line', 'users', 'cog', 'wrench',
+        'hammer', 'screwdriver', 'paint-brush', 'pen', 'pencil', 'clipboard',
+        'tasks', 'list-check', 'calendar', 'clock', 'envelope', 'phone', 'globe'
+    ];
+
+    // Project colors
+    const colors = [
+        '#ef4444', '#f59e0b', '#eab308', '#84cc16', '#10b981', '#14b8a6',
+        '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
+        '#ec4899', '#f43f5e', '#64748b', '#6b7280'
+    ];
+
+    // Render icons
+    const iconSelector = document.getElementById('editIconSelector');
+    icons.forEach(icon => {
+        const iconBtn = document.createElement('button');
+        iconBtn.type = 'button';
+        iconBtn.className = 'icon-option';
+        iconBtn.innerHTML = `<i class="fas fa-${icon}"></i>`;
+        iconBtn.style.cssText = 'padding: 12px; border: 2px solid transparent; border-radius: 6px; background: var(--card-background); cursor: pointer; transition: all 0.15s ease; font-size: 20px;';
+
+        if (icon === currentIconName) {
+            iconBtn.style.borderColor = 'var(--primary-color)';
+        }
+
+        iconBtn.addEventListener('click', () => {
+            document.querySelectorAll('.icon-option').forEach(btn => {
+                btn.style.borderColor = 'transparent';
+            });
+            iconBtn.style.borderColor = 'var(--primary-color)';
+            document.getElementById('editSelectedIcon').value = icon;
+        });
+
+        iconSelector.appendChild(iconBtn);
+    });
+
+    // Render colors
+    const colorSelector = document.getElementById('editColorSelector');
+    colors.forEach(color => {
+        const colorBtn = document.createElement('button');
+        colorBtn.type = 'button';
+        colorBtn.className = 'color-option';
+        colorBtn.style.cssText = `width: 40px; height: 40px; border: 3px solid transparent; border-radius: 8px; background: ${color}; cursor: pointer; transition: all 0.15s ease;`;
+
+        if (color === project.color) {
+            colorBtn.style.borderColor = 'var(--text-color)';
+        }
+
+        colorBtn.addEventListener('click', () => {
+            document.querySelectorAll('.color-option').forEach(btn => {
+                btn.style.borderColor = 'transparent';
+            });
+            colorBtn.style.borderColor = 'var(--text-color)';
+            document.getElementById('editSelectedColor').value = color;
+        });
+
+        colorSelector.appendChild(colorBtn);
+    });
+
+    // Event listeners
     modal.querySelector('.close').addEventListener('click', () => {
         document.body.removeChild(modal);
     });
 
-    modal.querySelector('#cancelNotesBtn').addEventListener('click', () => {
-        document.body.removeChild(modal);
-    });
-
-    modal.querySelector('#saveNotesBtn').addEventListener('click', () => {
-        const newNotes = document.getElementById('editNotesTextarea').value.trim();
-        todos[index].summary = newNotes;
-        todos[index].notes = newNotes; // Update both fields for compatibility
-        saveTodos();
-        renderTodos();
-        document.body.removeChild(modal);
-    });
-
-    // Allow clicking outside modal to close
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
             document.body.removeChild(modal);
         }
     });
 
-    // Focus the textarea
+    document.getElementById('cancelEditProjectBtn').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+
+    document.getElementById('saveEditProjectBtn').addEventListener('click', () => {
+        const name = document.getElementById('editProjectName').value.trim();
+        const icon = document.getElementById('editSelectedIcon').value;
+        const color = document.getElementById('editSelectedColor').value;
+
+        if (!name) {
+            alert('Please enter a project name');
+            return;
+        }
+
+        const updates = {
+            name,
+            icon: `<i class="fas fa-${icon}"></i>`,
+            color
+        };
+
+        taskDataManager.updateProject(projectId, updates);
+        renderSidebar();
+        updateViewHeader(); // Update header if currently viewing this project
+        document.body.removeChild(modal);
+
+        Logger.debug('Project updated:', projectId);
+    });
+
+    // Focus name input
     setTimeout(() => {
-        document.getElementById('editNotesTextarea').focus();
-    }, 0);
+        document.getElementById('editProjectName').focus();
+        document.getElementById('editProjectName').select();
+    }, 100);
 }
 
-// Get new filter elements
-const searchTodo = document.getElementById('searchTodo');
-const priorityFilter = document.getElementById('priorityFilter');
-
-// Add event listeners for filters with debouncing
-searchTodo.addEventListener('input', (e) => {
-    clearTimeout(searchDebounceTimer);
-    searchDebounceTimer = setTimeout(() => {
-        renderTodos(e.target.value, priorityFilter.value);
-    }, 300); // Wait 300ms after user stops typing
-});
-
-priorityFilter.addEventListener('change', (e) => {
-    renderTodos(searchTodo.value, e.target.value);
-});
-
-// Initialize Sortable and setup drag functionality
-new Sortable(todoList, {
-    animation: 150,
-    ghostClass: 'todo-item-ghost',
-    onEnd: () => {
-        // Extract data attributes to maintain original indices
-        const newOrder = Array.from(todoList.children).map((li, newIndex) => {
-            // Try to get the original index from the data attribute
-            const originalIndex = parseInt(li.getAttribute('data-index'), 10);
-            return { originalIndex, newIndex };
-        });
-
-        // Reorder the todos array based on the new order
-        const reorderedTodos = [];
-        newOrder.forEach(item => {
-            if (!isNaN(item.originalIndex) && todos[item.originalIndex]) {
-                reorderedTodos[item.newIndex] = todos[item.originalIndex];
-            }
-        });
-
-        // Update todos with valid entries only
-        todos = reorderedTodos.filter(Boolean);
-
-        // Save and re-render
-        saveTodos();
-        renderTodos();
-    }
-});
-
-// Initialize everything
-updateTitle();
-
-// Initialize todos in localStorage if not present
-if (!localStorage.getItem('todos')) {
-    localStorage.setItem('todos', JSON.stringify([]));
+/**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
-// Ensure todos are loaded, with retry mechanism
-function ensureTodosLoaded() {
-    Logger.debug('Ensuring todos are loaded...');
-    const storedTodos = localStorage.getItem('todos');
-    if (storedTodos) {
-        try {
-            const parsed = JSON.parse(storedTodos);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-                Logger.debug('Found valid todos in localStorage:', parsed.length);
-                todos = parsed;
-                renderTodos();
-                return;
+/**
+ * ========================================
+ * NAVIGATION HELPERS
+ * ========================================
+ */
+
+/**
+ * Activate a smart view programmatically
+ */
+function activateSmartView(view) {
+    // Update active state on smart views
+    smartViewsList.querySelectorAll('.sidebar-item').forEach(item => {
+        if (item.dataset.view === view) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+
+    // Clear project selection
+    projectsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // Update current view
+    currentView = view;
+    currentProjectId = null;
+
+    // Update header
+    updateViewHeader();
+
+    // Re-render
+    reRenderCurrentView();
+
+    Logger.debug('Activated smart view:', view);
+}
+
+/**
+ * Activate a project programmatically
+ */
+function activateProject(projectId) {
+    // Update active state on projects
+    projectsList.querySelectorAll('.sidebar-item').forEach(item => {
+        if (item.dataset.projectId === projectId) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+
+    // Clear view selection
+    smartViewsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // Update current view
+    currentView = 'project';
+    currentProjectId = projectId;
+
+    // Update header
+    updateViewHeader();
+
+    // Re-render
+    reRenderCurrentView();
+
+    Logger.debug('Activated project:', projectId);
+}
+
+/**
+ * Filter by tag programmatically
+ */
+function filterByTag(tag) {
+    // Clear sidebar selections
+    smartViewsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    projectsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // Update tags list active state
+    const tagsList = document.getElementById('tagsList');
+    tagsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.tag === tag) {
+            item.classList.add('active');
+        }
+    });
+
+    // Update current state
+    currentView = 'tag';
+    currentTag = tag;
+    currentProjectId = null;
+
+    // Close detail panel if open
+    hideDetailPanel();
+
+    // Update header
+    updateViewHeader();
+
+    // Re-render
+    reRenderCurrentView();
+
+    Logger.debug('Filtered by tag:', tag);
+}
+
+/**
+ * ========================================
+ * COMMAND PALETTE
+ * ========================================
+ */
+
+/**
+ * Get all available commands
+ */
+function getCommands() {
+    const commands = [
+        // Navigation - Smart Views
+        {
+            id: 'goto-my-day',
+            name: 'Go to My Day',
+            description: 'View tasks for today',
+            icon: '✨',
+            category: 'navigation',
+            keywords: ['my', 'day', 'today', 'navigate', 'view'],
+            action: () => activateSmartView('my-day')
+        },
+        {
+            id: 'goto-inbox',
+            name: 'Go to Inbox',
+            description: 'View inbox tasks',
+            icon: '📥',
+            category: 'navigation',
+            keywords: ['inbox', 'uncategorized', 'navigate', 'view'],
+            action: () => activateSmartView('inbox')
+        },
+        {
+            id: 'goto-all',
+            name: 'Go to All Tasks',
+            description: 'View all tasks',
+            icon: '📋',
+            category: 'navigation',
+            keywords: ['all', 'tasks', 'everything', 'navigate', 'view'],
+            action: () => activateSmartView('all')
+        },
+        {
+            id: 'goto-important',
+            name: 'Go to Important',
+            description: 'View high priority tasks',
+            icon: '⭐',
+            category: 'navigation',
+            keywords: ['important', 'priority', 'high', 'navigate', 'view'],
+            action: () => activateSmartView('important')
+        },
+        {
+            id: 'goto-upcoming',
+            name: 'Go to Upcoming',
+            description: 'View tasks due in next 7 days',
+            icon: '📅',
+            category: 'navigation',
+            keywords: ['upcoming', 'soon', 'week', 'navigate', 'view'],
+            action: () => activateSmartView('upcoming')
+        },
+        {
+            id: 'goto-completed',
+            name: 'Go to Completed',
+            description: 'View completed tasks',
+            icon: '✅',
+            category: 'navigation',
+            keywords: ['completed', 'done', 'finished', 'navigate', 'view'],
+            action: () => activateSmartView('completed')
+        },
+
+        // Actions
+        {
+            id: 'new-task',
+            name: 'New Task',
+            description: 'Create a new task',
+            icon: '➕',
+            category: 'action',
+            keywords: ['new', 'create', 'add', 'task', 'todo'],
+            action: () => {
+                closeCommandPalette();
+                quickAddInput.focus();
             }
-        } catch (e) {
-            Logger.error('Error parsing stored todos:', e);
-            if (window.errorHandler) {
-                window.errorHandler.handleError(e, 'storage', {
-                    operation: 'parse_todos'
+        },
+        {
+            id: 'new-project',
+            name: 'New Project',
+            description: 'Create a new project',
+            icon: '📁',
+            category: 'action',
+            keywords: ['new', 'create', 'add', 'project', 'folder'],
+            action: () => {
+                closeCommandPalette();
+                showAddProjectModal();
+            }
+        },
+
+        // View Switching
+        {
+            id: 'switch-to-list',
+            name: 'Switch to List View',
+            description: 'View tasks as a list',
+            icon: '📝',
+            category: 'view',
+            keywords: ['list', 'view', 'switch', 'layout'],
+            action: () => {
+                closeCommandPalette();
+                currentLayout = 'list';
+                switchViewLayout('list');
+                document.querySelectorAll('.view-switcher-btn').forEach(b => {
+                    b.classList.toggle('active', b.dataset.layout === 'list');
                 });
             }
-        }
-    }
+        },
+        {
+            id: 'switch-to-board',
+            name: 'Switch to Board View',
+            description: 'View tasks as a Kanban board',
+            icon: '📊',
+            category: 'view',
+            keywords: ['board', 'kanban', 'view', 'switch', 'layout'],
+            action: () => {
+                closeCommandPalette();
+                currentLayout = 'board';
+                switchViewLayout('board');
+                document.querySelectorAll('.view-switcher-btn').forEach(b => {
+                    b.classList.toggle('active', b.dataset.layout === 'board');
+                });
+            }
+        },
 
-    // If we get here, either no todos or invalid format
-    Logger.debug('No valid todos found, will retry in 1 second...');
-    setTimeout(ensureTodosLoaded, 1000); // Retry after 1 second
+        // Settings
+        {
+            id: 'toggle-dark-mode',
+            name: 'Toggle Dark Mode',
+            description: 'Switch between light and dark theme',
+            icon: '🌙',
+            category: 'settings',
+            keywords: ['dark', 'light', 'theme', 'mode', 'toggle'],
+            action: () => {
+                closeCommandPalette();
+                themeManager.toggleDarkMode();
+            }
+        },
+        {
+            id: 'change-theme-color',
+            name: 'Change Theme Color',
+            description: 'Pick a new theme color',
+            icon: '🎨',
+            category: 'settings',
+            keywords: ['color', 'theme', 'palette', 'change'],
+            action: () => {
+                closeCommandPalette();
+                themeManager.openColorPicker();
+            }
+        },
+        {
+            id: 'change-username',
+            name: 'Change Username',
+            description: 'Update your display name',
+            icon: '👤',
+            category: 'settings',
+            keywords: ['username', 'name', 'change', 'profile'],
+            action: () => {
+                closeCommandPalette();
+                changeUsername();
+            }
+        },
+        {
+            id: 'export-data',
+            name: 'Export All Data',
+            description: 'Download backup of all data',
+            icon: '💾',
+            category: 'settings',
+            keywords: ['export', 'backup', 'download', 'save'],
+            action: () => {
+                closeCommandPalette();
+                exportAllData();
+            }
+        },
+        {
+            id: 'import-data',
+            name: 'Import Data',
+            description: 'Import backup file',
+            icon: '📂',
+            category: 'settings',
+            keywords: ['import', 'restore', 'upload', 'load'],
+            action: () => {
+                closeCommandPalette();
+                importInput.click();
+            }
+        }
+    ];
+
+    // Add dynamic project navigation commands
+    const projects = taskDataManager.getAllProjects();
+    projects.forEach(project => {
+        if (project.id !== DEFAULT_PROJECTS.INBOX) {
+            commands.push({
+                id: `goto-project-${project.id}`,
+                name: `Go to ${project.name}`,
+                description: `Navigate to ${project.name} project`,
+                icon: project.icon || '📁',
+                category: 'navigation',
+                keywords: ['project', 'navigate', 'goto', project.name.toLowerCase()],
+                action: () => activateProject(project.id)
+            });
+        }
+    });
+
+    return commands;
 }
 
-// Start the initialization process
-reloadTodos();
-ensureTodosLoaded();
+/**
+ * Open command palette
+ */
+function openCommandPalette() {
+    commandPaletteOpen = true;
+    commandPalette.classList.remove('hidden');
+    commandPaletteInput.value = '';
+    commandPaletteInput.focus();
+    selectedCommandIndex = 0;
 
-// Add event delegation for todo actions
-todoList.addEventListener('click', (e) => {
-    // Find the button or element clicked
-    const actionButton = e.target.closest('[data-action]');
-    const showMoreLink = e.target.closest('.todo-summary-expand');
+    // Show all commands initially
+    filterCommands('');
 
-    if (actionButton) {
-        const index = parseInt(actionButton.getAttribute('data-index'), 10);
-        const action = actionButton.getAttribute('data-action');
+    Logger.debug('Command palette opened');
+}
 
-        // Execute the appropriate action based on button clicked
-        switch(action) {
-            case 'complete':
-                Logger.debug('Toggle complete for index:', index);
-                toggleComplete(index);
-                break;
-            case 'edit':
-                Logger.debug('Edit todo for index:', index);
-                editTodo(index);
-                break;
-            case 'delete':
-                Logger.debug('Delete todo for index:', index);
-                deleteTodo(index);
-                break;
-            case 'summary':
-                Logger.debug('Edit summary for index:', index);
-                editSummary(index);
-                break;
-            case 'date':
-                Logger.debug('Edit due date for index:', index);
-                editDueDate(index);
-                break;
-            case 'priority':
-                Logger.debug('Toggle priority for index:', index);
-                togglePriority(index);
-                break;
-        }
-    } else if (showMoreLink) {
-        const index = parseInt(showMoreLink.getAttribute('data-index'), 10);
-        Logger.debug('View full notes for index:', index);
-        viewFullNotes(index);
+/**
+ * Close command palette
+ */
+function closeCommandPalette() {
+    commandPaletteOpen = false;
+    commandPalette.classList.add('hidden');
+    commandPaletteInput.value = '';
+    filteredCommands = [];
+
+    Logger.debug('Command palette closed');
+}
+
+/**
+ * Filter commands based on search query
+ */
+function filterCommands(query) {
+    const allCommands = getCommands();
+
+    if (!query.trim()) {
+        filteredCommands = allCommands;
+    } else {
+        const searchTerms = query.toLowerCase().split(' ').filter(t => t);
+
+        filteredCommands = allCommands.filter(cmd => {
+            const searchText = [
+                cmd.name,
+                cmd.description,
+                ...cmd.keywords
+            ].join(' ').toLowerCase();
+
+            return searchTerms.every(term => searchText.includes(term));
+        });
     }
-});
 
-// Add all event listeners
-todoForm.addEventListener('submit', addTodo);
-backToDashboard.addEventListener('click', () => window.location.href = 'index.html');
-darkModeBtn.addEventListener('click', () => themeManager.toggleDarkMode());
-themeColorBtn.addEventListener('click', () => themeManager.changeThemeColor());
-settingsBtn.addEventListener('click', changeUsername);
+    selectedCommandIndex = 0;
+    renderCommandResults();
+}
 
-// Import functionality
-importTodosBtn.addEventListener('click', () => {
-    importInput.click();
-});
+/**
+ * Render command results
+ */
+function renderCommandResults() {
+    commandPaletteResults.innerHTML = '';
 
-importInput.addEventListener('change', (event) => {
-    const file = event.target.files[0];
-    if (file) {
-        importAllData(file)
-            .then(() => {
-                Logger.debug('Import completed successfully');
-                // No need for alert as importAllData already shows one
-                // Reload todos from localStorage since importAllData updates it
-                reloadTodos();
-            })
-            .catch(error => {
-                Logger.error('Error importing data:', error);
-                alert('Failed to import data: ' + error.message);
+    if (filteredCommands.length === 0) {
+        commandPaletteResults.innerHTML = `
+            <div class="command-palette-empty">
+                <div class="command-palette-empty-icon">🔍</div>
+                <div class="command-palette-empty-text">No commands found</div>
+            </div>
+        `;
+        return;
+    }
+
+    filteredCommands.forEach((cmd, index) => {
+        const resultEl = document.createElement('div');
+        resultEl.className = `command-result ${index === selectedCommandIndex ? 'selected' : ''}`;
+        resultEl.dataset.commandId = cmd.id;
+        resultEl.dataset.index = index;
+
+        resultEl.innerHTML = `
+            <div class="command-result-icon">${cmd.icon}</div>
+            <div class="command-result-content">
+                <div class="command-result-name">${escapeHtml(cmd.name)}</div>
+                <div class="command-result-description">${escapeHtml(cmd.description)}</div>
+            </div>
+            <div class="command-result-category">${cmd.category}</div>
+        `;
+
+        // Click handler
+        resultEl.addEventListener('click', () => {
+            executeCommand(cmd);
+        });
+
+        commandPaletteResults.appendChild(resultEl);
+    });
+}
+
+/**
+ * Execute a command
+ */
+function executeCommand(command) {
+    Logger.debug('Executing command:', command.id);
+
+    // Close palette first to avoid any UI conflicts
+    closeCommandPalette();
+
+    try {
+        command.action();
+    } catch (error) {
+        Logger.error('Command execution failed:', error);
+        if (window.errorHandler) {
+            window.errorHandler.handleError(error, 'command_palette', {
+                commandId: command.id
             });
+        }
     }
-});
+}
 
+/**
+ * Navigate command selection
+ */
+function navigateCommands(direction) {
+    if (filteredCommands.length === 0) return;
 
-// Export All functionality (both dashboard and todos)
-exportAllBtn.addEventListener('click', () => {
-    exportAllData(false); // false for non-silent export
-});
+    if (direction === 'down') {
+        selectedCommandIndex = (selectedCommandIndex + 1) % filteredCommands.length;
+    } else if (direction === 'up') {
+        selectedCommandIndex = selectedCommandIndex === 0
+            ? filteredCommands.length - 1
+            : selectedCommandIndex - 1;
+    }
 
-// Log the initial state
-Logger.debug('Initial todos state:', todos);
-Logger.debug('Initial localStorage state:', localStorage.getItem('todos'));
+    renderCommandResults();
+
+    // Scroll selected item into view
+    const selectedEl = commandPaletteResults.querySelector('.command-result.selected');
+    if (selectedEl) {
+        selectedEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+}
+
+/**
+ * Execute selected command
+ */
+function executeSelectedCommand() {
+    if (filteredCommands.length > 0 && selectedCommandIndex < filteredCommands.length) {
+        executeCommand(filteredCommands[selectedCommandIndex]);
+    }
+}
+
+// Initialize on load
+Logger.debug('todo.js loaded');

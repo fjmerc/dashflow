@@ -23,8 +23,8 @@ class KeyboardNavigationManager {
 
     registerShortcuts() {
         // Navigation shortcuts
-        this.shortcuts.set('ctrl+k', () => this.toggleGlobalSearch());
-        this.shortcuts.set('cmd+k', () => this.toggleGlobalSearch()); // Mac
+        this.shortcuts.set('ctrl+f', () => this.toggleGlobalSearch());
+        this.shortcuts.set('cmd+f', () => this.toggleGlobalSearch()); // Mac
         this.shortcuts.set('ctrl+/', () => this.showKeyboardHelp());
         this.shortcuts.set('cmd+/', () => this.showKeyboardHelp()); // Mac
 
@@ -278,7 +278,10 @@ class KeyboardNavigationManager {
                         <div class="shortcut-section">
                             <h4>Navigation</h4>
                             <div class="shortcut-item">
-                                <kbd>Ctrl</kbd> + <kbd>K</kbd> <span>Global Search</span>
+                                <kbd>Ctrl</kbd> + <kbd>K</kbd> <span>Command Palette</span>
+                            </div>
+                            <div class="shortcut-item">
+                                <kbd>Ctrl</kbd> + <kbd>F</kbd> <span>Global Search</span>
                             </div>
                             <div class="shortcut-item">
                                 <kbd>Ctrl</kbd> + <kbd>T</kbd> <span>Go to Todos</span>

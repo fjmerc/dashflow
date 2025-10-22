@@ -12,51 +12,277 @@
         <div class="header-content">
             <h1>Task List</h1>
             <div class="header-actions">
-                <button id="themeColorBtn" title="Change Theme Color">
+                <!-- Quick Actions -->
+                <button id="themeColorBtn" title="Change Theme Color" class="header-btn">
                     <i class="fas fa-palette"></i>
                 </button>
-                <button id="darkModeBtn" title="Toggle Dark Mode">
+                <button id="darkModeBtn" title="Toggle Dark Mode" class="header-btn">
                     <i class="fas fa-moon"></i>
                 </button>
-                <button id="settingsBtn" title="Change Username">
-                    <i class="fas fa-user-edit"></i>
-                </button>
-                <button id="importTodosBtn" title="Import All Data" aria-label="Import All Data">
-                    <i class="fas fa-file-arrow-down"></i>
-                </button>
-                <button id="exportAllBtn" title="Export All Data" aria-label="Export All Data">
-                    <i class="fas fa-file-export"></i>
-                </button>
-                <button id="backToDashboard" title="Home">
+
+                <span class="header-divider"></span>
+
+                <!-- Primary Features -->
+                <button id="backToDashboard" title="Home" class="header-btn">
                     <i class="fas fa-home"></i>
+                </button>
+
+                <span class="header-divider"></span>
+
+                <!-- Settings & Help -->
+                <div class="header-menu-container">
+                    <button id="todoHeaderMenuBtn" title="Settings & More" class="header-btn" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <div id="todoHeaderMenu" class="header-dropdown-menu" role="menu" aria-hidden="true">
+                        <button class="menu-item" id="todoMenuSettingsBtn" role="menuitem">
+                            <i class="fas fa-user-edit"></i>
+                            <span>Change Username</span>
+                        </button>
+                        <div class="menu-divider"></div>
+                        <button class="menu-item" id="todoMenuImportBtn" role="menuitem">
+                            <i class="fas fa-file-arrow-down"></i>
+                            <span>Import Data</span>
+                        </button>
+                        <button class="menu-item" id="todoMenuExportBtn" role="menuitem">
+                            <i class="fas fa-file-export"></i>
+                            <span>Export Data</span>
+                        </button>
+                        <button class="menu-item" id="todoMenuBackupBtn" role="menuitem">
+                            <i class="fas fa-cogs"></i>
+                            <span>Backup Settings</span>
+                        </button>
+                        <div class="menu-divider"></div>
+                        <button class="menu-item menu-item-danger" id="todoMenuClearBtn" role="menuitem">
+                            <i class="fas fa-trash-alt"></i>
+                            <span>Clear Storage</span>
+                        </button>
+                    </div>
+                </div>
+                <button id="todoHelpBtn" title="Help" class="header-btn" aria-label="Help and Documentation">
+                    <i class="fas fa-question-circle"></i>
                 </button>
             </div>
         </div>
     </header>
 
-    <main>
-        <div class="todo-container">
-            <form id="todoForm" class="todo-form">
-                <input type="text" id="todoInput" placeholder="Enter a new task" required>
-                <textarea id="todoNotes" placeholder="Add notes or details (optional)" class="todo-notes-input"></textarea>
-                <button type="submit" id="addTodoBtn">Add Task</button>
-            </form>
+    <!-- Main App Container -->
+    <div class="task-app-container">
+        <!-- Sidebar -->
+        <aside class="task-sidebar" id="taskSidebar">
+            <div class="sidebar-content">
+                <!-- Smart Views Section -->
+                <div class="sidebar-section">
+                    <div class="sidebar-section-header">
+                        <div class="sidebar-section-title">
+                            <i class="fas fa-star"></i>
+                            <span>Views</span>
+                        </div>
+                    </div>
+                    <div id="smartViewsList">
+                        <div class="sidebar-item active" data-view="my-day">
+                            <div class="sidebar-item-icon">✨</div>
+                            <div class="sidebar-item-text">My Day</div>
+                            <span class="sidebar-item-count" id="myDayCount">0</span>
+                        </div>
+                        <div class="sidebar-item" data-view="inbox">
+                            <div class="sidebar-item-icon">📥</div>
+                            <div class="sidebar-item-text">Inbox</div>
+                            <span class="sidebar-item-count" id="inboxCount">0</span>
+                        </div>
+                        <div class="sidebar-item" data-view="all">
+                            <div class="sidebar-item-icon">📋</div>
+                            <div class="sidebar-item-text">All Tasks</div>
+                            <span class="sidebar-item-count" id="allCount">0</span>
+                        </div>
+                        <div class="sidebar-item" data-view="important">
+                            <div class="sidebar-item-icon">⭐</div>
+                            <div class="sidebar-item-text">Important</div>
+                            <span class="sidebar-item-count" id="importantCount">0</span>
+                        </div>
+                        <div class="sidebar-item" data-view="upcoming">
+                            <div class="sidebar-item-icon">📅</div>
+                            <div class="sidebar-item-text">Upcoming</div>
+                            <span class="sidebar-item-count" id="upcomingCount">0</span>
+                        </div>
+                        <div class="sidebar-item" data-view="completed">
+                            <div class="sidebar-item-icon">✅</div>
+                            <div class="sidebar-item-text">Completed</div>
+                            <span class="sidebar-item-count" id="completedCount">0</span>
+                        </div>
+                    </div>
+                </div>
 
-            <div class="todo-filters">
-                <input type="text" id="searchTodo" placeholder="Search tasks..." class="search-input">
-                <select id="priorityFilter" class="priority-filter">
-                    <option value="all">All Priorities</option>
-                    <option value="high">High Priority</option>
-                    <option value="medium">Medium Priority</option>
-                    <option value="low">Low Priority</option>
-                </select>
+                <!-- Projects Section -->
+                <div class="sidebar-section">
+                    <div class="sidebar-section-header">
+                        <div class="sidebar-section-title">
+                            <i class="fas fa-folder"></i>
+                            <span>Projects</span>
+                        </div>
+                    </div>
+                    <div id="projectsList">
+                        <!-- Projects will be dynamically added here -->
+                    </div>
+                    <button class="sidebar-add-btn" id="addProjectBtn">
+                        <i class="fas fa-plus"></i>
+                        New Project
+                    </button>
+                </div>
+
+                <!-- Tags Section -->
+                <div class="sidebar-section">
+                    <div class="sidebar-section-header">
+                        <div class="sidebar-section-title">
+                            <i class="fas fa-tags"></i>
+                            <span>Tags</span>
+                        </div>
+                    </div>
+                    <div id="tagsList">
+                        <!-- Tags will be dynamically added here -->
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="task-main">
+            <!-- Main Header -->
+            <div class="task-main-header">
+                <div class="task-main-title">
+                    <button class="sidebar-toggle-btn" id="sidebarToggle" aria-label="Toggle Sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h2 id="viewTitle">My Day</h2>
+                </div>
+                <div class="task-main-subtitle" id="viewSubtitle">
+                    Focus on what matters today
+                </div>
+                <div class="task-main-actions">
+                    <div class="view-switcher">
+                        <button class="view-switcher-btn" data-layout="list">
+                            <i class="fas fa-list"></i>
+                            List
+                        </button>
+                        <button class="view-switcher-btn" data-layout="board">
+                            <i class="fas fa-th-large"></i>
+                            Board
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <ul id="todoList"></ul>
-        </div>
-    </main>
+            <!-- Quick Add Bar -->
+            <div class="quick-add-bar">
+                <form class="quick-add-form" id="quickAddForm">
+                    <input
+                        type="text"
+                        class="quick-add-input"
+                        id="quickAddInput"
+                        placeholder="Add a task... (Press Enter to save)"
+                        autocomplete="off"
+                    />
+                </form>
+            </div>
 
+            <!-- Task Content Area -->
+            <div class="task-content">
+                <!-- List View -->
+                <ul class="task-list" id="taskList">
+                    <!-- Tasks will be dynamically added here -->
+                </ul>
+
+                <!-- Kanban Board View (Hidden by default) -->
+                <div class="kanban-board hidden" id="kanbanBoard">
+                    <!-- To Do Column -->
+                    <div class="kanban-column" data-status="todo">
+                        <div class="kanban-column-header">
+                            <div class="kanban-column-title">
+                                <i class="fas fa-list-check"></i>
+                                <span>To Do</span>
+                            </div>
+                            <span class="kanban-column-count" id="todoCount">0</span>
+                        </div>
+                        <div class="kanban-column-content" id="todoColumn">
+                            <!-- Task cards will be added here -->
+                        </div>
+                    </div>
+
+                    <!-- In Progress Column -->
+                    <div class="kanban-column" data-status="in-progress">
+                        <div class="kanban-column-header">
+                            <div class="kanban-column-title">
+                                <i class="fas fa-spinner"></i>
+                                <span>In Progress</span>
+                            </div>
+                            <span class="kanban-column-count" id="inProgressCount">0</span>
+                        </div>
+                        <div class="kanban-column-content" id="inProgressColumn">
+                            <!-- Task cards will be added here -->
+                        </div>
+                    </div>
+
+                    <!-- Done Column -->
+                    <div class="kanban-column" data-status="done">
+                        <div class="kanban-column-header">
+                            <div class="kanban-column-title">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Done</span>
+                            </div>
+                            <span class="kanban-column-count" id="doneCount">0</span>
+                        </div>
+                        <div class="kanban-column-content" id="doneColumn">
+                            <!-- Task cards will be added here -->
+                        </div>
+                    </div>
+
+                    <!-- Blocked Column -->
+                    <div class="kanban-column" data-status="blocked">
+                        <div class="kanban-column-header">
+                            <div class="kanban-column-title">
+                                <i class="fas fa-ban"></i>
+                                <span>Blocked</span>
+                            </div>
+                            <span class="kanban-column-count" id="blockedCount">0</span>
+                        </div>
+                        <div class="kanban-column-content" id="blockedColumn">
+                            <!-- Task cards will be added here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <div class="empty-state-icon">✅</div>
+                    <div class="empty-state-title">No tasks yet</div>
+                    <div class="empty-state-description">
+                        Add your first task using the input above
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Detail Panel (Hidden by default) -->
+        <aside class="task-detail-panel hidden" id="taskDetailPanel">
+            <div class="detail-panel-header">
+                <h3>Task Details</h3>
+                <button class="detail-panel-close" id="closeDetailPanel">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="detail-panel-content" id="detailPanelContent">
+                <!-- Task details will be shown here -->
+            </div>
+        </aside>
+    </div>
+
+    <!-- File Input for Import -->
     <input type="file" id="importInput" style="display: none;" accept=".json,.html">
+
+    <!-- Hidden buttons for backward compatibility with todo.js -->
+    <button id="importTodosBtn" style="display: none;"></button>
+    <button id="exportAllBtn" style="display: none;"></button>
+    <button id="settingsBtn" style="display: none;"></button>
 
     <!-- Custom Modal Dialog -->
     <div id="customModal" class="modal" style="display: none;" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
@@ -70,6 +296,36 @@
         </div>
     </div>
 
+    <!-- Command Palette -->
+    <div id="commandPalette" class="command-palette hidden" role="dialog" aria-labelledby="commandPaletteTitle">
+        <div class="command-palette-backdrop"></div>
+        <div class="command-palette-container">
+            <div class="command-palette-header">
+                <i class="fas fa-search command-palette-icon"></i>
+                <input
+                    type="text"
+                    id="commandPaletteInput"
+                    class="command-palette-input"
+                    placeholder="Type a command or search..."
+                    autocomplete="off"
+                    spellcheck="false"
+                />
+                <kbd class="command-palette-hint">Esc</kbd>
+            </div>
+            <div class="command-palette-results" id="commandPaletteResults">
+                <!-- Command results will be rendered here -->
+            </div>
+            <div class="command-palette-footer">
+                <div class="command-palette-footer-hint">
+                    <kbd>↑</kbd><kbd>↓</kbd> to navigate
+                    <kbd>↵</kbd> to select
+                    <kbd>esc</kbd> to close
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
     <script src="logger.js"></script>
     <script src="theme.js"></script>
@@ -79,6 +335,7 @@
     <script src="input-validator.js"></script>
     <script src="error-handler.js"></script>
     <script src="modal-manager.js"></script>
+    <script src="task-data.js"></script>
     <script src="todo.js"></script>
 </body>
 </html>
