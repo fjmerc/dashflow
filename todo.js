@@ -54,14 +54,14 @@ document.addEventListener('DOMContentLoaded', function() {
     backdrop.id = 'detailPanelBackdrop';
     document.body.appendChild(backdrop);
 
+    // Setup event listeners first
+    setupEventListeners();
+
     // Render UI
     renderSidebar();
 
-    // Restore saved layout
+    // Restore saved layout (after event listeners are set up)
     restoreSavedLayout();
-
-    // Setup event listeners
-    setupEventListeners();
 
     // Update title
     updateTitle();

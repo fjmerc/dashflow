@@ -1,3 +1,8 @@
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
 /* Modal Dialog Styles */
 .modal {
     display: none !important; /* Force hidden by default */
