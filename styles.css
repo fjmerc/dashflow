@@ -2534,6 +2534,11 @@ form select {
         flex: 1 1 100%;
     }
 
+    /* Hide subtitle on very small widths */
+    .task-main-subtitle {
+        display: none;
+    }
+
     /* Stack header actions below title */
     .view-header-actions {
         width: 100%;
@@ -2568,6 +2573,121 @@ form select {
 
     .sidebar-item-icon {
         font-size: 14px;
+    }
+}
+
+/* Extra small width devices */
+@media (max-width: 480px) {
+    .task-main-header {
+        padding: 12px 16px;
+    }
+
+    .task-main-title {
+        gap: 8px;
+    }
+
+    .task-main-title h2 {
+        font-size: 16px;
+    }
+
+    .sidebar-toggle-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+    }
+
+    .task-main-actions {
+        gap: 6px;
+        margin-top: 12px;
+    }
+
+    .quick-add-bar {
+        padding: 10px 16px;
+    }
+
+    .task-content {
+        padding: 10px 16px;
+    }
+}
+
+/* Height-based media queries for short screens */
+@media (max-height: 700px) {
+    .task-main-header {
+        padding: 12px 24px;
+    }
+
+    .task-main-subtitle {
+        font-size: 13px;
+        margin-top: 2px;
+    }
+
+    .task-main-actions {
+        margin-top: 12px;
+    }
+
+    .quick-add-bar {
+        padding: 10px 24px;
+    }
+
+    .task-list-item {
+        padding: 12px;
+    }
+
+    .detail-panel-header {
+        padding: 12px 20px;
+    }
+
+    .detail-panel-content {
+        padding: 12px 20px;
+    }
+}
+
+@media (max-height: 600px) {
+    .task-main-header {
+        padding: 8px 20px;
+    }
+
+    /* Hide subtitle on very short screens */
+    .task-main-subtitle {
+        display: none;
+    }
+
+    .task-main-actions {
+        margin-top: 8px;
+    }
+
+    .quick-add-bar {
+        padding: 8px 20px;
+    }
+
+    .quick-add-input {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    .task-list-item {
+        padding: 10px;
+    }
+}
+
+/* Combined: Small width AND small height */
+@media (max-width: 600px) and (max-height: 700px) {
+    .task-main-header {
+        padding: 8px 16px;
+    }
+
+    .task-main-title {
+        gap: 6px;
+        margin-bottom: 4px;
+    }
+
+    .task-main-actions {
+        margin-top: 8px;
+    }
+
+    .view-switcher-btn {
+        padding: 4px 8px;
+        font-size: 11px;
     }
 }
 
