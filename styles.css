@@ -1976,17 +1976,16 @@ form select {
 
 /* Project Actions Menu */
 .project-actions {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
     display: none;
     gap: 4px;
+    margin-left: auto;
+    padding-left: 8px;
 }
 
 .sidebar-item.project-item:hover .project-actions {
     display: flex;
 }
+
 
 .project-action-btn {
     width: 24px;
@@ -2066,6 +2065,7 @@ form select {
 .task-main-title {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 12px;
     margin-bottom: 8px;
 }
@@ -2075,6 +2075,40 @@ form select {
     font-weight: 700;
     margin: 0;
     color: var(--text-color);
+}
+
+.view-header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.header-action-btn {
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-color);
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.header-action-btn:hover {
+    background: var(--hover-background);
+}
+
+.header-action-btn.delete-project {
+    color: #ef4444;
+    border-color: #ef4444;
+}
+
+.header-action-btn.delete-project:hover {
+    background: #ef4444;
+    color: white;
 }
 
 .task-main-subtitle {

@@ -122,6 +122,15 @@ function setupEventListeners() {
         });
     });
 
+    // Delete project button in header (using event delegation)
+    document.addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('.delete-project');
+        if (deleteBtn) {
+            const projectId = deleteBtn.dataset.projectId;
+            deleteProject(projectId);
+        }
+    });
+
     Logger.debug('Event listeners setup complete');
 }
 
@@ -156,9 +165,6 @@ function renderSidebar() {
             projectItem.classList.add('active');
         }
 
-        // Can't delete Inbox
-        const canDelete = project.id !== DEFAULT_PROJECTS.INBOX;
-
         projectItem.innerHTML = `
             <div class="sidebar-item-icon">${project.icon}</div>
             <div class="sidebar-item-text">${project.name}</div>
@@ -167,11 +173,6 @@ function renderSidebar() {
                 <button class="project-action-btn edit" data-action="edit-project" data-project-id="${project.id}" title="Edit Project">
                     <i class="fas fa-pencil"></i>
                 </button>
-                ${canDelete ? `
-                    <button class="project-action-btn delete" data-action="delete-project" data-project-id="${project.id}" title="Delete Project">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                ` : ''}
             </div>
         `;
 
@@ -267,6 +268,12 @@ function updateViewHeader() {
     let title = '';
     let subtitle = '';
 
+    // Clear any existing header actions
+    const existingActions = document.querySelector('.view-header-actions');
+    if (existingActions) {
+        existingActions.remove();
+    }
+
     switch (currentView) {
         case 'my-day':
             title = 'My Day';
@@ -285,6 +292,19 @@ function updateViewHeader() {
             if (project) {
                 title = project.icon + ' ' + project.name;
                 subtitle = project.description || 'Project tasks';
+
+                // Add delete button for non-Inbox projects
+                if (project.id !== DEFAULT_PROJECTS.INBOX) {
+                    const headerActions = document.createElement('div');
+                    headerActions.className = 'view-header-actions';
+                    headerActions.innerHTML = `
+                        <button class="header-action-btn delete-project" data-project-id="${project.id}" title="Delete Project">
+                            <i class="fas fa-trash"></i>
+                            Delete Project
+                        </button>
+                    `;
+                    viewTitle.parentElement.appendChild(headerActions);
+                }
             }
             break;
     }
