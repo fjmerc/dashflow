@@ -1059,6 +1059,10 @@ function showTaskDetails(taskId) {
         .task-detail-input:focus, .task-detail-textarea:focus, .task-detail-select:focus {
             outline: none; border-color: var(--primary-color);
         }
+        .task-detail-select option {
+            background: var(--background-color);
+            color: var(--text-color);
+        }
         .task-detail-row { display: flex; gap: 12px; }
         .task-detail-row .task-detail-section { flex: 1; }
         .task-detail-btn {

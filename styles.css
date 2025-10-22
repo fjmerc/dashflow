@@ -341,6 +341,12 @@ input, select, button {
     color: var(--text-color);
 }
 
+/* Fix dropdown option visibility in dark mode */
+select option {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
 button {
     background-color: var(--primary-color);
     color: white;
