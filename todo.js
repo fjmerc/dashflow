@@ -580,6 +580,9 @@ function showTaskDetails(taskId) {
     style.textContent = `
         .task-detail-section { margin-bottom: 20px; }
         .task-detail-label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 8px; color: var(--text-muted); }
+        .task-detail-label input[type="checkbox"] {
+            width: auto; margin-right: 8px; vertical-align: middle; cursor: pointer;
+        }
         .task-detail-input, .task-detail-textarea, .task-detail-select {
             width: 100%; padding: 10px; border: 1px solid var(--border-color);
             border-radius: 6px; background: var(--background-color); color: var(--text-color);
