@@ -1,6 +1,14 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file serves as the operational constitution for Claude Code when working in this repository. It defines project architecture, coding standards, workflow procedures, and operational boundaries.
+
+## Project Overview
+
+**Type**: Vanilla JavaScript Progressive Web App (PWA)
+**Purpose**: Personal dashboard with link management and enterprise task management system
+**No Build System**: Direct HTML/CSS/JS served via HTTP server
+**Target Browsers**: Modern browsers with Service Worker support
+**Architecture**: Multi-page application with shared utilities and localStorage-based state
 
 ## Development Commands
 
@@ -8,6 +16,8 @@ This is a vanilla JavaScript PWA with no build system. Development is done by:
 - Serving files through a local HTTP server (required for PWA features)
 - Opening browser dev tools for debugging
 - Testing PWA functionality requires HTTPS in production
+
+**IMPORTANT**: Never suggest build tools, bundlers, or transpilers. This is intentionally a vanilla JS project.
 
 ## Architecture Overview
 
@@ -180,3 +190,143 @@ When adding new features:
   position: number         // Display order
 }
 ```
+
+## Coding Standards and Conventions
+
+### JavaScript Style
+- **ES6+ syntax**: Use modern JavaScript (const/let, arrow functions, template literals)
+- **No frameworks**: Vanilla JavaScript only - no React, Vue, Angular, etc.
+- **No jQuery**: Use native DOM APIs (querySelector, addEventListener, etc.)
+- **Functional patterns**: Prefer pure functions and immutability where practical
+- **Clear naming**: Use descriptive variable/function names (e.g., `handleProjectClick`, not `hpc`)
+- **Comments**: Add JSDoc comments for public functions, inline comments for complex logic
+
+### File Organization
+- **Separation of concerns**: Each JS file has a specific purpose
+  - `script.js` - Main dashboard logic
+  - `todo.js` - Task management UI
+  - `task-data.js` - Task data models and storage
+  - Shared utilities: `theme.js`, `export-utils.js`, `logger.js`, etc.
+- **No inline JavaScript**: Keep JS in separate files, reference via `<script>` tags
+- **Load order matters**: Utilities must load before dependent files
+
+### CSS/HTML Standards
+- **CSS Variables**: Use CSS custom properties for theming (e.g., `--primary-color`)
+- **BEM-like naming**: Use descriptive class names (e.g., `.task-detail-panel`, `.sidebar-item`)
+- **Semantic HTML**: Use appropriate HTML5 elements (`<header>`, `<nav>`, `<main>`, etc.)
+- **Accessibility**: Include ARIA labels, keyboard navigation, screen reader support
+
+### localStorage Management
+- **NEVER use localStorage.clear()**: This would delete user data across all keys
+- **Always validate before parsing**: Use try-catch when parsing JSON from localStorage
+- **Synchronous saves**: Task data saves immediately (no debouncing)
+- **Debounced saves**: Link data uses debouncing to reduce writes
+- **Key consistency**: Use documented keys (see State Management section)
+
+## Operational Guidelines
+
+### When Making Changes
+
+**ALWAYS:**
+1. **Read before writing**: Use Read tool to examine files before editing
+2. **Update service worker**: Increment `CACHE_NAME` version in `sw.js` when modifying cached files
+3. **Update export/import**: Add new localStorage keys to `exportAllData()` and `importAllData()`
+4. **Test backward compatibility**: Ensure old backups still work after schema changes
+5. **Maintain migration paths**: Don't break existing data - provide migration code
+6. **Use sequential thinking**: For complex features, plan before implementing
+7. **Track with TodoWrite**: Use todo list for multi-step tasks
+
+**NEVER:**
+1. **Don't use frameworks**: No React, Vue, Angular, or any framework
+2. **Don't add build steps**: No webpack, babel, rollup, or bundlers
+3. **Don't break localStorage**: Never clear storage, always validate keys
+4. **Don't skip version bumps**: Always update service worker cache version
+5. **Don't ignore backups**: Always ensure new features integrate with export/import
+6. **Don't use inline styles heavily**: Prefer CSS classes over style attributes
+
+### Git Commit Standards
+- Use conventional commit format: `feat:`, `fix:`, `docs:`, `refactor:`, etc.
+- Include detailed descriptions for complex changes
+- Always add footer with Claude Code attribution
+- Group related changes in single commits
+
+### User Experience Principles
+- **Progressive enhancement**: Core functionality works without JavaScript where possible
+- **Responsive design**: Support desktop, tablet, and mobile viewports
+- **Keyboard navigation**: All features accessible via keyboard
+- **Visual feedback**: Loading states, success/error messages, hover effects
+- **Data safety**: Confirm destructive actions, provide undo where possible
+
+## Common Pitfalls to Avoid
+
+### Data Loss Scenarios
+❌ Using `localStorage.clear()` - Deletes all user data
+❌ Not updating export/import when adding localStorage keys - Backups incomplete
+❌ Breaking migration from legacy format - Users lose old data
+❌ Not validating JSON.parse() - App crashes on corrupted data
+
+### Performance Issues
+❌ Not debouncing frequent updates - Excessive localStorage writes
+❌ Not using event delegation - Too many event listeners
+❌ Inline styles in loops - Poor rendering performance
+❌ Not cleaning up event listeners - Memory leaks
+
+### State Management Issues
+❌ Directly mutating state - Use TaskDataManager methods
+❌ Not calling saveToStorage() after changes - Data not persisted
+❌ Forgetting to re-render UI after state changes - Stale display
+❌ Cross-page state conflicts - Use proper localStorage keys
+
+## Testing Checklist
+
+When implementing new features, verify:
+- [ ] Works in both light and dark modes
+- [ ] Responsive on mobile, tablet, desktop
+- [ ] Keyboard navigation functional
+- [ ] Data persists after page reload
+- [ ] Export includes new data
+- [ ] Import restores new data correctly
+- [ ] Old backups still import successfully
+- [ ] Service worker cache updated
+- [ ] No console errors or warnings
+- [ ] Proper error handling with user-friendly messages
+
+## Quick Reference: File Purposes
+
+**Core Pages:**
+- `index.html` - Main dashboard (link management)
+- `todo.html` - Task management system
+- `help.html` - User documentation
+
+**JavaScript - Dashboard:**
+- `script.js` - Link management, sections, favorites, undo
+
+**JavaScript - Task System:**
+- `todo.js` - UI rendering, interactions, views, kanban board
+- `task-data.js` - Data models, storage, migration, queries
+
+**JavaScript - Shared Utilities:**
+- `theme.js` - Theme management, dark mode, color schemes
+- `export-utils.js` - **CRITICAL** - Backup/restore, version 2.0 format
+- `logger.js` - Logging with severity levels
+- `keyboard-nav.js` - Global keyboard shortcuts
+- `auto-backup.js` - Automatic backup scheduling
+- `input-validator.js` - Input sanitization, XSS prevention
+- `error-handler.js` - Error logging and user feedback
+- `modal-manager.js` - Modal dialog system
+- `retirement-timer.js` - Retirement countdown feature
+
+**PWA Files:**
+- `sw.js` - Service worker (offline functionality)
+- `manifest.json` - PWA configuration
+
+**Styles:**
+- `styles.css` - All application styles (shared across pages)
+
+## Emergency Contacts
+
+If you encounter:
+- **Data loss bug**: Immediately stop and verify export/import logic
+- **Breaking changes**: Ensure migration path exists for existing users
+- **localStorage conflicts**: Check key naming and cross-page compatibility
+- **Service worker issues**: Verify cache version bumped and ASSETS_TO_CACHE updated
