@@ -2430,6 +2430,37 @@ form select {
         padding: 16px 20px;
     }
 
+    .task-main-title {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .task-main-title h2 {
+        font-size: 20px;
+    }
+
+    /* Make header actions wrap to next line on small screens */
+    .view-header-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .header-action-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
+    /* Show project actions always on touch devices */
+    .sidebar-item.project-item .project-actions {
+        display: flex;
+    }
+
+    .project-action-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 11px;
+    }
+
     .task-content {
         padding: 12px 20px;
     }
@@ -2441,6 +2472,57 @@ form select {
     .task-detail-panel {
         width: 100%;
         min-width: 100%;
+    }
+
+    .detail-panel-header {
+        padding: 16px 20px;
+    }
+
+    .detail-panel-content {
+        padding: 16px 20px;
+    }
+}
+
+@media (max-width: 600px) {
+    .task-main-title h2 {
+        font-size: 18px;
+        flex: 1 1 100%;
+    }
+
+    /* Stack header actions below title */
+    .view-header-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .header-action-btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    /* Simplify view switcher */
+    .view-switcher-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    /* Task list items */
+    .task-list-item {
+        padding: 12px;
+    }
+
+    .task-item-header h3 {
+        font-size: 14px;
+    }
+
+    /* Sidebar adjustments */
+    .sidebar-item {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    .sidebar-item-icon {
+        font-size: 14px;
     }
 }
 
