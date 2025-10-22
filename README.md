@@ -36,8 +36,19 @@ A modern, feature-rich Progressive Web App (PWA) for organizing and managing you
   - Undo functionality for actions
   - Clear storage option
 
+- **Enterprise Task Management System**
+  - **Smart Views**: My Day, Inbox, All Tasks, Important, Upcoming, and Completed task views
+  - **Projects**: Create custom projects with icons and colors to organize tasks
+  - **Tags**: Tag tasks for flexible categorization and filtering
+  - **Subtasks**: Break down complex tasks into manageable subtasks
+  - **Task Details**: Rich task information including priority, due dates, descriptions, and notes
+  - **Kanban Board**: Visual board view with Todo, In Progress, Done, and Blocked columns
+  - **Command Palette**: Quick access to tasks and actions with keyboard shortcuts (Ctrl+K)
+  - **Task Filtering**: Filter by project, tag, status, priority, and date
+  - **Drag & Drop**: Reorder tasks and move between kanban columns
+  - **Detail Panel**: Comprehensive task editing with inline subtask management
+
 - **Additional Features**
-  - Integrated Todo list
   - Offline functionality (PWA)
   - Help documentation
   - Secure Content Security Policy implementation
@@ -76,17 +87,24 @@ A modern, feature-rich Progressive Web App (PWA) for organizing and managing you
 
 ```
 dashboard/
-├── index.html          # Main application page
+├── index.html          # Main dashboard page
 ├── help.html           # Help documentation
-├── todo.html           # Todo list feature
+├── todo.html           # Enterprise task management page
 ├── manifest.json       # PWA configuration
 ├── sw.js               # Service Worker
-├── script.js           # Main application logic
-├── todo.js             # Todo list functionality
-├── theme.js            # Theme management
-├── export-utils.js     # Unified data export/import utilities
+├── script.js           # Main dashboard logic
+├── todo.js             # Task management UI and interactions
+├── task-data.js        # Task data models and storage management
+├── theme.js            # Theme management (shared)
+├── export-utils.js     # Unified data export/import utilities (shared)
 ├── retirement-timer.js # Retirement countdown logic
-└── styles.css          # Application styles
+├── logger.js           # Logging utility (shared)
+├── keyboard-nav.js     # Keyboard navigation handler (shared)
+├── auto-backup.js      # Automatic backup system (shared)
+├── input-validator.js  # Input validation (shared)
+├── error-handler.js    # Error handling (shared)
+├── modal-manager.js    # Modal dialog manager (shared)
+└── styles.css          # Application styles (shared)
 ```
 
 ## Usage
@@ -122,6 +140,42 @@ dashboard/
    - Cross-page integration between dashboard and todo list
    - Use undo for reversing actions
    - Clear storage if needed
+
+7. **Task Management System**
+   - **Access**: Click the tasks icon from the main dashboard or visit todo.html
+   - **Creating Tasks**: Use the quick add bar at the top to create tasks instantly
+   - **Smart Views**:
+     - **My Day**: Focus on today's priorities (overdue + due today + manually added)
+     - **Inbox**: Uncategorized tasks
+     - **All Tasks**: View all incomplete tasks
+     - **Important**: High-priority tasks
+     - **Upcoming**: Tasks due in the next 7 days
+     - **Completed**: Recently completed tasks
+   - **Projects**:
+     - Create custom projects with the "New Project" button
+     - Assign custom colors and icons to projects
+     - Edit or delete projects from the header when viewing a project
+   - **Task Details**:
+     - Click any task to open the detail panel
+     - Set priority (low, medium, high)
+     - Add due dates
+     - Write descriptions and notes
+     - Create subtasks for complex tasks
+     - Add tags for flexible categorization
+   - **Tags**:
+     - Add multiple tags to any task
+     - Click tags to filter tasks by that tag
+     - View all tags in the sidebar with task counts
+   - **Kanban Board**:
+     - Switch to board view for visual task management
+     - Drag tasks between Todo, In Progress, Done, and Blocked columns
+   - **Command Palette**:
+     - Press Ctrl+K (Cmd+K on Mac) to open
+     - Quick access to navigation and actions
+   - **Keyboard Navigation**:
+     - Tab/Shift+Tab to navigate
+     - Enter to open task details
+     - Escape to close panels
 
 ## License
 
