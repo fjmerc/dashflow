@@ -38,7 +38,7 @@ let taskDataManager;
 let currentView = 'my-day';
 let currentProjectId = null;
 let selectedTaskId = null;
-let currentLayout = 'list'; // 'list' or 'board'
+let currentLayout = localStorage.getItem('taskLayout') || 'list'; // 'list' or 'board'
 let username = localStorage.getItem('username') || 'User';
 
 // Initialize
@@ -56,7 +56,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Render UI
     renderSidebar();
-    renderTasks();
+
+    // Restore saved layout
+    restoreSavedLayout();
 
     // Setup event listeners
     setupEventListeners();
@@ -77,6 +79,25 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 function updateTitle() {
     document.title = `${username}'s Task List`;
+}
+
+/**
+ * Restore saved layout preference
+ */
+function restoreSavedLayout() {
+    Logger.debug('Restoring layout:', currentLayout);
+
+    // Update active button
+    document.querySelectorAll('.view-switcher-btn').forEach(btn => {
+        if (btn.dataset.layout === currentLayout) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    // Switch to saved layout
+    switchViewLayout(currentLayout);
 }
 
 /**
@@ -247,8 +268,8 @@ function handleViewClick(e) {
     // Update header
     updateViewHeader();
 
-    // Render tasks
-    renderTasks();
+    // Re-render
+    reRenderCurrentView();
 }
 
 /**
@@ -294,8 +315,8 @@ function handleProjectClick(e) {
     // Update header
     updateViewHeader();
 
-    // Render tasks
-    renderTasks();
+    // Re-render
+    reRenderCurrentView();
 }
 
 /**
@@ -348,6 +369,17 @@ function updateViewHeader() {
 
     viewTitle.textContent = title;
     viewSubtitle.textContent = subtitle;
+}
+
+/**
+ * Re-render current view with current layout
+ */
+function reRenderCurrentView() {
+    if (currentLayout === 'board') {
+        renderBoardView();
+    } else {
+        renderTasks();
+    }
 }
 
 /**
@@ -419,6 +451,9 @@ function switchViewLayout(layout) {
         renderTasks();
     }
 
+    // Save layout preference
+    localStorage.setItem('taskLayout', layout);
+
     Logger.debug('Switched to layout:', layout);
 }
 
@@ -489,7 +524,67 @@ function renderBoardView() {
     // Update sidebar counts
     renderSidebar();
 
+    // Initialize SortableJS on columns
+    initializeSortable();
+
     Logger.debug('Rendered board with', tasks.length, 'tasks');
+}
+
+/**
+ * Initialize SortableJS on Kanban columns
+ */
+function initializeSortable() {
+    const columns = [
+        { element: todoColumn, status: 'todo' },
+        { element: inProgressColumn, status: 'in-progress' },
+        { element: doneColumn, status: 'done' },
+        { element: blockedColumn, status: 'blocked' }
+    ];
+
+    columns.forEach(({ element, status }) => {
+        if (element._sortable) {
+            element._sortable.destroy();
+        }
+
+        const sortable = new Sortable(element, {
+            group: 'shared',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag',
+            onStart: function(evt) {
+                element.parentElement.classList.add('sortable-dragging');
+            },
+            onEnd: function(evt) {
+                // Remove dragging class from all columns
+                document.querySelectorAll('.kanban-column').forEach(col => {
+                    col.classList.remove('sortable-dragging');
+                });
+
+                // Get task ID and new status
+                const taskId = evt.item.dataset.taskId;
+                const newStatus = evt.to.parentElement.dataset.status;
+                const oldStatus = evt.from.parentElement.dataset.status;
+
+                // Only update if status changed
+                if (newStatus !== oldStatus && taskId) {
+                    Logger.debug('Task moved:', taskId, 'from', oldStatus, 'to', newStatus);
+
+                    // Update task status
+                    taskDataManager.updateTask(taskId, {
+                        status: newStatus,
+                        completed: newStatus === 'done'
+                    });
+
+                    // Re-render board to update counts
+                    renderBoardView();
+                }
+            }
+        });
+
+        element._sortable = sortable;
+    });
+
+    Logger.debug('Sortable initialized on all columns');
 }
 
 /**
@@ -666,7 +761,7 @@ function toggleTaskComplete(taskId) {
     };
 
     taskDataManager.updateTask(taskId, updates);
-    renderTasks();
+    reRenderCurrentView();
 
     Logger.debug('Task toggled:', taskId, updates.completed);
 }
@@ -807,7 +902,7 @@ function showTaskDetails(taskId) {
         if (confirm('Are you sure you want to delete this task?')) {
             taskDataManager.deleteTask(taskId);
             hideDetailPanel();
-            renderTasks();
+            reRenderCurrentView();
         }
     });
 
@@ -840,7 +935,7 @@ function saveTaskDetails(taskId) {
     };
 
     taskDataManager.updateTask(taskId, updates);
-    renderTasks();
+    reRenderCurrentView();
 
     Logger.debug('Task details saved:', taskId);
 }
@@ -887,7 +982,7 @@ function handleQuickAdd(e) {
     quickAddInput.value = '';
 
     // Re-render
-    renderTasks();
+    reRenderCurrentView();
 
     Logger.debug('Task added via quick add:', text);
 }
@@ -1059,7 +1154,7 @@ function handleImport(event) {
             // Reinitialize with new data
             taskDataManager = new TaskDataManager();
             renderSidebar();
-            renderTasks();
+            reRenderCurrentView();
         })
         .catch(error => {
             Logger.error('Error importing data:', error);
@@ -1091,7 +1186,7 @@ function deleteProject(projectId) {
     }
 
     renderSidebar();
-    renderTasks();
+    reRenderCurrentView();
 
     Logger.debug('Project deleted:', projectId);
 }
