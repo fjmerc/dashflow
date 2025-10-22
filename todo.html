@@ -41,7 +41,7 @@
                 <textarea id="todoNotes" placeholder="Add notes or details (optional)" class="todo-notes-input"></textarea>
                 <button type="submit" id="addTodoBtn">Add Task</button>
             </form>
-            
+
             <div class="todo-filters">
                 <input type="text" id="searchTodo" placeholder="Search tasks..." class="search-input">
                 <select id="priorityFilter" class="priority-filter">
@@ -56,7 +56,7 @@
         </div>
     </main>
 
-    <input type="file" id="importInput" style="display: none;" accept=".json">
+    <input type="file" id="importInput" style="display: none;" accept=".json,.html">
 
     <!-- Custom Modal Dialog -->
     <div id="customModal" class="modal" style="display: none;" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
@@ -71,8 +71,14 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+    <script src="logger.js"></script>
     <script src="theme.js"></script>
     <script src="export-utils.js"></script>
+    <script src="keyboard-nav.js"></script>
+    <script src="auto-backup.js"></script>
+    <script src="input-validator.js"></script>
+    <script src="error-handler.js"></script>
+    <script src="modal-manager.js"></script>
     <script src="todo.js"></script>
 </body>
 </html>

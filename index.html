@@ -36,6 +36,9 @@
                 <button id="exportAllBtn" title="Export All Data">
                     <i class="fas fa-file-export"></i>
                 </button>
+                <button id="backupSettingsBtn" title="Backup Settings">
+                    <i class="fas fa-cogs"></i>
+                </button>
                 <!-- Features -->
                 <button id="todoListBtn" title="To-do List">
                     <i class="fas fa-tasks"></i>
@@ -63,8 +66,8 @@
         <div class="form-container" role="form" aria-label="Add Content Forms">
             <form id="addSectionForm">
                 <h3 class="form-title">Add New Section</h3>
-                <input type="text" id="newSectionName" placeholder="Section name" required 
-                       aria-label="New Section Name" pattern="[A-Za-z0-9\s\-_]+" 
+                <input type="text" id="newSectionName" placeholder="Section name" required
+                       aria-label="New Section Name" pattern="[A-Za-z0-9\s\-_]+"
                        title="Only letters, numbers, spaces, hyphens and underscores allowed">
                 <button type="submit">Add Section</button>
             </form>
@@ -85,7 +88,7 @@
         </div>
 
         <div class="search-container">
-            <input type="text" id="searchInput" placeholder="Search links..." 
+            <input type="text" id="searchInput" placeholder="Search links..."
                    aria-label="Search Links" role="searchbox">
             <button type="button" id="clearSearchBtn" aria-label="Clear search">
                 <i class="fas fa-times"></i>
@@ -118,7 +121,7 @@
         <div id="linkList"></div>
     </main>
 
-    <input type="file" id="importInput" style="display: none;" accept=".json">
+    <input type="file" id="importInput" style="display: none;" accept=".json,.html">
 
     <!-- Custom Modal Dialog -->
     <div id="customModal" class="modal" style="display: none;" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
@@ -133,8 +136,14 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+    <script src="logger.js"></script>
     <script src="theme.js"></script>
     <script src="export-utils.js"></script>
+    <script src="keyboard-nav.js"></script>
+    <script src="auto-backup.js"></script>
+    <script src="input-validator.js"></script>
+    <script src="error-handler.js"></script>
+    <script src="modal-manager.js"></script>
     <script src="script.js"></script>
     <script src="retirement-timer.js"></script>
     <script>

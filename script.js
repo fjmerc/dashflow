@@ -15,21 +15,35 @@ const settingsBtn = document.getElementById('settingsBtn');
 const darkModeBtn = document.getElementById('darkModeBtn');
 const themeColorBtn = document.getElementById('themeColorBtn');
 const clearStorageBtn = document.getElementById('clearStorageBtn');
+const backupSettingsBtn = document.getElementById('backupSettingsBtn');
 
 // State management
 let links;
 let history = [];
 let username;
 let debounceTimer;
+let searchDebounceTimer;
 
-// Utility functions for input sanitization
+// Enhanced utility functions for input sanitization
 const sanitizeInput = (str) => {
+    // Use the enhanced validator if available, fallback to basic sanitization
+    if (window.validateAndSanitize && window.validateAndSanitize.html) {
+        return window.validateAndSanitize.html(str);
+    }
+
+    // Fallback sanitization
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
 };
 
 const validateUrl = (url) => {
+    // Use enhanced validator if available
+    if (window.validateAndSanitize && window.validateAndSanitize.url) {
+        return window.validateAndSanitize.url(url);
+    }
+
+    // Fallback validation
     try {
         new URL(url);
         return true;
@@ -51,14 +65,14 @@ const initializeState = () => {
             }));
         }
     } catch (e) {
-        console.error('Error parsing links from localStorage:', e);
+        Logger.error('Error parsing links from localStorage:', e);
         links = {};
     }
-    
+
     try {
         username = sanitizeInput(localStorage.getItem('username')) || 'User';
     } catch (e) {
-        console.error('Error getting username from localStorage:', e);
+        Logger.error('Error getting username from localStorage:', e);
         username = 'User';
     }
 };
@@ -69,84 +83,9 @@ const initializeApp = () => {
 };
 
 // Custom modal dialog functions
-function showModal(title, message, yesCallback, noCallback) {
-    const modal = document.getElementById('customModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalMessage = document.getElementById('modalMessage');
-    const modalYes = document.getElementById('modalYes');
-    const modalNo = document.getElementById('modalNo');
-    
-    modalTitle.textContent = title;
-    
-    // Sanitize the message first, then replace newlines with <br> tags
-    const sanitized = sanitizeInput(message);
-    modalMessage.innerHTML = sanitized.replace(/\n/g, '<br>');
-    
-    // Remove any existing event listeners
-    const newYesBtn = modalYes.cloneNode(true);
-    const newNoBtn = modalNo.cloneNode(true);
-    modalYes.parentNode.replaceChild(newYesBtn, modalYes);
-    modalNo.parentNode.replaceChild(newNoBtn, modalNo);
-    
-    // Add new event listeners
-    newYesBtn.addEventListener('click', () => {
-        hideModal();
-        if (yesCallback) yesCallback();
-    });
-    
-    newNoBtn.addEventListener('click', () => {
-        hideModal();
-        if (noCallback) noCallback();
-    });
-    
-    // Handle Escape key to close the modal
-    const handleEscape = (e) => {
-        if (e.key === 'Escape') {
-            hideModal();
-            if (noCallback) noCallback();
-            document.removeEventListener('keydown', handleEscape);
-        }
-    };
-    document.addEventListener('keydown', handleEscape);
-    
-    // Handle Enter key to trigger Yes button only if we're not in an input field
-    const handleEnter = (e) => {
-        // Don't trigger on input fields, textareas, etc.
-        if (e.key === 'Enter' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
-            hideModal();
-            if (yesCallback) yesCallback();
-            document.removeEventListener('keydown', handleEnter);
-        }
-    };
-    document.addEventListener('keydown', handleEnter);
-    
-        // Store references to event handlers for proper cleanup
-    window.modalKeyHandlers = {
-        escape: handleEscape,
-        enter: handleEnter
-    };
-    
-    // Show the modal with a slight delay to prevent flash during page transitions
-    setTimeout(() => {
-        modal.style.display = 'block';
-        
-        // Set focus to the No button for better keyboard navigation
-        // (so users don't accidentally confirm destructive actions)
-        setTimeout(() => newNoBtn.focus(), 50);
-    }, 10);
-}
+// Modal showModal function now provided by modal-manager.js
 
-function hideModal() {
-    const modal = document.getElementById('customModal');
-    modal.style.display = 'none';
-    
-    // Remove keyboard event listeners when closing
-    if (window.modalKeyHandlers) {
-        document.removeEventListener('keydown', window.modalKeyHandlers.escape);
-        document.removeEventListener('keydown', window.modalKeyHandlers.enter);
-        window.modalKeyHandlers = null;
-    }
-}
+// Modal hideModal function now provided by modal-manager.js
 
 function updateTitle() {
     document.title = `${username}'s Dashboard`;
@@ -175,25 +114,44 @@ function saveState() {
             //     console.error('Auto-export failed:', e);
             // });
         } catch (e) {
-            console.error('Error saving to localStorage:', e);
-            alert('Failed to save changes. Please ensure you have enough storage space.');
+            Logger.error('Error saving to localStorage:', e);
+            if (window.errorHandler) {
+                window.errorHandler.handleError(e, 'storage', {
+                    operation: 'save_links',
+                    dataSize: JSON.stringify(links).length
+                });
+            } else {
+                alert('Failed to save changes. Please ensure you have enough storage space.');
+            }
         }
     }, 300);
 }
 
 function updateSectionDropdown() {
     existingSections.innerHTML = '<option value="">Select section</option>';
-    for (const section in links) {
+
+    // Get section names and sort them alphabetically
+    const sortedSections = Object.keys(links).sort((a, b) =>
+        a.toLowerCase().localeCompare(b.toLowerCase())
+    );
+
+    // Add sorted sections to dropdown
+    sortedSections.forEach(section => {
         existingSections.innerHTML += `<option value="${section}">${section}</option>`;
-    }
+    });
 }
 
 function renderLinks(filter = '') {
     linkList.innerHTML = '';
     favoritesList.innerHTML = '';
 
-    for (const section in links) {
-        const filteredLinks = links[section].filter(link => 
+    // Sort sections alphabetically
+    const sortedSections = Object.keys(links).sort((a, b) =>
+        a.toLowerCase().localeCompare(b.toLowerCase())
+    );
+
+    for (const section of sortedSections) {
+        const filteredLinks = links[section].filter(link =>
             link.name.toLowerCase().includes(filter.toLowerCase()) ||
             link.url.toLowerCase().includes(filter.toLowerCase())
         );
@@ -277,7 +235,7 @@ function renderLinks(filter = '') {
             saveState();
         }
     });
-    
+
     // Make retirement timer container draggable
     const retirementContainer = document.getElementById('retirementTimerContainer');
     if (retirementContainer) {
@@ -323,13 +281,13 @@ function addSection(event) {
     event.preventDefault();
     try {
         const newSectionName = document.getElementById('newSectionName').value.trim();
-        
+
         // Input validation
         if (!newSectionName.match(/^[A-Za-z0-9\s\-_]+$/)) {
             alert('Section name can only contain letters, numbers, spaces, hyphens and underscores');
             return;
         }
-        
+
         if (newSectionName && !links[newSectionName]) {
             links[newSectionName] = [];
             saveState();
@@ -340,7 +298,7 @@ function addSection(event) {
             alert('Section already exists or invalid name');
         }
     } catch (e) {
-        console.error('Error adding section:', e);
+        Logger.error('Error adding section:', e);
         alert('Failed to add section. Please try again.');
     }
 }
@@ -388,7 +346,7 @@ function addLink(event) {
         renderLinks();
         addLinkForm.reset();
     } catch (e) {
-        console.error('Error adding link:', e);
+        Logger.error('Error adding link:', e);
         alert('Failed to add link. Please try again.');
     }
 }
@@ -397,7 +355,7 @@ function editLink(section, index) {
     const link = links[section][index];
     const newName = prompt('Enter new name:', link.name);
     let newUrl = prompt('Enter new URL:', link.url);
-    
+
     if (newName && newUrl) {
         if (!newUrl.startsWith('http://') && !newUrl.startsWith('https://')) {
             newUrl = 'https://' + newUrl;
@@ -487,27 +445,27 @@ async function exportBookmarks(silent = true) {
                 }
             }
         };
-        
+
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
-        
+
         // Generate filename with timestamp
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         downloadAnchorNode.setAttribute("download", `dashboard_backup_${timestamp}.json`);
-        
+
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
-        
+
         // Update last export timestamp
         localStorage.setItem('lastExportTimestamp', new Date().getTime().toString());
-        
+
         if (!silent) {
             alert('Export completed successfully!');
         }
     } catch (e) {
-        console.error('[Export Debug] Error exporting data:', e);
+        Logger.error('Error exporting data:', e);
         if (!silent) {
             alert('Failed to export data. Please try again.');
         }
@@ -517,7 +475,7 @@ async function exportBookmarks(silent = true) {
 
 // Add error boundary
 window.addEventListener('error', function(event) {
-    console.error('Global error caught:', event.error);
+    Logger.error('Global error caught:', event.error);
     alert('An error occurred. Please refresh the page and try again.');
 });
 
@@ -527,22 +485,41 @@ setInterval(() => {
         const backup = JSON.stringify(links);
         localStorage.setItem('links_backup', backup);
     } catch (e) {
-        console.error('Error creating backup:', e);
+        Logger.error('Error creating backup:', e);
     }
 }, 5 * 60 * 1000); // Every 5 minutes
 
 function handleImport(event) {
     const file = event.target.files[0];
     if (file) {
-        importAllData(file)
-            .then(() => {
-                console.log('Import completed successfully');
-                // No need for alert as importAllData already shows one
-            })
-            .catch(error => {
-                console.error('Error importing data:', error);
-                alert('Failed to import data: ' + error.message);
-            });
+        const fileName = file.name.toLowerCase();
+
+        // Determine import type based on file extension
+        if (fileName.endsWith('.json')) {
+            // Handle JSON dashboard data import
+            importAllData(file)
+                .then(() => {
+                    Logger.debug('Dashboard data import completed successfully');
+                })
+                .catch(error => {
+                    Logger.error('Error importing dashboard data:', error);
+                    alert('Failed to import dashboard data: ' + error.message);
+                });
+        } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
+            // Handle HTML bookmark import
+            importBrowserBookmarks(file)
+                .then(() => {
+                    Logger.debug('Browser bookmark import completed successfully');
+                })
+                .catch(error => {
+                    Logger.error('Error importing browser bookmarks:', error);
+                    alert('Failed to import bookmarks: ' + error.message);
+                });
+        } else {
+            // Unknown file type
+            alert('Unsupported file type. Please select a JSON file (dashboard data) or HTML file (browser bookmarks).');
+            Logger.warn('Unsupported file type selected:', fileName);
+        }
     }
 }
 
@@ -563,7 +540,7 @@ function initializePage() {
     updateSectionDropdown();
     renderLinks();
     updateTitle();
-    
+
     // Initialize clear search button visibility
     if (searchInput.value) {
         clearSearchBtn.classList.add('visible');
@@ -574,7 +551,7 @@ function initializePage() {
 function showImportReminder() {
     // Check if we've already shown the reminder in this browser session
     const hasShownReminder = sessionStorage.getItem('importReminderShown');
-    
+
     // Only show the reminder if we haven't shown it yet and either there's no export timestamp
     // or the links object is empty
     const lastExport = localStorage.getItem('lastExportTimestamp');
@@ -582,7 +559,7 @@ function showImportReminder() {
         // Mark that we've shown the reminder (using sessionStorage instead of localStorage)
         // This will persist across page navigations but reset when the browser is closed
         sessionStorage.setItem('importReminderShown', 'true');
-        
+
         showModal(
             'Import Data',
             'Would you like to import your previously exported dashboard data?\n\n' +
@@ -610,7 +587,7 @@ function showExportReminder() {
     const lastExport = localStorage.getItem('lastExportTimestamp');
     const now = new Date().getTime();
     const hoursSinceLastExport = lastExport ? (now - parseInt(lastExport)) / (1000 * 60 * 60) : 24;
-    
+
     if (hoursSinceLastExport >= 1) { // Show reminder if last export was more than 1 hour ago
         showModal(
             'Export Data',
@@ -634,11 +611,11 @@ function showExportReminder() {
 document.addEventListener('click', (e) => {
     const linkItem = e.target.closest('.link-item');
     const sectionHeader = e.target.closest('.section-header');
-    
+
     if (linkItem) {
         const section = linkItem.dataset.section;
         const index = parseInt(linkItem.dataset.index);
-        
+
         if (e.target.closest('.favorite-btn')) {
             toggleFavorite(section, index);
         } else if (e.target.closest('.edit-btn')) {
@@ -648,7 +625,7 @@ document.addEventListener('click', (e) => {
         }
     } else if (sectionHeader) {
         const section = sectionHeader.closest('.section').dataset.section;
-        
+
         if (e.target.closest('.edit-section-btn')) {
             editSection(section);
         } else if (e.target.closest('.delete-section-btn')) {
@@ -662,14 +639,21 @@ addLinkForm.addEventListener('submit', addLink);
 // Handle search input changes
 searchInput.addEventListener('input', (e) => {
     const searchValue = e.target.value;
-    renderLinks(searchValue);
-    
-    // Toggle visibility of clear button based on input content
+
+    // Debounce search to improve performance
+    clearTimeout(searchDebounceTimer);
+
+    // Toggle visibility of clear button immediately for better UX
     if (searchValue) {
         clearSearchBtn.classList.add('visible');
     } else {
         clearSearchBtn.classList.remove('visible');
     }
+
+    // Debounce the actual rendering
+    searchDebounceTimer = setTimeout(() => {
+        renderLinks(searchValue);
+    }, 300); // Wait 300ms after user stops typing
 });
 
 // Add keyboard support for escape key to clear search
@@ -702,13 +686,13 @@ todoListBtn.addEventListener('click', () => {
 retirementTimerBtn.addEventListener('click', () => {
     const timerContainer = document.getElementById('retirementTimerContainer');
     const linkList = document.getElementById('linkList');
-    
+
     if (timerContainer.style.display === 'none') {
         // Show the timer section
         timerContainer.style.display = 'block';
         retirementTimerBtn.title = 'Hide Retirement Timer';
         retirementTimerBtn.innerHTML = '<i class="fas fa-hourglass-half" style="color: var(--primary-color);"></i>';
-        
+
         // Move timer container to be part of the section layout
         // If sections exist, insert before the first one
         const firstSection = linkList.querySelector('.section');
@@ -718,13 +702,13 @@ retirementTimerBtn.addEventListener('click', () => {
             // If no sections exist, append to link list
             linkList.appendChild(timerContainer);
         }
-        
+
         // Add sortable functionality
         if (!timerContainer.querySelector('.retirement-content.sortable-initialized')) {
             // Mark as initialized to avoid duplicating
             timerContainer.querySelector('.retirement-content').classList.add('sortable-initialized');
         }
-        
+
         // Scroll to the timer container
         window.scrollTo({
             top: timerContainer.offsetTop - 20,
@@ -735,7 +719,7 @@ retirementTimerBtn.addEventListener('click', () => {
         timerContainer.style.display = 'none';
         retirementTimerBtn.title = 'Show Retirement Timer';
         retirementTimerBtn.innerHTML = '<i class="fas fa-hourglass-half"></i>';
-        
+
         // Remove from DOM flow to prevent empty space
         if (timerContainer.parentNode === linkList) {
             linkList.removeChild(timerContainer);
@@ -763,6 +747,14 @@ clearStorageBtn.addEventListener('click', () => {
     );
 });
 
+if (backupSettingsBtn) {
+    backupSettingsBtn.addEventListener('click', () => {
+        if (typeof showBackupSettings === 'function') {
+            showBackupSettings();
+        }
+    });
+}
+
 const helpBtn = document.getElementById('helpBtn');
 helpBtn.addEventListener('click', () => {
     window.location.href = 'help.html';
@@ -775,20 +767,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modal) {
         modal.style.display = 'none';
     }
-    
+
     initializeApp();
     initializePage();
-    
+
     // Only show import reminder after a short delay to prevent flashing during navigation
     setTimeout(() => {
         showImportReminder();
     }, 100);
-    
+
     // Show export reminder when user is about to leave
     window.addEventListener('beforeunload', () => {
         showExportReminder();
     });
-    
+
     // Set up periodic export reminders
     setInterval(showExportReminder, 60 * 60 * 1000); // Check every hour
 });
