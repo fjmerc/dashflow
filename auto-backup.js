@@ -1,6 +1,6 @@
 /**
  * Automatic Backup Scheduling System
- * 
+ *
  * Provides configurable automatic backups of dashboard data
  */
 
@@ -70,7 +70,7 @@ class AutoBackupManager {
         };
 
         const interval = intervals[this.settings.frequency] || intervals.daily;
-        
+
         this.intervalId = setInterval(() => {
             this.performAutoBackup();
         }, interval);
@@ -113,13 +113,13 @@ class AutoBackupManager {
             // Use existing exportAllData function
             if (typeof exportAllData === 'function') {
                 await exportAllData(true); // Silent export
-                
+
                 this.settings.lastBackup = new Date().toISOString();
                 this.saveBackupSettings();
-                
+
                 // Show subtle notification
                 this.showBackupNotification('Automatic backup completed successfully');
-                
+
                 Logger.debug('Automatic backup completed');
             } else {
                 Logger.error('exportAllData function not available');
@@ -278,7 +278,7 @@ class AutoBackupManager {
                                     </label>
                                 </div>
                             </div>
-                            
+
                             <div class="setting-item ${!this.settings.enabled ? 'disabled' : ''}">
                                 <div class="setting-content">
                                     <label for="backupFrequency" class="setting-label">
@@ -316,7 +316,7 @@ class AutoBackupManager {
                                     </label>
                                 </div>
                             </div>
-                            
+
                             <div class="setting-item ${!this.settings.reminderEnabled ? 'disabled' : ''}">
                                 <div class="setting-content">
                                     <label for="reminderFrequency" class="setting-label">
@@ -398,11 +398,11 @@ class AutoBackupManager {
             this.settings.frequency = frequencySelect.value;
             this.settings.reminderEnabled = remindersCheckbox.checked;
             this.settings.reminderFrequency = reminderFrequencySelect.value;
-            
+
             this.saveBackupSettings();
             this.setupAutoBackup(); // Restart with new settings
             this.setupBackupReminders();
-            
+
             this.showBackupNotification('Backup settings saved successfully');
             document.body.removeChild(settingsModal);
         });

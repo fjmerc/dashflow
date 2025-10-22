@@ -1,6 +1,6 @@
 /**
  * Enhanced Input Validation and XSS Protection
- * 
+ *
  * Provides comprehensive input sanitization and validation
  */
 
@@ -17,11 +17,11 @@ class InputValidator {
     // Enhanced HTML sanitization
     sanitizeHtml(str) {
         if (typeof str !== 'string') return '';
-        
+
         // Create a temporary element to safely escape HTML
         const temp = document.createElement('div');
         temp.textContent = str;
-        
+
         // Additional cleaning for common XSS patterns
         let clean = temp.innerHTML
             .replace(/javascript:/gi, 'javascript-blocked:')
@@ -34,33 +34,33 @@ class InputValidator {
             .replace(/<embed\b[^<]*>/gi, '[embed-blocked]')
             .replace(/<link\b[^<]*>/gi, '[link-blocked]')
             .replace(/<meta\b[^<]*>/gi, '[meta-blocked]');
-        
+
         return clean.trim();
     }
 
     // Enhanced URL validation
     validateUrl(url) {
         if (!url || typeof url !== 'string') return false;
-        
+
         try {
             const urlObj = new URL(url);
-            
+
             // Block dangerous protocols
             const dangerousProtocols = [
                 'javascript:', 'data:', 'vbscript:', 'file:', 'ftp:'
             ];
-            
+
             const protocol = urlObj.protocol.toLowerCase();
             if (dangerousProtocols.some(dangerous => protocol.startsWith(dangerous))) {
                 Logger.warn('Blocked dangerous URL protocol:', protocol);
                 return false;
             }
-            
+
             // Only allow http and https
             if (!['http:', 'https:'].includes(protocol)) {
                 return false;
             }
-            
+
             // Block localhost and private IP ranges (optional security measure)
             const hostname = urlObj.hostname.toLowerCase();
             const privateIPs = [
@@ -72,16 +72,16 @@ class InputValidator {
                 /^::1$/, // IPv6 localhost
                 /^fe80::/i // IPv6 link-local
             ];
-            
+
             // Allow localhost in development
-            const isDevelopment = window.location.hostname === 'localhost' || 
+            const isDevelopment = window.location.hostname === 'localhost' ||
                                 window.location.hostname === '127.0.0.1';
-            
+
             if (!isDevelopment && privateIPs.some(pattern => pattern.test(hostname))) {
                 Logger.warn('Blocked private/localhost URL:', hostname);
                 return false;
             }
-            
+
             return true;
         } catch (e) {
             Logger.warn('Invalid URL format:', url);
@@ -97,25 +97,25 @@ class InputValidator {
             allowedChars = /^[\w\s\-_.,!?@#$%^&*()+=\[\]{};:'"\|<>\/\\`~]*$/,
             required = true
         } = options;
-        
+
         if (!text || typeof text !== 'string') {
             return { valid: !required, error: required ? 'Text is required' : null };
         }
-        
+
         const sanitized = this.sanitizeHtml(text);
-        
+
         if (sanitized.length < minLength) {
             return { valid: false, error: `Text must be at least ${minLength} characters` };
         }
-        
+
         if (sanitized.length > maxLength) {
             return { valid: false, error: `Text must be no more than ${maxLength} characters` };
         }
-        
+
         if (!allowedChars.test(sanitized)) {
             return { valid: false, error: 'Text contains invalid characters' };
         }
-        
+
         return { valid: true, sanitized };
     }
 
@@ -181,15 +181,15 @@ class InputValidator {
     validateJsonImport(jsonString) {
         try {
             const data = JSON.parse(jsonString);
-            
+
             // Validate structure
             if (typeof data !== 'object' || data === null) {
                 return { valid: false, error: 'Invalid JSON structure' };
             }
-            
+
             // Recursively sanitize all string values in the JSON
             const sanitized = this.deepSanitizeObject(data);
-            
+
             return { valid: true, sanitized };
         } catch (e) {
             return { valid: false, error: 'Invalid JSON format' };
@@ -218,7 +218,7 @@ class InputValidator {
         // Add input validation to existing forms
         this.addValidationToForm('addSectionForm');
         this.addValidationToForm('addLinkForm');
-        
+
         // Add real-time validation feedback
         this.addRealTimeValidation();
     }
@@ -226,14 +226,14 @@ class InputValidator {
     addValidationToForm(formId) {
         const form = document.getElementById(formId);
         if (!form) return;
-        
+
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            
+
             const inputs = form.querySelectorAll('input, textarea, select');
             let isValid = true;
             const errors = [];
-            
+
             inputs.forEach(input => {
                 // Use stricter validation for form submission
                 const validation = this.validateInputForSubmit(input);
@@ -248,7 +248,7 @@ class InputValidator {
                     }
                 }
             });
-            
+
             if (isValid) {
                 // Proceed with original form submission
                 const originalHandler = this.getOriginalSubmitHandler(formId);
@@ -264,7 +264,7 @@ class InputValidator {
     validateInput(input) {
         const type = input.type || input.tagName.toLowerCase();
         const value = input.value;
-        
+
         switch (input.id) {
             case 'newSectionName':
                 // Section name is required only on submit, not on blur
@@ -283,8 +283,8 @@ class InputValidator {
                     url = 'https://' + url;
                     input.value = url; // Update the input
                 }
-                return this.validateUrl(url) ? 
-                    { valid: true, sanitized: url } : 
+                return this.validateUrl(url) ?
+                    { valid: true, sanitized: url } :
                     { valid: false, error: 'Invalid URL format' };
             case 'todoInput':
                 return this.validateTodoText(value);
@@ -303,7 +303,7 @@ class InputValidator {
     validateInputForSubmit(input) {
         const type = input.type || input.tagName.toLowerCase();
         const value = input.value;
-        
+
         // Enforce required fields on form submission
         switch (input.id) {
             case 'newSectionName':
@@ -321,8 +321,8 @@ class InputValidator {
                     url = 'https://' + url;
                     input.value = url; // Update the input
                 }
-                return this.validateUrl(url) ? 
-                    { valid: true, sanitized: url } : 
+                return this.validateUrl(url) ?
+                    { valid: true, sanitized: url } :
                     { valid: false, error: 'Invalid URL format' };
             case 'todoInput':
                 return this.validateTodoText(value);
@@ -363,22 +363,22 @@ class InputValidator {
     showInputError(input, error) {
         // Remove existing error
         this.clearInputError(input);
-        
+
         // Add error class
         input.classList.add('input-error');
-        
+
         // Create error message
         const errorDiv = document.createElement('div');
         errorDiv.className = 'input-error-message';
         errorDiv.textContent = error;
-        
+
         // Insert after input
         input.parentNode.insertBefore(errorDiv, input.nextSibling);
     }
 
     clearInputError(input) {
         input.classList.remove('input-error');
-        
+
         // Remove error message
         const errorMsg = input.parentNode.querySelector('.input-error-message');
         if (errorMsg) {
@@ -388,9 +388,9 @@ class InputValidator {
 
     showValidationSummary(errors) {
         if (errors.length === 0) return;
-        
+
         const summary = `Please fix the following errors:\n\n${errors.join('\n')}`;
-        
+
         if (typeof showModal === 'function') {
             showModal('Validation Error', summary, null, () => {});
         } else {

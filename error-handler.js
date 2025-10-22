@@ -1,6 +1,6 @@
 /**
  * Enhanced Error Handling System
- * 
+ *
  * Provides comprehensive error handling with user-friendly messages
  */
 
@@ -23,7 +23,7 @@ class ErrorHandler {
         console.error = (...args) => {
             // Call original console.error
             originalError.apply(console, args);
-            
+
             // Handle the error with our system
             if (args.length > 0) {
                 const error = args[0];
@@ -48,10 +48,10 @@ class ErrorHandler {
     setupUnhandledPromiseRejection() {
         window.addEventListener('unhandledrejection', (event) => {
             event.preventDefault(); // Prevent console spam
-            
+
             const reason = event.reason;
             const error = reason instanceof Error ? reason : new Error(String(reason));
-            
+
             this.handleError(error, 'promise');
         });
     }
@@ -165,14 +165,14 @@ class ErrorHandler {
         const message = (error.message || '').toLowerCase();
 
         // Critical errors that break functionality
-        if (message.includes('localstorage') || 
+        if (message.includes('localstorage') ||
             message.includes('quota') ||
             type === 'javascript' && message.includes('cannot read property')) {
             return 'critical';
         }
 
         // High priority errors that affect user experience
-        if (message.includes('network') || 
+        if (message.includes('network') ||
             message.includes('fetch') ||
             message.includes('permission') ||
             type === 'promise') {
@@ -180,7 +180,7 @@ class ErrorHandler {
         }
 
         // Medium priority errors
-        if (message.includes('validation') || 
+        if (message.includes('validation') ||
             message.includes('invalid') ||
             message.includes('file')) {
             return 'medium';
@@ -201,7 +201,7 @@ class ErrorHandler {
             while (this.errorQueue.length > 0) {
                 const errorEntry = this.errorQueue.shift();
                 await this.displayError(errorEntry);
-                
+
                 // Small delay to prevent overwhelming the user
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
@@ -253,7 +253,7 @@ class ErrorHandler {
 
     showErrorToast(errorEntry) {
         const { userMessage } = errorEntry;
-        
+
         const toast = document.createElement('div');
         toast.className = 'error-toast';
         toast.innerHTML = `
@@ -288,9 +288,9 @@ class ErrorHandler {
     }
 
     showErrorDetails(errorId) {
-        const errorEntry = this.errorQueue.find(e => e.id === errorId) || 
+        const errorEntry = this.errorQueue.find(e => e.id === errorId) ||
                           this.getErrorFromHistory(errorId);
-        
+
         if (!errorEntry) {
             alert('Error details not found');
             return;
@@ -346,13 +346,13 @@ ${JSON.stringify(errorEntry.context, null, 2)}
     }
 
     copyErrorDetails(errorId) {
-        const errorEntry = this.errorQueue.find(e => e.id === errorId) || 
+        const errorEntry = this.errorQueue.find(e => e.id === errorId) ||
                           this.getErrorFromHistory(errorId);
-        
+
         if (!errorEntry) return;
 
         const details = JSON.stringify(errorEntry, null, 2);
-        
+
         if (navigator.clipboard) {
             navigator.clipboard.writeText(details).then(() => {
                 this.showSuccessToast('Error details copied to clipboard');
@@ -398,20 +398,20 @@ ${JSON.stringify(errorEntry.context, null, 2)}
                 // If we can determine the failed operation, retry it
                 this.showSuccessToast('You can try the operation again');
                 break;
-            
+
             case 'Refresh Page':
                 if (confirm('This will refresh the page and you may lose unsaved changes. Continue?')) {
                     window.location.reload();
                 }
                 break;
-                
+
             case 'Clear Storage':
                 if (confirm('This will clear all stored data. Make sure to export your data first! Continue?')) {
                     localStorage.clear();
                     window.location.reload();
                 }
                 break;
-                
+
             case 'Export Data First':
                 if (typeof exportAllData === 'function') {
                     exportAllData(false);
@@ -419,23 +419,23 @@ ${JSON.stringify(errorEntry.context, null, 2)}
                     alert('Export function not available. Please try manually.');
                 }
                 break;
-                
+
             case 'Check Settings':
                 this.showBrowserSettingsHelp();
                 break;
-                
+
             case 'Check Connection':
                 this.showConnectionHelp();
                 break;
-                
+
             case 'Try Different File':
                 this.showFileFormatHelp();
                 break;
-                
+
             case 'Report Issue':
                 this.showReportIssueHelp();
                 break;
-                
+
             default:
                 Logger.debug('Unknown error action:', action);
         }
@@ -524,7 +524,7 @@ You can report issues via:
         return (...args) => {
             try {
                 const result = fn.apply(this, args);
-                
+
                 // Handle promises
                 if (result && typeof result.catch === 'function') {
                     return result.catch(error => {
@@ -532,7 +532,7 @@ You can report issues via:
                         return fallback;
                     });
                 }
-                
+
                 return result;
             } catch (error) {
                 this.handleError(error, 'sync', context);
@@ -546,8 +546,8 @@ You can report issues via:
 window.errorHandler = new ErrorHandler();
 
 // Export utility functions
-window.withErrorBoundary = (fn, fallback, context) => 
+window.withErrorBoundary = (fn, fallback, context) =>
     window.errorHandler.withErrorBoundary(fn, fallback, context);
 
-window.reportError = (message, context) => 
+window.reportError = (message, context) =>
     window.errorHandler.reportError(message, context);

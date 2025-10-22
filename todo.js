@@ -23,7 +23,7 @@ function reloadTodos() {
     try {
         const storedTodos = localStorage.getItem('todos');
         Logger.debug('Current localStorage todos:', storedTodos);
-        
+
         if (!storedTodos) {
             Logger.debug('No todos found in localStorage');
             todos = [];
@@ -31,7 +31,7 @@ function reloadTodos() {
             todos = JSON.parse(storedTodos);
             Logger.debug('Successfully parsed todos:', todos);
         }
-        
+
         renderTodos();
         Logger.debug('Todos rendered, current count:', todos.length);
     } catch (error) {
@@ -79,13 +79,13 @@ localStorage.setItem = function(key, value) {
 // Initialize on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', function() {
     Logger.debug('DOMContentLoaded event fired');
-    
+
     // Make sure modal is hidden initially
     const modal = document.getElementById('customModal');
     if (modal) {
         modal.style.display = 'none';
     }
-    
+
     initializeTodos();
 });
 
@@ -156,18 +156,18 @@ function renderTodos(searchText = '', priorityFilter = 'all') {
         li.setAttribute('data-index', index); // Add original index as a data attribute
         const dueDate = todo.dueDate ? new Date(todo.dueDate).toLocaleDateString() : 'No due date';
         const isOverdue = todo.dueDate && new Date(todo.dueDate) < new Date() && !todo.completed;
-        
+
         li.innerHTML = `
             <div class="todo-content">
                 <div class="todo-header">
                     <span class="todo-text ${todo.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}">${todo.text}</span>
                     <span class="todo-due-date ${isOverdue ? 'overdue' : ''}">${dueDate}</span>
                 </div>
-                ${todo.summary || todo.notes ? 
+                ${todo.summary || todo.notes ?
                     `<div class="todo-notes-container">
                         <p class="todo-summary${todo.summary && todo.summary.length > 100 ? ' truncated' : ''}">${(todo.summary || todo.notes).slice(0, 100)}${(todo.summary || todo.notes).length > 100 ? '...' : ''}</p>
                         ${(todo.summary || todo.notes).length > 100 ? '<span class="todo-summary-expand" data-index="' + index + '">Show more</span>' : ''}
-                    </div>` 
+                    </div>`
                 : ''}
                 <span class="todo-priority">Priority: <span class="priority-indicator priority-${todo.priority || 'none'}">${todo.priority || 'None'}</span></span>
             </div>
@@ -294,7 +294,7 @@ function editTodo(index) {
 
     modal.querySelector('#saveTaskBtn').addEventListener('click', () => {
         const taskText = document.getElementById('editTaskText').value.trim();
-        
+
         if (!taskText) {
             alert('Task text cannot be empty');
             return;
@@ -483,7 +483,7 @@ new Sortable(todoList, {
 
         // Update todos with valid entries only
         todos = reorderedTodos.filter(Boolean);
-        
+
         // Save and re-render
         saveTodos();
         renderTodos();
@@ -520,7 +520,7 @@ function ensureTodosLoaded() {
             }
         }
     }
-    
+
     // If we get here, either no todos or invalid format
     Logger.debug('No valid todos found, will retry in 1 second...');
     setTimeout(ensureTodosLoaded, 1000); // Retry after 1 second
@@ -535,11 +535,11 @@ todoList.addEventListener('click', (e) => {
     // Find the button or element clicked
     const actionButton = e.target.closest('[data-action]');
     const showMoreLink = e.target.closest('.todo-summary-expand');
-    
+
     if (actionButton) {
         const index = parseInt(actionButton.getAttribute('data-index'), 10);
         const action = actionButton.getAttribute('data-action');
-        
+
         // Execute the appropriate action based on button clicked
         switch(action) {
             case 'complete':

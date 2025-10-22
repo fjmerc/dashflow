@@ -3,11 +3,11 @@ class ThemeManager {
     constructor() {
         this.currentTheme = localStorage.getItem('theme') || 'light';
         this.primaryColor = localStorage.getItem('primaryColor') || '#4f46e5';
-        
+
         // Initialize theme and colors when created
         this.applyTheme();
         this.applyColors();
-        
+
         // Listen for storage events to sync themes across pages
         window.addEventListener('storage', (e) => {
             if (e.key === 'theme') {
@@ -52,13 +52,13 @@ class ThemeManager {
         const colorPicker = document.createElement('input');
         colorPicker.type = 'color';
         colorPicker.value = this.primaryColor;
-        
+
         colorPicker.addEventListener('change', (e) => {
             this.primaryColor = e.target.value;
             localStorage.setItem('primaryColor', this.primaryColor);
             this.syncThemeSettings();
         });
-        
+
         colorPicker.click();
     }
 

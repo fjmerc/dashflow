@@ -94,12 +94,12 @@
         margin: 15% auto;
         padding: 20px;
     }
-    
+
     .modal-buttons {
         flex-direction: column-reverse;
         gap: 10px;
     }
-    
+
     .modal-btn {
         width: 100%;
     }
@@ -932,7 +932,7 @@ button:hover {
     .todo-form {
         flex-direction: column;
     }
-    
+
     .todo-form input[type="text"],
     .todo-form textarea,
     .todo-form button {
@@ -1460,35 +1460,35 @@ input:checked + .slider:before {
         margin: 20px;
         max-width: none;
     }
-    
+
     .backup-settings-modal .header-content {
         gap: 12px;
     }
-    
+
     .backup-settings-modal .header-icon {
         width: 40px;
         height: 40px;
         font-size: 18px;
     }
-    
+
     .setting-item {
         flex-direction: column;
         align-items: flex-start;
         gap: 12px;
     }
-    
+
     .setting-content {
         margin-right: 0;
     }
-    
+
     .backup-settings-modal select {
         width: 100%;
     }
-    
+
     .backup-settings-modal .modal-footer {
         flex-direction: column;
     }
-    
+
     .backup-settings-modal .modal-btn {
         width: 100%;
         justify-content: center;
@@ -1503,7 +1503,7 @@ input:checked + .slider:before {
         max-width: none;
         transform: translateY(-100px);
     }
-    
+
     .backup-notification.show {
         transform: translateY(0);
     }
@@ -1801,27 +1801,27 @@ form select {
         transform: translateY(-100%);
         top: 10px;
     }
-    
+
     .error-toast.show {
         transform: translateY(0);
     }
-    
+
     .error-toast.fade-out {
         transform: translateY(-50%);
     }
-    
+
     .success-toast {
         right: 10px;
         left: 10px;
         max-width: none;
     }
-    
+
     .error-details-modal .modal-content {
         margin: 10px;
         max-width: none;
         max-height: calc(100vh - 20px);
     }
-    
+
     .error-details-text {
         font-size: 11px;
         padding: 12px;

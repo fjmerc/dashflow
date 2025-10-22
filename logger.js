@@ -1,6 +1,6 @@
 /**
  * Configurable Logger for Dashboard App
- * 
+ *
  * Provides different log levels that can be controlled via configuration
  * In production, set LOG_LEVEL to 'error' or 'none' to reduce output
  */

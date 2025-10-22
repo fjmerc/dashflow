@@ -1,6 +1,6 @@
 /**
  * Enhanced Keyboard Navigation System
- * 
+ *
  * Provides comprehensive keyboard shortcuts and navigation for the dashboard
  */
 
@@ -14,10 +14,10 @@ class KeyboardNavigationManager {
     init() {
         // Register keyboard shortcuts
         this.registerShortcuts();
-        
+
         // Set up global event listener
         document.addEventListener('keydown', this.handleKeyDown.bind(this));
-        
+
         Logger.debug('Keyboard navigation initialized');
     }
 
@@ -27,7 +27,7 @@ class KeyboardNavigationManager {
         this.shortcuts.set('cmd+k', () => this.toggleGlobalSearch()); // Mac
         this.shortcuts.set('ctrl+/', () => this.showKeyboardHelp());
         this.shortcuts.set('cmd+/', () => this.showKeyboardHelp()); // Mac
-        
+
         // Quick actions
         this.shortcuts.set('ctrl+n', () => this.focusNewSection());
         this.shortcuts.set('cmd+n', () => this.focusNewSection()); // Mac
@@ -37,17 +37,17 @@ class KeyboardNavigationManager {
         this.shortcuts.set('cmd+e', () => this.exportData()); // Mac
         this.shortcuts.set('ctrl+i', () => this.importData());
         this.shortcuts.set('cmd+i', () => this.importData()); // Mac
-        
+
         // Theme shortcuts
         this.shortcuts.set('ctrl+shift+d', () => this.toggleDarkMode());
         this.shortcuts.set('cmd+shift+d', () => this.toggleDarkMode()); // Mac
-        
+
         // Todo shortcuts (when on todo page)
         this.shortcuts.set('ctrl+t', () => this.goToTodos());
         this.shortcuts.set('cmd+t', () => this.goToTodos()); // Mac
         this.shortcuts.set('ctrl+h', () => this.goToHome());
         this.shortcuts.set('cmd+h', () => this.goToHome()); // Mac
-        
+
         // Escape actions
         this.shortcuts.set('escape', () => this.handleEscape());
     }
@@ -79,13 +79,13 @@ class KeyboardNavigationManager {
         if (event.metaKey && !event.ctrlKey) parts.push('cmd'); // Mac Command key
         if (event.shiftKey) parts.push('shift');
         if (event.altKey) parts.push('alt');
-        
+
         // Add the main key
         const key = event.key.toLowerCase();
         parts.push(key);
-        
+
         const shortcut = parts.join('+');
-        
+
         // Execute shortcut if it exists
         if (this.shortcuts.has(shortcut)) {
             event.preventDefault();
@@ -110,7 +110,7 @@ class KeyboardNavigationManager {
         // Create and show global search modal
         const modal = this.createGlobalSearchModal();
         document.body.appendChild(modal);
-        
+
         const searchInput = modal.querySelector('#globalSearchInput');
         setTimeout(() => searchInput.focus(), 100);
     }
@@ -138,7 +138,7 @@ class KeyboardNavigationManager {
         // Add event listeners
         const closeBtn = modal.querySelector('.close');
         const searchInput = modal.querySelector('#globalSearchInput');
-        
+
         closeBtn.addEventListener('click', () => {
             document.body.removeChild(modal);
         });
@@ -178,7 +178,7 @@ class KeyboardNavigationManager {
             const links = JSON.parse(localStorage.getItem('links') || '{}');
             for (const [section, sectionLinks] of Object.entries(links)) {
                 sectionLinks.forEach(link => {
-                    if (link.name.toLowerCase().includes(lowerQuery) || 
+                    if (link.name.toLowerCase().includes(lowerQuery) ||
                         link.url.toLowerCase().includes(lowerQuery) ||
                         section.toLowerCase().includes(lowerQuery)) {
                         results.push({
@@ -251,7 +251,7 @@ class KeyboardNavigationManager {
 
     handleSearchResultClick(resultEl) {
         const type = resultEl.dataset.type;
-        
+
         if (type === 'link') {
             const url = resultEl.dataset.url;
             if (url) {
@@ -346,7 +346,7 @@ class KeyboardNavigationManager {
     focusNewLink() {
         const existingSections = document.getElementById('existingSections');
         const linkNameInput = document.getElementById('linkName');
-        
+
         if (existingSections && linkNameInput) {
             // If no section is selected, focus section dropdown first
             if (!existingSections.value) {
@@ -397,7 +397,7 @@ class KeyboardNavigationManager {
         modals.forEach(modal => {
             modal.style.display = 'none';
             // Clean up if it's a dynamically created modal
-            if (modal.classList.contains('global-search-modal') || 
+            if (modal.classList.contains('global-search-modal') ||
                 modal.classList.contains('keyboard-help-modal')) {
                 document.body.removeChild(modal);
             }

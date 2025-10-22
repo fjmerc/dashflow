@@ -30,7 +30,7 @@ const sanitizeInput = (str) => {
     if (window.validateAndSanitize && window.validateAndSanitize.html) {
         return window.validateAndSanitize.html(str);
     }
-    
+
     // Fallback sanitization
     const div = document.createElement('div');
     div.textContent = str;
@@ -42,7 +42,7 @@ const validateUrl = (url) => {
     if (window.validateAndSanitize && window.validateAndSanitize.url) {
         return window.validateAndSanitize.url(url);
     }
-    
+
     // Fallback validation
     try {
         new URL(url);
@@ -68,7 +68,7 @@ const initializeState = () => {
         Logger.error('Error parsing links from localStorage:', e);
         links = {};
     }
-    
+
     try {
         username = sanitizeInput(localStorage.getItem('username')) || 'User';
     } catch (e) {
@@ -129,12 +129,12 @@ function saveState() {
 
 function updateSectionDropdown() {
     existingSections.innerHTML = '<option value="">Select section</option>';
-    
+
     // Get section names and sort them alphabetically
-    const sortedSections = Object.keys(links).sort((a, b) => 
+    const sortedSections = Object.keys(links).sort((a, b) =>
         a.toLowerCase().localeCompare(b.toLowerCase())
     );
-    
+
     // Add sorted sections to dropdown
     sortedSections.forEach(section => {
         existingSections.innerHTML += `<option value="${section}">${section}</option>`;
@@ -146,12 +146,12 @@ function renderLinks(filter = '') {
     favoritesList.innerHTML = '';
 
     // Sort sections alphabetically
-    const sortedSections = Object.keys(links).sort((a, b) => 
+    const sortedSections = Object.keys(links).sort((a, b) =>
         a.toLowerCase().localeCompare(b.toLowerCase())
     );
-    
+
     for (const section of sortedSections) {
-        const filteredLinks = links[section].filter(link => 
+        const filteredLinks = links[section].filter(link =>
             link.name.toLowerCase().includes(filter.toLowerCase()) ||
             link.url.toLowerCase().includes(filter.toLowerCase())
         );
@@ -235,7 +235,7 @@ function renderLinks(filter = '') {
             saveState();
         }
     });
-    
+
     // Make retirement timer container draggable
     const retirementContainer = document.getElementById('retirementTimerContainer');
     if (retirementContainer) {
@@ -281,13 +281,13 @@ function addSection(event) {
     event.preventDefault();
     try {
         const newSectionName = document.getElementById('newSectionName').value.trim();
-        
+
         // Input validation
         if (!newSectionName.match(/^[A-Za-z0-9\s\-_]+$/)) {
             alert('Section name can only contain letters, numbers, spaces, hyphens and underscores');
             return;
         }
-        
+
         if (newSectionName && !links[newSectionName]) {
             links[newSectionName] = [];
             saveState();
@@ -355,7 +355,7 @@ function editLink(section, index) {
     const link = links[section][index];
     const newName = prompt('Enter new name:', link.name);
     let newUrl = prompt('Enter new URL:', link.url);
-    
+
     if (newName && newUrl) {
         if (!newUrl.startsWith('http://') && !newUrl.startsWith('https://')) {
             newUrl = 'https://' + newUrl;
@@ -445,22 +445,22 @@ async function exportBookmarks(silent = true) {
                 }
             }
         };
-        
+
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
-        
+
         // Generate filename with timestamp
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         downloadAnchorNode.setAttribute("download", `dashboard_backup_${timestamp}.json`);
-        
+
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
-        
+
         // Update last export timestamp
         localStorage.setItem('lastExportTimestamp', new Date().getTime().toString());
-        
+
         if (!silent) {
             alert('Export completed successfully!');
         }
@@ -493,7 +493,7 @@ function handleImport(event) {
     const file = event.target.files[0];
     if (file) {
         const fileName = file.name.toLowerCase();
-        
+
         // Determine import type based on file extension
         if (fileName.endsWith('.json')) {
             // Handle JSON dashboard data import
@@ -540,7 +540,7 @@ function initializePage() {
     updateSectionDropdown();
     renderLinks();
     updateTitle();
-    
+
     // Initialize clear search button visibility
     if (searchInput.value) {
         clearSearchBtn.classList.add('visible');
@@ -551,7 +551,7 @@ function initializePage() {
 function showImportReminder() {
     // Check if we've already shown the reminder in this browser session
     const hasShownReminder = sessionStorage.getItem('importReminderShown');
-    
+
     // Only show the reminder if we haven't shown it yet and either there's no export timestamp
     // or the links object is empty
     const lastExport = localStorage.getItem('lastExportTimestamp');
@@ -559,7 +559,7 @@ function showImportReminder() {
         // Mark that we've shown the reminder (using sessionStorage instead of localStorage)
         // This will persist across page navigations but reset when the browser is closed
         sessionStorage.setItem('importReminderShown', 'true');
-        
+
         showModal(
             'Import Data',
             'Would you like to import your previously exported dashboard data?\n\n' +
@@ -587,7 +587,7 @@ function showExportReminder() {
     const lastExport = localStorage.getItem('lastExportTimestamp');
     const now = new Date().getTime();
     const hoursSinceLastExport = lastExport ? (now - parseInt(lastExport)) / (1000 * 60 * 60) : 24;
-    
+
     if (hoursSinceLastExport >= 1) { // Show reminder if last export was more than 1 hour ago
         showModal(
             'Export Data',
@@ -611,11 +611,11 @@ function showExportReminder() {
 document.addEventListener('click', (e) => {
     const linkItem = e.target.closest('.link-item');
     const sectionHeader = e.target.closest('.section-header');
-    
+
     if (linkItem) {
         const section = linkItem.dataset.section;
         const index = parseInt(linkItem.dataset.index);
-        
+
         if (e.target.closest('.favorite-btn')) {
             toggleFavorite(section, index);
         } else if (e.target.closest('.edit-btn')) {
@@ -625,7 +625,7 @@ document.addEventListener('click', (e) => {
         }
     } else if (sectionHeader) {
         const section = sectionHeader.closest('.section').dataset.section;
-        
+
         if (e.target.closest('.edit-section-btn')) {
             editSection(section);
         } else if (e.target.closest('.delete-section-btn')) {
@@ -639,17 +639,17 @@ addLinkForm.addEventListener('submit', addLink);
 // Handle search input changes
 searchInput.addEventListener('input', (e) => {
     const searchValue = e.target.value;
-    
+
     // Debounce search to improve performance
     clearTimeout(searchDebounceTimer);
-    
+
     // Toggle visibility of clear button immediately for better UX
     if (searchValue) {
         clearSearchBtn.classList.add('visible');
     } else {
         clearSearchBtn.classList.remove('visible');
     }
-    
+
     // Debounce the actual rendering
     searchDebounceTimer = setTimeout(() => {
         renderLinks(searchValue);
@@ -686,13 +686,13 @@ todoListBtn.addEventListener('click', () => {
 retirementTimerBtn.addEventListener('click', () => {
     const timerContainer = document.getElementById('retirementTimerContainer');
     const linkList = document.getElementById('linkList');
-    
+
     if (timerContainer.style.display === 'none') {
         // Show the timer section
         timerContainer.style.display = 'block';
         retirementTimerBtn.title = 'Hide Retirement Timer';
         retirementTimerBtn.innerHTML = '<i class="fas fa-hourglass-half" style="color: var(--primary-color);"></i>';
-        
+
         // Move timer container to be part of the section layout
         // If sections exist, insert before the first one
         const firstSection = linkList.querySelector('.section');
@@ -702,13 +702,13 @@ retirementTimerBtn.addEventListener('click', () => {
             // If no sections exist, append to link list
             linkList.appendChild(timerContainer);
         }
-        
+
         // Add sortable functionality
         if (!timerContainer.querySelector('.retirement-content.sortable-initialized')) {
             // Mark as initialized to avoid duplicating
             timerContainer.querySelector('.retirement-content').classList.add('sortable-initialized');
         }
-        
+
         // Scroll to the timer container
         window.scrollTo({
             top: timerContainer.offsetTop - 20,
@@ -719,7 +719,7 @@ retirementTimerBtn.addEventListener('click', () => {
         timerContainer.style.display = 'none';
         retirementTimerBtn.title = 'Show Retirement Timer';
         retirementTimerBtn.innerHTML = '<i class="fas fa-hourglass-half"></i>';
-        
+
         // Remove from DOM flow to prevent empty space
         if (timerContainer.parentNode === linkList) {
             linkList.removeChild(timerContainer);
@@ -767,20 +767,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modal) {
         modal.style.display = 'none';
     }
-    
+
     initializeApp();
     initializePage();
-    
+
     // Only show import reminder after a short delay to prevent flashing during navigation
     setTimeout(() => {
         showImportReminder();
     }, 100);
-    
+
     // Show export reminder when user is about to leave
     window.addEventListener('beforeunload', () => {
         showExportReminder();
     });
-    
+
     // Set up periodic export reminders
     setInterval(showExportReminder, 60 * 60 * 1000); // Check every hour
 });
