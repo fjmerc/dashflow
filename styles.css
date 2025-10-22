@@ -2408,8 +2408,6 @@ form select {
     grid-template-columns: repeat(4, 1fr);
     gap: 20px;
     padding: 20px;
-    height: 100%;
-    overflow-x: auto;
 }
 
 .kanban-column {
@@ -2418,7 +2416,6 @@ form select {
     border: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    min-height: 0;
 }
 
 .kanban-column-header {
@@ -2471,12 +2468,10 @@ form select {
 
 .kanban-column-content {
     flex: 1;
-    overflow-y: auto;
     padding: 12px;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    min-height: 200px;
 }
 
 /* Kanban Cards */
