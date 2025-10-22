@@ -2333,25 +2333,40 @@ form select {
 }
 
 .detail-panel-header {
-    padding: 20px;
+    padding: 20px 24px;
     border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
     justify-content: space-between;
+    background: var(--card-background);
+}
+
+.detail-panel-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-color);
 }
 
 .detail-panel-close {
-    background: none;
-    border: none;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
     cursor: pointer;
     color: var(--text-muted);
-    font-size: 20px;
-    padding: 4px;
-    transition: color 0.15s ease;
+    font-size: 18px;
+    transition: all 0.15s ease;
 }
 
 .detail-panel-close:hover {
+    background: var(--hover-background);
     color: var(--text-color);
+    border-color: var(--text-muted);
 }
 
 .detail-panel-content {
