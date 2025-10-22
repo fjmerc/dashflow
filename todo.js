@@ -106,12 +106,19 @@ function setupEventListeners() {
     importInput.addEventListener('change', handleImport);
     exportAllBtn.addEventListener('click', () => exportAllData(false));
 
-    // View switcher
+    // View switcher - Board view coming in Checkpoint 3
     document.querySelectorAll('.view-switcher-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+            const layout = btn.dataset.layout;
+
+            if (layout === 'board') {
+                // Show coming soon message
+                alert('📊 Board view is coming in the next update!\n\nFor now, enjoy the List view. The Kanban board will be available soon with drag-and-drop between columns.');
+                return;
+            }
+
             document.querySelectorAll('.view-switcher-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            // TODO: Implement board view in later checkpoint
         });
     });
 
@@ -621,21 +628,154 @@ function handleQuickAdd(e) {
  * Show add project modal
  */
 function showAddProjectModal() {
-    const projectName = prompt('Enter project name:');
-    if (!projectName || !projectName.trim()) return;
+    // Create modal
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'block';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>Create New Project</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Project Name</label>
+                    <input type="text" id="newProjectName"
+                        style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; background: var(--background-color); color: var(--text-color);"
+                        placeholder="Enter project name..." autofocus>
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Project Icon</label>
+                    <div id="iconSelector" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; max-height: 300px; overflow-y: auto; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--background-color);">
+                        <!-- Icons will be added here -->
+                    </div>
+                    <input type="hidden" id="selectedIcon" value="folder">
+                </div>
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Project Color</label>
+                    <div id="colorSelector" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px;">
+                        <!-- Colors will be added here -->
+                    </div>
+                    <input type="hidden" id="selectedColor" value="#3b82f6">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelProjectBtn" class="modal-btn">Cancel</button>
+                <button id="createProjectBtn" class="modal-btn primary">Create Project</button>
+            </div>
+        </div>
+    `;
 
-    // Simple icon picker (emoji)
-    const projectIcon = prompt('Enter project icon (emoji):', '📁');
+    document.body.appendChild(modal);
 
-    const projectData = {
-        name: projectName.trim(),
-        icon: projectIcon || '📁'
-    };
+    // Popular FontAwesome icons
+    const icons = [
+        'folder', 'briefcase', 'home', 'graduation-cap', 'heart', 'star', 'code',
+        'laptop', 'mobile', 'book', 'lightbulb', 'rocket', 'shopping-cart',
+        'utensils', 'dumbbell', 'plane', 'car', 'bicycle', 'camera', 'music',
+        'gamepad', 'palette', 'flask', 'seedling', 'paw', 'coffee', 'pizza-slice',
+        'wallet', 'gift', 'bell', 'flag', 'chart-line', 'users', 'cog', 'wrench',
+        'hammer', 'screwdriver', 'paint-brush', 'pen', 'pencil', 'clipboard',
+        'tasks', 'list-check', 'calendar', 'clock', 'envelope', 'phone', 'globe'
+    ];
 
-    taskDataManager.addProject(projectData);
-    renderSidebar();
+    // Project colors
+    const colors = [
+        '#ef4444', '#f59e0b', '#eab308', '#84cc16', '#10b981', '#14b8a6',
+        '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
+        '#ec4899', '#f43f5e', '#64748b', '#6b7280'
+    ];
 
-    Logger.debug('Project added:', projectName);
+    // Render icons
+    const iconSelector = document.getElementById('iconSelector');
+    icons.forEach(icon => {
+        const iconBtn = document.createElement('button');
+        iconBtn.type = 'button';
+        iconBtn.className = 'icon-option';
+        iconBtn.innerHTML = `<i class="fas fa-${icon}"></i>`;
+        iconBtn.style.cssText = 'padding: 12px; border: 2px solid transparent; border-radius: 6px; background: var(--card-background); cursor: pointer; transition: all 0.15s ease; font-size: 20px;';
+
+        if (icon === 'folder') {
+            iconBtn.style.borderColor = 'var(--primary-color)';
+        }
+
+        iconBtn.addEventListener('click', () => {
+            document.querySelectorAll('.icon-option').forEach(btn => {
+                btn.style.borderColor = 'transparent';
+            });
+            iconBtn.style.borderColor = 'var(--primary-color)';
+            document.getElementById('selectedIcon').value = icon;
+        });
+
+        iconSelector.appendChild(iconBtn);
+    });
+
+    // Render colors
+    const colorSelector = document.getElementById('colorSelector');
+    colors.forEach(color => {
+        const colorBtn = document.createElement('button');
+        colorBtn.type = 'button';
+        colorBtn.className = 'color-option';
+        colorBtn.style.cssText = `width: 40px; height: 40px; border: 3px solid transparent; border-radius: 8px; background: ${color}; cursor: pointer; transition: all 0.15s ease;`;
+
+        if (color === '#3b82f6') {
+            colorBtn.style.borderColor = 'var(--text-color)';
+        }
+
+        colorBtn.addEventListener('click', () => {
+            document.querySelectorAll('.color-option').forEach(btn => {
+                btn.style.borderColor = 'transparent';
+            });
+            colorBtn.style.borderColor = 'var(--text-color)';
+            document.getElementById('selectedColor').value = color;
+        });
+
+        colorSelector.appendChild(colorBtn);
+    });
+
+    // Event listeners
+    modal.querySelector('.close').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
+
+    document.getElementById('cancelProjectBtn').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+
+    document.getElementById('createProjectBtn').addEventListener('click', () => {
+        const name = document.getElementById('newProjectName').value.trim();
+        const icon = document.getElementById('selectedIcon').value;
+        const color = document.getElementById('selectedColor').value;
+
+        if (!name) {
+            alert('Please enter a project name');
+            return;
+        }
+
+        const projectData = {
+            name,
+            icon: `<i class="fas fa-${icon}"></i>`,
+            color
+        };
+
+        taskDataManager.addProject(projectData);
+        renderSidebar();
+        document.body.removeChild(modal);
+
+        Logger.debug('Project added:', name);
+    });
+
+    // Focus name input
+    setTimeout(() => {
+        document.getElementById('newProjectName').focus();
+    }, 100);
 }
 
 /**

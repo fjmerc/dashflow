@@ -119,7 +119,7 @@ class Project {
         this.name = data.name || '';
         this.description = data.description || '';
         this.color = data.color || '#3b82f6'; // Default blue
-        this.icon = data.icon || '📁';
+        this.icon = data.icon || '<i class="fas fa-folder"></i>';
         this.archived = data.archived || false;
         this.createdAt = data.createdAt || new Date().toISOString();
         this.position = data.position || 0;
@@ -305,7 +305,7 @@ class TaskDataManager {
                 name: 'Inbox',
                 description: 'Uncategorized tasks',
                 color: '#6b7280',
-                icon: '📥',
+                icon: '<i class="fas fa-inbox"></i>',
                 position: 0
             }),
             new Project({
@@ -313,7 +313,7 @@ class TaskDataManager {
                 name: 'Personal',
                 description: 'Personal tasks',
                 color: '#10b981',
-                icon: '🏠',
+                icon: '<i class="fas fa-home"></i>',
                 position: 1
             })
         ];
@@ -335,7 +335,7 @@ class TaskDataManager {
                 name: 'Inbox',
                 description: 'Uncategorized tasks',
                 color: '#6b7280',
-                icon: '📥',
+                icon: '<i class="fas fa-inbox"></i>',
                 position: 0
             }));
         }
