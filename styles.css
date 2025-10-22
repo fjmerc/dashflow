@@ -2716,6 +2716,30 @@ form select {
     .detail-panel-content {
         padding: 16px 20px;
     }
+
+    /* Kanban board responsive - tablet */
+    .kanban-board {
+        grid-template-columns: repeat(2, 1fr);
+        padding: 12px;
+        gap: 12px;
+    }
+
+    .kanban-column-header {
+        padding: 12px;
+    }
+
+    .kanban-column-content {
+        padding: 8px;
+        gap: 8px;
+    }
+
+    .kanban-card {
+        padding: 10px;
+    }
+
+    .kanban-card-title {
+        font-size: 13px;
+    }
 }
 
 @media (max-width: 600px) {
@@ -2763,6 +2787,16 @@ form select {
 
     .sidebar-item-icon {
         font-size: 14px;
+    }
+
+    /* Kanban board responsive - mobile (single column) */
+    .kanban-board {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .kanban-column {
+        min-height: 200px;
     }
 }
 
