@@ -174,6 +174,85 @@ function setupEventListeners() {
     importInput.addEventListener('change', handleImport);
     exportAllBtn.addEventListener('click', () => exportAllData(false));
 
+    // Header Menu Toggle
+    const todoHeaderMenuBtn = document.getElementById('todoHeaderMenuBtn');
+    const todoHeaderMenu = document.getElementById('todoHeaderMenu');
+
+    function toggleTodoHeaderMenu() {
+        const isOpen = todoHeaderMenu.classList.contains('show');
+        if (isOpen) {
+            todoHeaderMenu.classList.remove('show');
+            todoHeaderMenuBtn.setAttribute('aria-expanded', 'false');
+            todoHeaderMenu.setAttribute('aria-hidden', 'true');
+        } else {
+            todoHeaderMenu.classList.add('show');
+            todoHeaderMenuBtn.setAttribute('aria-expanded', 'true');
+            todoHeaderMenu.setAttribute('aria-hidden', 'false');
+        }
+    }
+
+    function closeTodoHeaderMenu() {
+        todoHeaderMenu.classList.remove('show');
+        todoHeaderMenuBtn.setAttribute('aria-expanded', 'false');
+        todoHeaderMenu.setAttribute('aria-hidden', 'true');
+    }
+
+    todoHeaderMenuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleTodoHeaderMenu();
+    });
+
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!todoHeaderMenu.contains(e.target) && !todoHeaderMenuBtn.contains(e.target)) {
+            closeTodoHeaderMenu();
+        }
+    });
+
+    // Menu item handlers
+    const todoMenuSettingsBtn = document.getElementById('todoMenuSettingsBtn');
+    const todoMenuImportBtn = document.getElementById('todoMenuImportBtn');
+    const todoMenuExportBtn = document.getElementById('todoMenuExportBtn');
+    const todoMenuBackupBtn = document.getElementById('todoMenuBackupBtn');
+    const todoMenuClearBtn = document.getElementById('todoMenuClearBtn');
+
+    todoMenuSettingsBtn.addEventListener('click', () => {
+        closeTodoHeaderMenu();
+        changeUsername();
+    });
+
+    todoMenuImportBtn.addEventListener('click', () => {
+        closeTodoHeaderMenu();
+        importTodosBtn.click();
+    });
+
+    todoMenuExportBtn.addEventListener('click', () => {
+        closeTodoHeaderMenu();
+        exportAllData(false);
+    });
+
+    todoMenuBackupBtn.addEventListener('click', () => {
+        closeTodoHeaderMenu();
+        if (typeof showBackupSettings === 'function') {
+            showBackupSettings();
+        }
+    });
+
+    todoMenuClearBtn.addEventListener('click', () => {
+        closeTodoHeaderMenu();
+        if (confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
+            localStorage.clear();
+            alert('Local storage has been cleared.');
+            location.reload();
+        }
+    });
+
+    // Help button
+    const todoHelpBtn = document.getElementById('todoHelpBtn');
+    todoHelpBtn.addEventListener('click', () => {
+        window.location.href = 'help.html';
+    });
+
     // Command Palette keyboard shortcuts
     document.addEventListener('keydown', (e) => {
         // Ctrl+K or Cmd+K to open command palette

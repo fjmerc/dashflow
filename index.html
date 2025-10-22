@@ -18,45 +18,63 @@
         <div class="header-content">
             <h1>Dashboard</h1>
             <div class="header-actions">
-                <!-- Theme/Appearance Group -->
-                <button id="themeColorBtn" title="Change Theme Color">
+                <!-- Quick Actions -->
+                <button id="themeColorBtn" title="Change Theme Color" class="header-btn">
                     <i class="fas fa-palette"></i>
                 </button>
-                <button id="darkModeBtn" title="Toggle Dark Mode">
+                <button id="darkModeBtn" title="Toggle Dark Mode" class="header-btn">
                     <i class="fas fa-moon"></i>
                 </button>
-                <!-- User Settings -->
-                <button id="settingsBtn" title="Change Username">
-                    <i class="fas fa-user-edit"></i>
-                </button>
-                <!-- Data Management Group -->
-                <button id="importBtn" title="Import All Data">
-                    <i class="fas fa-file-arrow-down"></i>
-                </button>
-                <button id="exportAllBtn" title="Export All Data">
-                    <i class="fas fa-file-export"></i>
-                </button>
-                <button id="backupSettingsBtn" title="Backup Settings">
-                    <i class="fas fa-cogs"></i>
-                </button>
-                <!-- Features -->
-                <button id="todoListBtn" title="To-do List">
+
+                <span class="header-divider"></span>
+
+                <!-- Primary Features -->
+                <button id="todoListBtn" title="Tasks" class="header-btn">
                     <i class="fas fa-tasks"></i>
                 </button>
-                <button id="retirementTimerBtn" title="Retirement Timer">
+                <button id="retirementTimerBtn" title="Retirement Timer" class="header-btn">
                     <i class="fas fa-hourglass-half"></i>
                 </button>
-                <!-- Moved undo to end since it's often disabled -->
-                <button id="undoBtn" title="Undo">
-                    <i class="fas fa-undo"></i>
-                </button>
-                <!-- Help -->
-                <button id="helpBtn" title="Help" aria-label="Help and Documentation">
+
+                <span class="header-divider"></span>
+
+                <!-- Settings & Help -->
+                <div class="header-menu-container">
+                    <button id="headerMenuBtn" title="Settings & More" class="header-btn" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <div id="headerMenu" class="header-dropdown-menu" role="menu" aria-hidden="true">
+                        <button class="menu-item" id="menuSettingsBtn" role="menuitem">
+                            <i class="fas fa-user-edit"></i>
+                            <span>Change Username</span>
+                        </button>
+                        <div class="menu-divider"></div>
+                        <button class="menu-item" id="menuImportBtn" role="menuitem">
+                            <i class="fas fa-file-arrow-down"></i>
+                            <span>Import Data</span>
+                        </button>
+                        <button class="menu-item" id="menuExportBtn" role="menuitem">
+                            <i class="fas fa-file-export"></i>
+                            <span>Export Data</span>
+                        </button>
+                        <button class="menu-item" id="menuBackupBtn" role="menuitem">
+                            <i class="fas fa-cogs"></i>
+                            <span>Backup Settings</span>
+                        </button>
+                        <div class="menu-divider"></div>
+                        <button class="menu-item" id="menuUndoBtn" role="menuitem">
+                            <i class="fas fa-undo"></i>
+                            <span>Undo</span>
+                        </button>
+                        <div class="menu-divider"></div>
+                        <button class="menu-item menu-item-danger" id="menuClearBtn" role="menuitem">
+                            <i class="fas fa-trash-alt"></i>
+                            <span>Clear Storage</span>
+                        </button>
+                    </div>
+                </div>
+                <button id="helpBtn" title="Help" class="header-btn" aria-label="Help and Documentation">
                     <i class="fas fa-question-circle"></i>
-                </button>
-                <!-- Clear Storage -->
-                <button id="clearStorageBtn" title="Clear Storage" aria-label="Clear Local Storage">
-                    <i class="fas fa-trash-alt"></i>
                 </button>
             </div>
         </div>
@@ -122,6 +140,14 @@
     </main>
 
     <input type="file" id="importInput" style="display: none;" accept=".json,.html">
+
+    <!-- Hidden buttons for backward compatibility with script.js -->
+    <button id="importBtn" style="display: none;"></button>
+    <button id="exportAllBtn" style="display: none;"></button>
+    <button id="settingsBtn" style="display: none;"></button>
+    <button id="undoBtn" style="display: none;"></button>
+    <button id="clearStorageBtn" style="display: none;"></button>
+    <button id="backupSettingsBtn" style="display: none;"></button>
 
     <!-- Custom Modal Dialog -->
     <div id="customModal" class="modal" style="display: none;" role="dialog" aria-labelledby="modalTitle" aria-modal="true">

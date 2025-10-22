@@ -109,6 +109,7 @@ function saveState() {
             history.push(JSON.stringify(links));
             localStorage.setItem('links', JSON.stringify(links));
             undoBtn.classList.add('active');
+            if (menuUndoBtn) menuUndoBtn.disabled = false;
             // Auto-export disabled - uncomment to enable
             // exportBookmarks(true).catch(e => {
             //     console.error('Auto-export failed:', e);
@@ -533,6 +534,7 @@ function undo() {
     }
     if (history.length <= 1) {
         undoBtn.classList.remove('active');
+        if (menuUndoBtn) menuUndoBtn.disabled = true;
     }
 }
 
@@ -729,8 +731,79 @@ retirementTimerBtn.addEventListener('click', () => {
 });
 darkModeBtn.addEventListener('click', () => themeManager.toggleDarkMode());
 themeColorBtn.addEventListener('click', () => themeManager.changeThemeColor());
-settingsBtn.addEventListener('click', changeUsername);
-clearStorageBtn.addEventListener('click', () => {
+
+// Header Menu Toggle
+const headerMenuBtn = document.getElementById('headerMenuBtn');
+const headerMenu = document.getElementById('headerMenu');
+
+function toggleHeaderMenu() {
+    const isOpen = headerMenu.classList.contains('show');
+    if (isOpen) {
+        headerMenu.classList.remove('show');
+        headerMenuBtn.setAttribute('aria-expanded', 'false');
+        headerMenu.setAttribute('aria-hidden', 'true');
+    } else {
+        headerMenu.classList.add('show');
+        headerMenuBtn.setAttribute('aria-expanded', 'true');
+        headerMenu.setAttribute('aria-hidden', 'false');
+    }
+}
+
+function closeHeaderMenu() {
+    headerMenu.classList.remove('show');
+    headerMenuBtn.setAttribute('aria-expanded', 'false');
+    headerMenu.setAttribute('aria-hidden', 'true');
+}
+
+headerMenuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleHeaderMenu();
+});
+
+// Close menu when clicking outside
+document.addEventListener('click', (e) => {
+    if (!headerMenu.contains(e.target) && !headerMenuBtn.contains(e.target)) {
+        closeHeaderMenu();
+    }
+});
+
+// Menu item handlers
+const menuSettingsBtn = document.getElementById('menuSettingsBtn');
+const menuImportBtn = document.getElementById('menuImportBtn');
+const menuExportBtn = document.getElementById('menuExportBtn');
+const menuBackupBtn = document.getElementById('menuBackupBtn');
+const menuUndoBtn = document.getElementById('menuUndoBtn');
+const menuClearBtn = document.getElementById('menuClearBtn');
+
+menuSettingsBtn.addEventListener('click', () => {
+    closeHeaderMenu();
+    changeUsername();
+});
+
+menuImportBtn.addEventListener('click', () => {
+    closeHeaderMenu();
+    importBtn.click(); // Trigger existing import functionality
+});
+
+menuExportBtn.addEventListener('click', () => {
+    closeHeaderMenu();
+    exportAllData(false);
+});
+
+menuBackupBtn.addEventListener('click', () => {
+    closeHeaderMenu();
+    if (typeof showBackupSettings === 'function') {
+        showBackupSettings();
+    }
+});
+
+menuUndoBtn.addEventListener('click', () => {
+    closeHeaderMenu();
+    undoBtn.click(); // Trigger existing undo functionality
+});
+
+menuClearBtn.addEventListener('click', () => {
+    closeHeaderMenu();
     showModal(
         'Clear All Data',
         'Are you sure you want to clear all dashboard data? This action cannot be undone.',
@@ -747,12 +820,9 @@ clearStorageBtn.addEventListener('click', () => {
     );
 });
 
-if (backupSettingsBtn) {
-    backupSettingsBtn.addEventListener('click', () => {
-        if (typeof showBackupSettings === 'function') {
-            showBackupSettings();
-        }
-    });
+// Initialize menu undo button state
+if (menuUndoBtn) {
+    menuUndoBtn.disabled = history.length <= 1;
 }
 
 const helpBtn = document.getElementById('helpBtn');
