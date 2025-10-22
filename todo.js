@@ -1890,9 +1890,11 @@ function renderCommandResults() {
 function executeCommand(command) {
     Logger.debug('Executing command:', command.id);
 
+    // Close palette first to avoid any UI conflicts
+    closeCommandPalette();
+
     try {
         command.action();
-        closeCommandPalette();
     } catch (error) {
         Logger.error('Command execution failed:', error);
         if (window.errorHandler) {
