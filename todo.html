@@ -246,6 +246,35 @@
         </div>
     </div>
 
+    <!-- Command Palette -->
+    <div id="commandPalette" class="command-palette hidden" role="dialog" aria-labelledby="commandPaletteTitle">
+        <div class="command-palette-backdrop"></div>
+        <div class="command-palette-container">
+            <div class="command-palette-header">
+                <i class="fas fa-search command-palette-icon"></i>
+                <input
+                    type="text"
+                    id="commandPaletteInput"
+                    class="command-palette-input"
+                    placeholder="Type a command or search..."
+                    autocomplete="off"
+                    spellcheck="false"
+                />
+                <kbd class="command-palette-hint">Esc</kbd>
+            </div>
+            <div class="command-palette-results" id="commandPaletteResults">
+                <!-- Command results will be rendered here -->
+            </div>
+            <div class="command-palette-footer">
+                <div class="command-palette-footer-hint">
+                    <kbd>↑</kbd><kbd>↓</kbd> to navigate
+                    <kbd>↵</kbd> to select
+                    <kbd>esc</kbd> to close
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
     <script src="logger.js"></script>
