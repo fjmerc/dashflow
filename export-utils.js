@@ -21,7 +21,12 @@ async function exportAllData(silent = false) {
             }
         };
 
-        // Get todo data
+        // Get task management data (new format - version 2.0+)
+        const tasksData = JSON.parse(localStorage.getItem('tasks') || 'null');
+        const projectsData = JSON.parse(localStorage.getItem('projects') || 'null');
+        const taskSettingsData = JSON.parse(localStorage.getItem('taskSettings') || 'null');
+
+        // Get legacy todo data for backward compatibility
         const todoData = JSON.parse(localStorage.getItem('todos') || '[]');
 
         // Get retirement timer data
@@ -29,10 +34,15 @@ async function exportAllData(silent = false) {
 
         // Combine data
         const exportData = {
-            version: '1.2', // Increment version to indicate retirement timer support
+            version: '2.0', // Version 2.0 includes new task management system
             timestamp: new Date().toISOString(),
             data: {
                 bookmarks: dashboardData.data.bookmarks,
+                // New task management data
+                tasks: tasksData,
+                projects: projectsData,
+                taskSettings: taskSettingsData,
+                // Keep legacy todos for backward compatibility
                 todos: todoData,
                 settings: dashboardData.data.settings,
                 retirementTimer: retirementTimerData
@@ -95,12 +105,38 @@ async function importAllData(file) {
                         success = true;
                     }
 
-                    // Import todos
-                    if (importedData.data.todos && Array.isArray(importedData.data.todos)) {
+                    // Import task management data (version 2.0+)
+                    if (parseFloat(importedData.version) >= 2.0) {
+                        // Import new task management system data
+                        if (importedData.data.tasks) {
+                            localStorage.setItem('tasks', JSON.stringify(importedData.data.tasks));
+                            success = true;
+                        }
+
+                        if (importedData.data.projects) {
+                            localStorage.setItem('projects', JSON.stringify(importedData.data.projects));
+                            success = true;
+                        }
+
+                        if (importedData.data.taskSettings) {
+                            localStorage.setItem('taskSettings', JSON.stringify(importedData.data.taskSettings));
+                            success = true;
+                        }
+
+                        // Dispatch event to notify todo.js that tasks have been updated
+                        if (importedData.data.tasks) {
+                            window.dispatchEvent(new CustomEvent('tasksUpdated', {
+                                detail: { source: 'importAllData', count: importedData.data.tasks.length }
+                            }));
+                        }
+                    }
+                    // Import legacy todos (version 1.x)
+                    else if (importedData.data.todos && Array.isArray(importedData.data.todos)) {
                         localStorage.setItem('todos', JSON.stringify(importedData.data.todos));
                         success = true;
 
                         // Dispatch event to notify todo.js that todos have been updated
+                        // task-data.js will migrate this to the new format on next load
                         window.dispatchEvent(new CustomEvent('todosUpdated', {
                             detail: { source: 'importAllData', count: importedData.data.todos.length }
                         }));
