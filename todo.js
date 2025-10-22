@@ -1075,13 +1075,20 @@ function showTaskDetails(taskId) {
             flex-direction: column;
             gap: 2px;
             margin-bottom: 16px;
+            padding-left: 8px;
+            border-left: 2px solid var(--border-color);
+            margin-left: 4px;
         }
         .subtask-item {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 0;
-            transition: opacity 0.15s ease;
+            padding: 8px 0 8px 12px;
+            transition: all 0.15s ease;
+            border-radius: 4px;
+        }
+        .subtask-item:hover {
+            background: rgba(255, 255, 255, 0.03);
         }
         .subtask-checkbox {
             cursor: pointer;
