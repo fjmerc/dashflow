@@ -2545,6 +2545,8 @@ form select {
         width: 100%;
         min-width: 100%;
         max-width: 100%;
+        left: 0;
+        right: 0;
     }
 
     .detail-panel-header {
@@ -2553,15 +2555,6 @@ form select {
 
     .detail-panel-content {
         padding: 16px 20px;
-    }
-}
-
-@media (max-width: 600px) {
-    /* Full width detail panel on very small screens */
-    .task-detail-panel {
-        width: 100% !important;
-        min-width: 100% !important;
-        max-width: 100% !important;
     }
 }
 
