@@ -156,10 +156,23 @@ function renderSidebar() {
             projectItem.classList.add('active');
         }
 
+        // Can't delete Inbox
+        const canDelete = project.id !== DEFAULT_PROJECTS.INBOX;
+
         projectItem.innerHTML = `
             <div class="sidebar-item-icon">${project.icon}</div>
             <div class="sidebar-item-text">${project.name}</div>
             <span class="sidebar-item-count">${projectTasks.length}</span>
+            <div class="project-actions">
+                <button class="project-action-btn edit" data-action="edit-project" data-project-id="${project.id}" title="Edit Project">
+                    <i class="fas fa-pencil"></i>
+                </button>
+                ${canDelete ? `
+                    <button class="project-action-btn delete" data-action="delete-project" data-project-id="${project.id}" title="Delete Project">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                ` : ''}
+            </div>
         `;
 
         projectsList.appendChild(projectItem);
@@ -204,6 +217,21 @@ function handleViewClick(e) {
  * Handle project click
  */
 function handleProjectClick(e) {
+    // Check if clicking on action button
+    const actionBtn = e.target.closest('[data-action]');
+    if (actionBtn) {
+        e.stopPropagation();
+        const action = actionBtn.dataset.action;
+        const projectId = actionBtn.dataset.projectId;
+
+        if (action === 'edit-project') {
+            showEditProjectModal(projectId);
+        } else if (action === 'delete-project') {
+            deleteProject(projectId);
+        }
+        return;
+    }
+
     const projectItem = e.target.closest('.sidebar-item');
     if (!projectItem) return;
 
@@ -797,6 +825,198 @@ function handleImport(event) {
             Logger.error('Error importing data:', error);
             alert('Failed to import data: ' + error.message);
         });
+}
+
+/**
+ * Delete project
+ */
+function deleteProject(projectId) {
+    const project = taskDataManager.getProjectById(projectId);
+    if (!project) return;
+
+    const taskCount = taskDataManager.getTasksByProject(projectId).length;
+    const message = taskCount > 0
+        ? `Are you sure you want to delete "${project.name}"?\n\n${taskCount} task(s) will be moved to Inbox.`
+        : `Are you sure you want to delete "${project.name}"?`;
+
+    if (!confirm(message)) return;
+
+    taskDataManager.deleteProject(projectId);
+
+    // If currently viewing this project, switch to Inbox
+    if (currentProjectId === projectId) {
+        currentView = 'inbox';
+        currentProjectId = null;
+        updateViewHeader();
+    }
+
+    renderSidebar();
+    renderTasks();
+
+    Logger.debug('Project deleted:', projectId);
+}
+
+/**
+ * Show edit project modal
+ */
+function showEditProjectModal(projectId) {
+    const project = taskDataManager.getProjectById(projectId);
+    if (!project) return;
+
+    // Extract icon name from HTML (e.g., "<i class='fas fa-folder'></i>" -> "folder")
+    const iconMatch = project.icon.match(/fa-([a-z-]+)/);
+    const currentIconName = iconMatch ? iconMatch[1] : 'folder';
+
+    // Create modal (similar to add project modal)
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'block';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>Edit Project</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Project Name</label>
+                    <input type="text" id="editProjectName"
+                        style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; background: var(--background-color); color: var(--text-color);"
+                        placeholder="Enter project name..." value="${escapeHtml(project.name)}" autofocus>
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Project Icon</label>
+                    <div id="editIconSelector" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; max-height: 300px; overflow-y: auto; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--background-color);">
+                        <!-- Icons will be added here -->
+                    </div>
+                    <input type="hidden" id="editSelectedIcon" value="${currentIconName}">
+                </div>
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Project Color</label>
+                    <div id="editColorSelector" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px;">
+                        <!-- Colors will be added here -->
+                    </div>
+                    <input type="hidden" id="editSelectedColor" value="${project.color}">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelEditProjectBtn" class="modal-btn">Cancel</button>
+                <button id="saveEditProjectBtn" class="modal-btn primary">Save Changes</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Popular FontAwesome icons
+    const icons = [
+        'folder', 'briefcase', 'home', 'graduation-cap', 'heart', 'star', 'code',
+        'laptop', 'mobile', 'book', 'lightbulb', 'rocket', 'shopping-cart',
+        'utensils', 'dumbbell', 'plane', 'car', 'bicycle', 'camera', 'music',
+        'gamepad', 'palette', 'flask', 'seedling', 'paw', 'coffee', 'pizza-slice',
+        'wallet', 'gift', 'bell', 'flag', 'chart-line', 'users', 'cog', 'wrench',
+        'hammer', 'screwdriver', 'paint-brush', 'pen', 'pencil', 'clipboard',
+        'tasks', 'list-check', 'calendar', 'clock', 'envelope', 'phone', 'globe'
+    ];
+
+    // Project colors
+    const colors = [
+        '#ef4444', '#f59e0b', '#eab308', '#84cc16', '#10b981', '#14b8a6',
+        '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
+        '#ec4899', '#f43f5e', '#64748b', '#6b7280'
+    ];
+
+    // Render icons
+    const iconSelector = document.getElementById('editIconSelector');
+    icons.forEach(icon => {
+        const iconBtn = document.createElement('button');
+        iconBtn.type = 'button';
+        iconBtn.className = 'icon-option';
+        iconBtn.innerHTML = `<i class="fas fa-${icon}"></i>`;
+        iconBtn.style.cssText = 'padding: 12px; border: 2px solid transparent; border-radius: 6px; background: var(--card-background); cursor: pointer; transition: all 0.15s ease; font-size: 20px;';
+
+        if (icon === currentIconName) {
+            iconBtn.style.borderColor = 'var(--primary-color)';
+        }
+
+        iconBtn.addEventListener('click', () => {
+            document.querySelectorAll('.icon-option').forEach(btn => {
+                btn.style.borderColor = 'transparent';
+            });
+            iconBtn.style.borderColor = 'var(--primary-color)';
+            document.getElementById('editSelectedIcon').value = icon;
+        });
+
+        iconSelector.appendChild(iconBtn);
+    });
+
+    // Render colors
+    const colorSelector = document.getElementById('editColorSelector');
+    colors.forEach(color => {
+        const colorBtn = document.createElement('button');
+        colorBtn.type = 'button';
+        colorBtn.className = 'color-option';
+        colorBtn.style.cssText = `width: 40px; height: 40px; border: 3px solid transparent; border-radius: 8px; background: ${color}; cursor: pointer; transition: all 0.15s ease;`;
+
+        if (color === project.color) {
+            colorBtn.style.borderColor = 'var(--text-color)';
+        }
+
+        colorBtn.addEventListener('click', () => {
+            document.querySelectorAll('.color-option').forEach(btn => {
+                btn.style.borderColor = 'transparent';
+            });
+            colorBtn.style.borderColor = 'var(--text-color)';
+            document.getElementById('editSelectedColor').value = color;
+        });
+
+        colorSelector.appendChild(colorBtn);
+    });
+
+    // Event listeners
+    modal.querySelector('.close').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
+
+    document.getElementById('cancelEditProjectBtn').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+
+    document.getElementById('saveEditProjectBtn').addEventListener('click', () => {
+        const name = document.getElementById('editProjectName').value.trim();
+        const icon = document.getElementById('editSelectedIcon').value;
+        const color = document.getElementById('editSelectedColor').value;
+
+        if (!name) {
+            alert('Please enter a project name');
+            return;
+        }
+
+        const updates = {
+            name,
+            icon: `<i class="fas fa-${icon}"></i>`,
+            color
+        };
+
+        taskDataManager.updateProject(projectId, updates);
+        renderSidebar();
+        updateViewHeader(); // Update header if currently viewing this project
+        document.body.removeChild(modal);
+
+        Logger.debug('Project updated:', projectId);
+    });
+
+    // Focus name input
+    setTimeout(() => {
+        document.getElementById('editProjectName').focus();
+        document.getElementById('editProjectName').select();
+    }, 100);
 }
 
 /**
