@@ -545,6 +545,32 @@ class TaskDataManager {
         }
         return false;
     }
+
+    /**
+     * Get tasks by tag
+     */
+    getTasksByTag(tag) {
+        return this.tasks.filter(t => t.tags.includes(tag));
+    }
+
+    /**
+     * Get all unique tags with counts
+     */
+    getAllTags() {
+        const tagMap = new Map();
+
+        // Count occurrences of each tag
+        this.tasks.forEach(task => {
+            task.tags.forEach(tag => {
+                tagMap.set(tag, (tagMap.get(tag) || 0) + 1);
+            });
+        });
+
+        // Convert to array and sort by count (descending)
+        return Array.from(tagMap.entries())
+            .map(([tag, count]) => ({ tag, count }))
+            .sort((a, b) => b.count - a.count);
+    }
 }
 
 // Export to global scope

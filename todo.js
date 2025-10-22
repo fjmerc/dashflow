@@ -42,6 +42,7 @@ const commandPaletteResults = document.getElementById('commandPaletteResults');
 let taskDataManager;
 let currentView = 'my-day';
 let currentProjectId = null;
+let currentTag = null;
 let selectedTaskId = null;
 let currentLayout = localStorage.getItem('taskLayout') || 'list'; // 'list' or 'board'
 let username = localStorage.getItem('username') || 'User';
@@ -444,6 +445,12 @@ function updateViewHeader() {
                 }
             }
             break;
+        case 'tag':
+            if (currentTag) {
+                title = '🏷️ ' + currentTag;
+                subtitle = `All tasks tagged with "${currentTag}"`;
+            }
+            break;
     }
 
     viewTitle.textContent = title;
@@ -491,6 +498,11 @@ function renderTasks() {
         case 'project':
             if (currentProjectId) {
                 tasks = taskDataManager.getTasksByProject(currentProjectId);
+            }
+            break;
+        case 'tag':
+            if (currentTag) {
+                tasks = taskDataManager.getTasksByTag(currentTag);
             }
             break;
     }
@@ -576,6 +588,11 @@ function renderBoardView() {
         case 'project':
             if (currentProjectId) {
                 tasks = taskDataManager.getTasksByProject(currentProjectId);
+            }
+            break;
+        case 'tag':
+            if (currentTag) {
+                tasks = taskDataManager.getTasksByTag(currentTag);
             }
             break;
     }
@@ -1005,8 +1022,8 @@ function showTaskDetails(taskId) {
             <label class="task-detail-label">Tags</label>
             <div class="tags-list" id="tagsList">
                 ${task.tags.map(tag => `
-                    <span class="tag-chip" data-tag="${escapeHtml(tag)}">
-                        ${escapeHtml(tag)}
+                    <span class="tag-chip" data-tag="${escapeHtml(tag)}" style="cursor: pointer;" title="Click to filter by this tag">
+                        <span class="tag-chip-text">${escapeHtml(tag)}</span>
                         <button class="tag-remove-btn" title="Remove tag">
                             <i class="fas fa-times"></i>
                         </button>
@@ -1152,9 +1169,10 @@ function showTaskDetails(taskId) {
             background: rgba(59, 130, 246, 0.12); color: var(--primary-color);
             border: 1px solid rgba(59, 130, 246, 0.25);
             border-radius: 12px; font-size: 12px; font-weight: 500;
-            transition: all 0.15s ease; line-height: 1.4;
+            transition: all 0.15s ease; line-height: 1.4; cursor: pointer;
         }
-        .tag-chip:hover { background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.4); }
+        .tag-chip:hover { background: rgba(59, 130, 246, 0.25); border-color: rgba(59, 130, 246, 0.5); transform: translateY(-1px); }
+        .tag-chip-text { flex: 1; }
         .tag-remove-btn { background: none; border: none; color: var(--primary-color);
             cursor: pointer; padding: 0; width: 14px; height: 14px; display: flex;
             align-items: center; justify-content: center; border-radius: 50%;
@@ -1263,9 +1281,21 @@ function showTaskDetails(taskId) {
         }
     });
 
+    // Tag chip click - filter by tag
+    document.querySelectorAll('.tag-chip').forEach(chip => {
+        chip.addEventListener('click', (e) => {
+            // Don't trigger if clicking the remove button
+            if (e.target.closest('.tag-remove-btn')) return;
+
+            const tag = chip.dataset.tag;
+            filterByTag(tag);
+        });
+    });
+
     // Tag remove buttons
     document.querySelectorAll('.tag-remove-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent tag chip click
             const tag = btn.closest('.tag-chip').dataset.tag;
             removeTag(taskId, tag);
         });
@@ -1891,6 +1921,36 @@ function activateProject(projectId) {
     reRenderCurrentView();
 
     Logger.debug('Activated project:', projectId);
+}
+
+/**
+ * Filter by tag programmatically
+ */
+function filterByTag(tag) {
+    // Clear sidebar selections
+    smartViewsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    projectsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // Update current state
+    currentView = 'tag';
+    currentTag = tag;
+    currentProjectId = null;
+
+    // Close detail panel if open
+    hideDetailPanel();
+
+    // Update header
+    updateViewHeader();
+
+    // Re-render
+    reRenderCurrentView();
+
+    Logger.debug('Filtered by tag:', tag);
 }
 
 /**
