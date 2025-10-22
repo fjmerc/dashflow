@@ -2397,6 +2397,14 @@ form select {
     flex-direction: column;
     overflow-y: auto;
     transition: width 0.3s ease, min-width 0.3s ease;
+    /* Hide scrollbar but keep scroll functionality */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+/* Hide scrollbar for Chrome/Safari/Edge */
+.task-detail-panel::-webkit-scrollbar {
+    display: none;
 }
 
 .task-detail-panel.hidden {
