@@ -33,6 +33,11 @@ const importTodosBtn = document.getElementById('importTodosBtn');
 const exportAllBtn = document.getElementById('exportAllBtn');
 const importInput = document.getElementById('importInput');
 
+// Command Palette elements
+const commandPalette = document.getElementById('commandPalette');
+const commandPaletteInput = document.getElementById('commandPaletteInput');
+const commandPaletteResults = document.getElementById('commandPaletteResults');
+
 // State
 let taskDataManager;
 let currentView = 'my-day';
@@ -40,6 +45,11 @@ let currentProjectId = null;
 let selectedTaskId = null;
 let currentLayout = localStorage.getItem('taskLayout') || 'list'; // 'list' or 'board'
 let username = localStorage.getItem('username') || 'User';
+
+// Command Palette state
+let commandPaletteOpen = false;
+let selectedCommandIndex = 0;
+let filteredCommands = [];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
@@ -157,6 +167,44 @@ function setupEventListeners() {
     importTodosBtn.addEventListener('click', () => importInput.click());
     importInput.addEventListener('change', handleImport);
     exportAllBtn.addEventListener('click', () => exportAllData(false));
+
+    // Command Palette keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        // Ctrl+K or Cmd+K to open command palette
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            if (!commandPaletteOpen) {
+                openCommandPalette();
+            }
+        }
+
+        // Command palette is open
+        if (commandPaletteOpen) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                closeCommandPalette();
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                navigateCommands('down');
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                navigateCommands('up');
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                executeSelectedCommand();
+            }
+        }
+    });
+
+    // Command palette input - filter on typing
+    commandPaletteInput.addEventListener('input', (e) => {
+        filterCommands(e.target.value);
+    });
+
+    // Command palette backdrop click - close
+    commandPalette.querySelector('.command-palette-backdrop').addEventListener('click', () => {
+        closeCommandPalette();
+    });
 
     // View switcher - Toggle between list and board
     document.querySelectorAll('.view-switcher-btn').forEach(btn => {
@@ -1463,6 +1511,360 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+/**
+ * ========================================
+ * COMMAND PALETTE
+ * ========================================
+ */
+
+/**
+ * Get all available commands
+ */
+function getCommands() {
+    const commands = [
+        // Navigation - Smart Views
+        {
+            id: 'goto-my-day',
+            name: 'Go to My Day',
+            description: 'View tasks for today',
+            icon: '✨',
+            category: 'navigation',
+            keywords: ['my', 'day', 'today', 'navigate', 'view'],
+            action: () => activateSmartView('my-day')
+        },
+        {
+            id: 'goto-inbox',
+            name: 'Go to Inbox',
+            description: 'View inbox tasks',
+            icon: '📥',
+            category: 'navigation',
+            keywords: ['inbox', 'uncategorized', 'navigate', 'view'],
+            action: () => activateSmartView('inbox')
+        },
+        {
+            id: 'goto-all',
+            name: 'Go to All Tasks',
+            description: 'View all tasks',
+            icon: '📋',
+            category: 'navigation',
+            keywords: ['all', 'tasks', 'everything', 'navigate', 'view'],
+            action: () => activateSmartView('all')
+        },
+        {
+            id: 'goto-important',
+            name: 'Go to Important',
+            description: 'View high priority tasks',
+            icon: '⭐',
+            category: 'navigation',
+            keywords: ['important', 'priority', 'high', 'navigate', 'view'],
+            action: () => activateSmartView('important')
+        },
+        {
+            id: 'goto-upcoming',
+            name: 'Go to Upcoming',
+            description: 'View tasks due in next 7 days',
+            icon: '📅',
+            category: 'navigation',
+            keywords: ['upcoming', 'soon', 'week', 'navigate', 'view'],
+            action: () => activateSmartView('upcoming')
+        },
+        {
+            id: 'goto-completed',
+            name: 'Go to Completed',
+            description: 'View completed tasks',
+            icon: '✅',
+            category: 'navigation',
+            keywords: ['completed', 'done', 'finished', 'navigate', 'view'],
+            action: () => activateSmartView('completed')
+        },
+
+        // Actions
+        {
+            id: 'new-task',
+            name: 'New Task',
+            description: 'Create a new task',
+            icon: '➕',
+            category: 'action',
+            keywords: ['new', 'create', 'add', 'task', 'todo'],
+            action: () => {
+                closeCommandPalette();
+                quickAddInput.focus();
+            }
+        },
+        {
+            id: 'new-project',
+            name: 'New Project',
+            description: 'Create a new project',
+            icon: '📁',
+            category: 'action',
+            keywords: ['new', 'create', 'add', 'project', 'folder'],
+            action: () => {
+                closeCommandPalette();
+                showAddProjectModal();
+            }
+        },
+
+        // View Switching
+        {
+            id: 'switch-to-list',
+            name: 'Switch to List View',
+            description: 'View tasks as a list',
+            icon: '📝',
+            category: 'view',
+            keywords: ['list', 'view', 'switch', 'layout'],
+            action: () => {
+                closeCommandPalette();
+                currentLayout = 'list';
+                switchViewLayout('list');
+                document.querySelectorAll('.view-switcher-btn').forEach(b => {
+                    b.classList.toggle('active', b.dataset.layout === 'list');
+                });
+            }
+        },
+        {
+            id: 'switch-to-board',
+            name: 'Switch to Board View',
+            description: 'View tasks as a Kanban board',
+            icon: '📊',
+            category: 'view',
+            keywords: ['board', 'kanban', 'view', 'switch', 'layout'],
+            action: () => {
+                closeCommandPalette();
+                currentLayout = 'board';
+                switchViewLayout('board');
+                document.querySelectorAll('.view-switcher-btn').forEach(b => {
+                    b.classList.toggle('active', b.dataset.layout === 'board');
+                });
+            }
+        },
+
+        // Settings
+        {
+            id: 'toggle-dark-mode',
+            name: 'Toggle Dark Mode',
+            description: 'Switch between light and dark theme',
+            icon: '🌙',
+            category: 'settings',
+            keywords: ['dark', 'light', 'theme', 'mode', 'toggle'],
+            action: () => {
+                closeCommandPalette();
+                themeManager.toggleDarkMode();
+            }
+        },
+        {
+            id: 'change-theme-color',
+            name: 'Change Theme Color',
+            description: 'Pick a new theme color',
+            icon: '🎨',
+            category: 'settings',
+            keywords: ['color', 'theme', 'palette', 'change'],
+            action: () => {
+                closeCommandPalette();
+                themeManager.openColorPicker();
+            }
+        },
+        {
+            id: 'change-username',
+            name: 'Change Username',
+            description: 'Update your display name',
+            icon: '👤',
+            category: 'settings',
+            keywords: ['username', 'name', 'change', 'profile'],
+            action: () => {
+                closeCommandPalette();
+                changeUsername();
+            }
+        },
+        {
+            id: 'export-data',
+            name: 'Export All Data',
+            description: 'Download backup of all data',
+            icon: '💾',
+            category: 'settings',
+            keywords: ['export', 'backup', 'download', 'save'],
+            action: () => {
+                closeCommandPalette();
+                exportAllData();
+            }
+        },
+        {
+            id: 'import-data',
+            name: 'Import Data',
+            description: 'Import backup file',
+            icon: '📂',
+            category: 'settings',
+            keywords: ['import', 'restore', 'upload', 'load'],
+            action: () => {
+                closeCommandPalette();
+                importInput.click();
+            }
+        }
+    ];
+
+    // Add dynamic project navigation commands
+    const projects = taskDataManager.getAllProjects();
+    projects.forEach(project => {
+        if (project.id !== DEFAULT_PROJECTS.INBOX) {
+            commands.push({
+                id: `goto-project-${project.id}`,
+                name: `Go to ${project.name}`,
+                description: `Navigate to ${project.name} project`,
+                icon: project.icon || '📁',
+                category: 'navigation',
+                keywords: ['project', 'navigate', 'goto', project.name.toLowerCase()],
+                action: () => activateProject(project.id)
+            });
+        }
+    });
+
+    return commands;
+}
+
+/**
+ * Open command palette
+ */
+function openCommandPalette() {
+    commandPaletteOpen = true;
+    commandPalette.classList.remove('hidden');
+    commandPaletteInput.value = '';
+    commandPaletteInput.focus();
+    selectedCommandIndex = 0;
+
+    // Show all commands initially
+    filterCommands('');
+
+    Logger.debug('Command palette opened');
+}
+
+/**
+ * Close command palette
+ */
+function closeCommandPalette() {
+    commandPaletteOpen = false;
+    commandPalette.classList.add('hidden');
+    commandPaletteInput.value = '';
+    filteredCommands = [];
+
+    Logger.debug('Command palette closed');
+}
+
+/**
+ * Filter commands based on search query
+ */
+function filterCommands(query) {
+    const allCommands = getCommands();
+
+    if (!query.trim()) {
+        filteredCommands = allCommands;
+    } else {
+        const searchTerms = query.toLowerCase().split(' ').filter(t => t);
+
+        filteredCommands = allCommands.filter(cmd => {
+            const searchText = [
+                cmd.name,
+                cmd.description,
+                ...cmd.keywords
+            ].join(' ').toLowerCase();
+
+            return searchTerms.every(term => searchText.includes(term));
+        });
+    }
+
+    selectedCommandIndex = 0;
+    renderCommandResults();
+}
+
+/**
+ * Render command results
+ */
+function renderCommandResults() {
+    commandPaletteResults.innerHTML = '';
+
+    if (filteredCommands.length === 0) {
+        commandPaletteResults.innerHTML = `
+            <div class="command-palette-empty">
+                <div class="command-palette-empty-icon">🔍</div>
+                <div class="command-palette-empty-text">No commands found</div>
+            </div>
+        `;
+        return;
+    }
+
+    filteredCommands.forEach((cmd, index) => {
+        const resultEl = document.createElement('div');
+        resultEl.className = `command-result ${index === selectedCommandIndex ? 'selected' : ''}`;
+        resultEl.dataset.commandId = cmd.id;
+        resultEl.dataset.index = index;
+
+        resultEl.innerHTML = `
+            <div class="command-result-icon">${cmd.icon}</div>
+            <div class="command-result-content">
+                <div class="command-result-name">${escapeHtml(cmd.name)}</div>
+                <div class="command-result-description">${escapeHtml(cmd.description)}</div>
+            </div>
+            <div class="command-result-category">${cmd.category}</div>
+        `;
+
+        // Click handler
+        resultEl.addEventListener('click', () => {
+            executeCommand(cmd);
+        });
+
+        commandPaletteResults.appendChild(resultEl);
+    });
+}
+
+/**
+ * Execute a command
+ */
+function executeCommand(command) {
+    Logger.debug('Executing command:', command.id);
+
+    try {
+        command.action();
+        closeCommandPalette();
+    } catch (error) {
+        Logger.error('Command execution failed:', error);
+        if (window.errorHandler) {
+            window.errorHandler.handleError(error, 'command_palette', {
+                commandId: command.id
+            });
+        }
+    }
+}
+
+/**
+ * Navigate command selection
+ */
+function navigateCommands(direction) {
+    if (filteredCommands.length === 0) return;
+
+    if (direction === 'down') {
+        selectedCommandIndex = (selectedCommandIndex + 1) % filteredCommands.length;
+    } else if (direction === 'up') {
+        selectedCommandIndex = selectedCommandIndex === 0
+            ? filteredCommands.length - 1
+            : selectedCommandIndex - 1;
+    }
+
+    renderCommandResults();
+
+    // Scroll selected item into view
+    const selectedEl = commandPaletteResults.querySelector('.command-result.selected');
+    if (selectedEl) {
+        selectedEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+}
+
+/**
+ * Execute selected command
+ */
+function executeSelectedCommand() {
+    if (filteredCommands.length > 0 && selectedCommandIndex < filteredCommands.length) {
+        executeCommand(filteredCommands[selectedCommandIndex]);
+    }
 }
 
 // Initialize on load
