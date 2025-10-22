@@ -2442,8 +2442,8 @@ form select {
 }
 
 /* Responsive Design */
-@media (max-width: 1024px) {
-    /* Detail panel becomes overlay on tablets */
+@media (max-width: 900px) {
+    /* Detail panel becomes overlay when space is constrained */
     .task-detail-panel {
         position: fixed;
         right: 0;

@@ -611,8 +611,8 @@ function showTaskDetails(taskId) {
     // Show panel and backdrop
     taskDetailPanel.classList.remove('hidden');
 
-    // Show backdrop on mobile/tablet
-    if (window.innerWidth <= 1024) {
+    // Show backdrop on small screens
+    if (window.innerWidth <= 900) {
         const backdrop = document.getElementById('detailPanelBackdrop');
         if (backdrop) {
             setTimeout(() => backdrop.classList.add('active'), 10);
