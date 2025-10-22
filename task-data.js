@@ -391,6 +391,47 @@ class TaskDataManager {
     }
 
     /**
+     * Get important tasks (high priority, not completed)
+     */
+    getImportantTasks() {
+        return this.tasks.filter(t => !t.completed && t.priority === TaskPriority.HIGH);
+    }
+
+    /**
+     * Get upcoming tasks (due in next 7 days, not completed)
+     */
+    getUpcomingTasks() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const sevenDaysFromNow = new Date(today);
+        sevenDaysFromNow.setDate(today.getDate() + 7);
+
+        return this.tasks.filter(t => {
+            if (t.completed) return false;
+            if (!t.dueDate) return false;
+
+            const dueDate = new Date(t.dueDate);
+            dueDate.setHours(0, 0, 0, 0);
+
+            return dueDate >= today && dueDate <= sevenDaysFromNow;
+        });
+    }
+
+    /**
+     * Get completed tasks (sorted by completion date, most recent first)
+     */
+    getCompletedTasks() {
+        return this.tasks
+            .filter(t => t.completed)
+            .sort((a, b) => {
+                const dateA = new Date(a.completedAt || a.modifiedAt);
+                const dateB = new Date(b.completedAt || b.modifiedAt);
+                return dateB - dateA; // Most recent first
+            });
+    }
+
+    /**
      * Get all projects
      */
     getAllProjects() {

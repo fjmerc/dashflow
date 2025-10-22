@@ -202,10 +202,16 @@ function renderSidebar() {
     const myDayTasks = taskDataManager.getMyDayTasks();
     const inboxTasks = taskDataManager.getTasksByProject(DEFAULT_PROJECTS.INBOX);
     const allTasks = taskDataManager.getAllTasks().filter(t => !t.completed);
+    const importantTasks = taskDataManager.getImportantTasks();
+    const upcomingTasks = taskDataManager.getUpcomingTasks();
+    const completedTasks = taskDataManager.getCompletedTasks();
 
     document.getElementById('myDayCount').textContent = myDayTasks.length;
     document.getElementById('inboxCount').textContent = inboxTasks.filter(t => !t.completed).length;
     document.getElementById('allCount').textContent = allTasks.length;
+    document.getElementById('importantCount').textContent = importantTasks.length;
+    document.getElementById('upcomingCount').textContent = upcomingTasks.length;
+    document.getElementById('completedCount').textContent = completedTasks.length;
 
     // Render projects
     const projects = taskDataManager.getAllProjects();
@@ -345,6 +351,18 @@ function updateViewHeader() {
             title = 'All Tasks';
             subtitle = 'View all your tasks';
             break;
+        case 'important':
+            title = 'Important';
+            subtitle = 'High priority tasks';
+            break;
+        case 'upcoming':
+            title = 'Upcoming';
+            subtitle = 'Tasks due in the next 7 days';
+            break;
+        case 'completed':
+            title = 'Completed';
+            subtitle = 'View your accomplishments';
+            break;
         case 'project':
             const project = taskDataManager.getProjectById(currentProjectId);
             if (project) {
@@ -399,6 +417,15 @@ function renderTasks() {
             break;
         case 'all':
             tasks = taskDataManager.getAllTasks();
+            break;
+        case 'important':
+            tasks = taskDataManager.getImportantTasks();
+            break;
+        case 'upcoming':
+            tasks = taskDataManager.getUpcomingTasks();
+            break;
+        case 'completed':
+            tasks = taskDataManager.getCompletedTasks();
             break;
         case 'project':
             if (currentProjectId) {
@@ -475,6 +502,15 @@ function renderBoardView() {
             break;
         case 'all':
             tasks = taskDataManager.getAllTasks();
+            break;
+        case 'important':
+            tasks = taskDataManager.getImportantTasks();
+            break;
+        case 'upcoming':
+            tasks = taskDataManager.getUpcomingTasks();
+            break;
+        case 'completed':
+            tasks = taskDataManager.getCompletedTasks();
             break;
         case 'project':
             if (currentProjectId) {
