@@ -956,6 +956,16 @@ function showTaskDetails(taskId) {
 
         <div class="task-detail-row">
             <div class="task-detail-section">
+                <label class="task-detail-label">Status</label>
+                <select class="task-detail-select" id="detailTaskStatus">
+                    <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>📝 To Do</option>
+                    <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>⚡ In Progress</option>
+                    <option value="done" ${task.status === 'done' ? 'selected' : ''}>✅ Done</option>
+                    <option value="blocked" ${task.status === 'blocked' ? 'selected' : ''}>🚫 Blocked</option>
+                </select>
+            </div>
+
+            <div class="task-detail-section">
                 <label class="task-detail-label">Priority</label>
                 <select class="task-detail-select" id="detailTaskPriority">
                     <option value="low" ${task.priority === 'low' ? 'selected' : ''}>Low</option>
@@ -963,12 +973,12 @@ function showTaskDetails(taskId) {
                     <option value="high" ${task.priority === 'high' ? 'selected' : ''}>High</option>
                 </select>
             </div>
+        </div>
 
-            <div class="task-detail-section">
-                <label class="task-detail-label">Due Date</label>
-                <input type="date" class="task-detail-input" id="detailTaskDueDate"
-                    value="${task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : ''}">
-            </div>
+        <div class="task-detail-section">
+            <label class="task-detail-label">Due Date</label>
+            <input type="date" class="task-detail-input" id="detailTaskDueDate"
+                value="${task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : ''}">
         </div>
 
         <div class="task-detail-section">
@@ -976,6 +986,48 @@ function showTaskDetails(taskId) {
                 <input type="checkbox" id="detailTaskMyDay" ${task.isMyDay ? 'checked' : ''}>
                 Add to My Day
             </label>
+        </div>
+
+        <div class="task-detail-section">
+            <label class="task-detail-label">Subtasks</label>
+            <div class="subtasks-list" id="subtasksList">
+                ${task.subtasks.map((subtask, index) => `
+                    <div class="subtask-item" data-subtask-id="${subtask.id}">
+                        <input type="checkbox" class="subtask-checkbox" ${subtask.completed ? 'checked' : ''}
+                            data-subtask-index="${index}">
+                        <span class="subtask-text ${subtask.completed ? 'completed' : ''}">${escapeHtml(subtask.text)}</span>
+                        <button class="subtask-delete-btn" data-subtask-index="${index}" title="Delete subtask">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="subtask-add-form">
+                <input type="text" class="subtask-input" id="subtaskInput" placeholder="Add a subtask..." />
+                <button class="subtask-add-btn" id="addSubtaskBtn" title="Add subtask">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="task-detail-section">
+            <label class="task-detail-label">Tags</label>
+            <div class="tags-list" id="tagsList">
+                ${task.tags.map(tag => `
+                    <span class="tag-chip" data-tag="${escapeHtml(tag)}">
+                        ${escapeHtml(tag)}
+                        <button class="tag-remove-btn" title="Remove tag">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </span>
+                `).join('')}
+            </div>
+            <div class="tag-add-form">
+                <input type="text" class="tag-input" id="tagInput" placeholder="Add a tag..." />
+                <button class="tag-add-btn" id="addTagBtn" title="Add tag">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
         </div>
 
         <div class="task-detail-section">
@@ -1021,6 +1073,51 @@ function showTaskDetails(taskId) {
             border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 4px;
         }
         .task-detail-meta small { color: var(--text-muted); font-size: 12px; }
+
+        /* Subtasks styles */
+        .subtasks-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+        .subtask-item { display: flex; align-items: center; gap: 8px; padding: 8px;
+            background: var(--background-color); border: 1px solid var(--border-color); border-radius: 6px;
+        }
+        .subtask-checkbox { cursor: pointer; }
+        .subtask-text { flex: 1; font-size: 14px; }
+        .subtask-text.completed { text-decoration: line-through; color: var(--text-muted); }
+        .subtask-delete-btn { background: none; border: none; color: var(--text-muted);
+            cursor: pointer; padding: 4px; transition: color 0.15s ease;
+        }
+        .subtask-delete-btn:hover { color: #ef4444; }
+        .subtask-add-form { display: flex; gap: 8px; }
+        .subtask-input { flex: 1; padding: 8px; border: 1px solid var(--border-color);
+            border-radius: 6px; background: var(--background-color); color: var(--text-color);
+            font-size: 14px;
+        }
+        .subtask-input:focus { outline: none; border-color: var(--primary-color); }
+        .subtask-add-btn { padding: 8px 12px; background: var(--primary-color); color: white;
+            border: none; border-radius: 6px; cursor: pointer; transition: opacity 0.15s ease;
+        }
+        .subtask-add-btn:hover { opacity: 0.9; }
+
+        /* Tags styles */
+        .tags-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; min-height: 32px; }
+        .tag-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px;
+            background: var(--primary-color); color: white; border-radius: 16px; font-size: 12px;
+            font-weight: 500;
+        }
+        .tag-remove-btn { background: none; border: none; color: white; cursor: pointer;
+            padding: 0; width: 14px; height: 14px; display: flex; align-items: center;
+            justify-content: center; opacity: 0.8; transition: opacity 0.15s ease;
+        }
+        .tag-remove-btn:hover { opacity: 1; }
+        .tag-add-form { display: flex; gap: 8px; }
+        .tag-input { flex: 1; padding: 8px; border: 1px solid var(--border-color);
+            border-radius: 6px; background: var(--background-color); color: var(--text-color);
+            font-size: 14px;
+        }
+        .tag-input:focus { outline: none; border-color: var(--primary-color); }
+        .tag-add-btn { padding: 8px 12px; background: var(--primary-color); color: white;
+            border: none; border-radius: 6px; cursor: pointer; transition: opacity 0.15s ease;
+        }
+        .tag-add-btn:hover { opacity: 0.9; }
     `;
     if (!document.getElementById('detailPanelStyles')) {
         style.id = 'detailPanelStyles';
@@ -1039,12 +1136,84 @@ function showTaskDetails(taskId) {
     }
 
     // Auto-save on changes
-    const inputs = ['detailTaskText', 'detailTaskDescription', 'detailTaskProject', 'detailTaskPriority', 'detailTaskDueDate', 'detailTaskMyDay'];
+    const inputs = ['detailTaskText', 'detailTaskDescription', 'detailTaskProject', 'detailTaskStatus', 'detailTaskPriority', 'detailTaskDueDate', 'detailTaskMyDay'];
     inputs.forEach(id => {
         const element = document.getElementById(id);
         if (element) {
             element.addEventListener('change', () => saveTaskDetails(taskId));
         }
+    });
+
+    // Subtask event listeners
+    // Add subtask
+    const addSubtaskBtn = document.getElementById('addSubtaskBtn');
+    const subtaskInput = document.getElementById('subtaskInput');
+
+    addSubtaskBtn.addEventListener('click', () => {
+        const text = subtaskInput.value.trim();
+        if (text) {
+            addSubtask(taskId, text);
+            subtaskInput.value = '';
+        }
+    });
+
+    subtaskInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const text = subtaskInput.value.trim();
+            if (text) {
+                addSubtask(taskId, text);
+                subtaskInput.value = '';
+            }
+        }
+    });
+
+    // Subtask checkboxes
+    document.querySelectorAll('.subtask-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+            const index = parseInt(e.target.dataset.subtaskIndex);
+            toggleSubtask(taskId, index);
+        });
+    });
+
+    // Subtask delete buttons
+    document.querySelectorAll('.subtask-delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const index = parseInt(btn.dataset.subtaskIndex);
+            deleteSubtask(taskId, index);
+        });
+    });
+
+    // Tag event listeners
+    // Add tag
+    const addTagBtn = document.getElementById('addTagBtn');
+    const tagInput = document.getElementById('tagInput');
+
+    addTagBtn.addEventListener('click', () => {
+        const tag = tagInput.value.trim();
+        if (tag) {
+            addTag(taskId, tag);
+            tagInput.value = '';
+        }
+    });
+
+    tagInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const tag = tagInput.value.trim();
+            if (tag) {
+                addTag(taskId, tag);
+                tagInput.value = '';
+            }
+        }
+    });
+
+    // Tag remove buttons
+    document.querySelectorAll('.tag-remove-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tag = btn.closest('.tag-chip').dataset.tag;
+            removeTag(taskId, tag);
+        });
     });
 
     // Delete button
@@ -1066,6 +1235,7 @@ function saveTaskDetails(taskId) {
     const text = document.getElementById('detailTaskText').value.trim();
     const description = document.getElementById('detailTaskDescription').value.trim();
     const projectId = document.getElementById('detailTaskProject').value;
+    const status = document.getElementById('detailTaskStatus').value;
     const priority = document.getElementById('detailTaskPriority').value;
     const dueDate = document.getElementById('detailTaskDueDate').value;
     const isMyDay = document.getElementById('detailTaskMyDay').checked;
@@ -1079,6 +1249,7 @@ function saveTaskDetails(taskId) {
         text,
         description,
         projectId,
+        status,
         priority,
         dueDate: dueDate ? new Date(dueDate).toISOString() : null,
         isMyDay
@@ -1102,6 +1273,92 @@ function hideDetailPanel() {
     if (backdrop) {
         backdrop.classList.remove('active');
     }
+}
+
+/**
+ * Add subtask to task
+ */
+function addSubtask(taskId, text) {
+    const task = taskDataManager.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const newSubtask = new Subtask({ text });
+    task.subtasks.push(newSubtask);
+
+    taskDataManager.updateTask(taskId, { subtasks: task.subtasks });
+    showTaskDetails(taskId); // Refresh detail panel
+    reRenderCurrentView();
+
+    Logger.debug('Added subtask to task:', taskId);
+}
+
+/**
+ * Toggle subtask completion
+ */
+function toggleSubtask(taskId, index) {
+    const task = taskDataManager.tasks.find(t => t.id === taskId);
+    if (!task || !task.subtasks[index]) return;
+
+    task.subtasks[index].completed = !task.subtasks[index].completed;
+
+    taskDataManager.updateTask(taskId, { subtasks: task.subtasks });
+    showTaskDetails(taskId); // Refresh detail panel
+    reRenderCurrentView();
+
+    Logger.debug('Toggled subtask:', index, 'for task:', taskId);
+}
+
+/**
+ * Delete subtask from task
+ */
+function deleteSubtask(taskId, index) {
+    const task = taskDataManager.tasks.find(t => t.id === taskId);
+    if (!task || !task.subtasks[index]) return;
+
+    task.subtasks.splice(index, 1);
+
+    taskDataManager.updateTask(taskId, { subtasks: task.subtasks });
+    showTaskDetails(taskId); // Refresh detail panel
+    reRenderCurrentView();
+
+    Logger.debug('Deleted subtask:', index, 'from task:', taskId);
+}
+
+/**
+ * Add tag to task
+ */
+function addTag(taskId, tag) {
+    const task = taskDataManager.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    // Don't add duplicate tags
+    if (task.tags.includes(tag)) {
+        return;
+    }
+
+    task.tags.push(tag);
+
+    taskDataManager.updateTask(taskId, { tags: task.tags });
+    showTaskDetails(taskId); // Refresh detail panel
+    reRenderCurrentView();
+
+    Logger.debug('Added tag to task:', taskId, tag);
+}
+
+/**
+ * Remove tag from task
+ */
+function removeTag(taskId, tag) {
+    const task = taskDataManager.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    task.tags = task.tags.filter(t => t !== tag);
+
+    taskDataManager.updateTask(taskId, { tags: task.tags });
+    showTaskDetails(taskId); // Refresh detail panel
+    reRenderCurrentView();
+
+    Logger.debug('Removed tag from task:', taskId, tag);
 }
 
 /**
