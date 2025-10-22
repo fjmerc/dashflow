@@ -1096,8 +1096,10 @@ function showTaskDetails(taskId) {
             font-size: 14px;
         }
         .subtask-input:focus { outline: none; border-color: var(--primary-color); }
-        .subtask-add-btn { padding: 8px 12px; background: var(--primary-color); color: white;
-            border: none; border-radius: 6px; cursor: pointer; transition: opacity 0.15s ease;
+        .subtask-add-btn { padding: 8px; width: 36px; height: 36px; display: flex;
+            align-items: center; justify-content: center; background: var(--primary-color);
+            color: white; border: none; border-radius: 6px; cursor: pointer;
+            transition: opacity 0.15s ease; flex-shrink: 0;
         }
         .subtask-add-btn:hover { opacity: 0.9; }
 
@@ -1118,8 +1120,10 @@ function showTaskDetails(taskId) {
             font-size: 14px;
         }
         .tag-input:focus { outline: none; border-color: var(--primary-color); }
-        .tag-add-btn { padding: 8px 12px; background: var(--primary-color); color: white;
-            border: none; border-radius: 6px; cursor: pointer; transition: opacity 0.15s ease;
+        .tag-add-btn { padding: 8px; width: 36px; height: 36px; display: flex;
+            align-items: center; justify-content: center; background: var(--primary-color);
+            color: white; border: none; border-radius: 6px; cursor: pointer;
+            transition: opacity 0.15s ease; flex-shrink: 0;
         }
         .tag-add-btn:hover { opacity: 0.9; }
     `;
