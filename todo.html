@@ -127,9 +127,69 @@
 
             <!-- Task Content Area -->
             <div class="task-content">
+                <!-- List View -->
                 <ul class="task-list" id="taskList">
                     <!-- Tasks will be dynamically added here -->
                 </ul>
+
+                <!-- Kanban Board View (Hidden by default) -->
+                <div class="kanban-board hidden" id="kanbanBoard">
+                    <!-- To Do Column -->
+                    <div class="kanban-column" data-status="todo">
+                        <div class="kanban-column-header">
+                            <div class="kanban-column-title">
+                                <i class="fas fa-list-check"></i>
+                                <span>To Do</span>
+                            </div>
+                            <span class="kanban-column-count" id="todoCount">0</span>
+                        </div>
+                        <div class="kanban-column-content" id="todoColumn">
+                            <!-- Task cards will be added here -->
+                        </div>
+                    </div>
+
+                    <!-- In Progress Column -->
+                    <div class="kanban-column" data-status="in-progress">
+                        <div class="kanban-column-header">
+                            <div class="kanban-column-title">
+                                <i class="fas fa-spinner"></i>
+                                <span>In Progress</span>
+                            </div>
+                            <span class="kanban-column-count" id="inProgressCount">0</span>
+                        </div>
+                        <div class="kanban-column-content" id="inProgressColumn">
+                            <!-- Task cards will be added here -->
+                        </div>
+                    </div>
+
+                    <!-- Done Column -->
+                    <div class="kanban-column" data-status="done">
+                        <div class="kanban-column-header">
+                            <div class="kanban-column-title">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Done</span>
+                            </div>
+                            <span class="kanban-column-count" id="doneCount">0</span>
+                        </div>
+                        <div class="kanban-column-content" id="doneColumn">
+                            <!-- Task cards will be added here -->
+                        </div>
+                    </div>
+
+                    <!-- Blocked Column -->
+                    <div class="kanban-column" data-status="blocked">
+                        <div class="kanban-column-header">
+                            <div class="kanban-column-title">
+                                <i class="fas fa-ban"></i>
+                                <span>Blocked</span>
+                            </div>
+                            <span class="kanban-column-count" id="blockedCount">0</span>
+                        </div>
+                        <div class="kanban-column-content" id="blockedColumn">
+                            <!-- Task cards will be added here -->
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Empty State -->
                 <div class="empty-state" id="emptyState" style="display: none;">
