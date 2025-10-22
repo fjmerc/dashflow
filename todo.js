@@ -226,8 +226,14 @@ function setupEventListeners() {
         });
     });
 
-    // Delete project button in header (using event delegation)
+    // Edit and delete project buttons in header (using event delegation)
     document.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-project');
+        if (editBtn) {
+            const projectId = editBtn.dataset.projectId;
+            showEditProjectModal(projectId);
+        }
+
         const deleteBtn = e.target.closest('.delete-project');
         if (deleteBtn) {
             const projectId = deleteBtn.dataset.projectId;
@@ -490,11 +496,15 @@ function updateViewHeader() {
                 title = project.icon + ' ' + project.name;
                 subtitle = project.description || 'Project tasks';
 
-                // Add delete button for non-Inbox projects
+                // Add edit and delete buttons for non-Inbox projects
                 if (project.id !== DEFAULT_PROJECTS.INBOX) {
                     const headerActions = document.createElement('div');
                     headerActions.className = 'view-header-actions';
                     headerActions.innerHTML = `
+                        <button class="header-action-btn edit-project" data-project-id="${project.id}" title="Edit Project">
+                            <i class="fas fa-pencil"></i>
+                            Edit Project
+                        </button>
                         <button class="header-action-btn delete-project" data-project-id="${project.id}" title="Delete Project">
                             <i class="fas fa-trash"></i>
                             Delete Project
