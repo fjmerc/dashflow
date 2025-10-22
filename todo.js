@@ -136,6 +136,10 @@ function setupEventListeners() {
     // Projects list
     projectsList.addEventListener('click', handleProjectClick);
 
+    // Tags list
+    const tagsList = document.getElementById('tagsList');
+    tagsList.addEventListener('click', handleTagClick);
+
     // Add project button
     addProjectBtn.addEventListener('click', showAddProjectModal);
 
@@ -305,7 +309,31 @@ function renderSidebar() {
         projectsList.appendChild(projectItem);
     });
 
-    Logger.debug('Sidebar rendered with', projects.length, 'projects');
+    // Render tags
+    const tags = taskDataManager.getAllTags();
+    const tagsList = document.getElementById('tagsList');
+    tagsList.innerHTML = '';
+
+    tags.forEach(tagData => {
+        const tagItem = document.createElement('div');
+        tagItem.className = 'sidebar-item tag-item';
+        tagItem.dataset.tag = tagData.tag;
+
+        // Check if this tag is currently selected
+        if (currentView === 'tag' && currentTag === tagData.tag) {
+            tagItem.classList.add('active');
+        }
+
+        tagItem.innerHTML = `
+            <div class="sidebar-item-icon">🏷️</div>
+            <div class="sidebar-item-text">${escapeHtml(tagData.tag)}</div>
+            <span class="sidebar-item-count">${tagData.count}</span>
+        `;
+
+        tagsList.appendChild(tagItem);
+    });
+
+    Logger.debug('Sidebar rendered with', projects.length, 'projects and', tags.length, 'tags');
 }
 
 /**
@@ -385,6 +413,37 @@ function handleProjectClick(e) {
 
     // Re-render
     reRenderCurrentView();
+}
+
+/**
+ * Handle tag click
+ */
+function handleTagClick(e) {
+    const tagItem = e.target.closest('.sidebar-item');
+    if (!tagItem) return;
+
+    const tag = tagItem.dataset.tag;
+    if (!tag) return;
+
+    // Update active state for tags
+    const tagsList = document.getElementById('tagsList');
+    tagsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    tagItem.classList.add('active');
+
+    // Clear view selection
+    smartViewsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // Clear project selection
+    projectsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // Use the existing filterByTag function
+    filterByTag(tag);
 }
 
 /**
@@ -1934,6 +1993,15 @@ function filterByTag(tag) {
 
     projectsList.querySelectorAll('.sidebar-item').forEach(item => {
         item.classList.remove('active');
+    });
+
+    // Update tags list active state
+    const tagsList = document.getElementById('tagsList');
+    tagsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.tag === tag) {
+            item.classList.add('active');
+        }
     });
 
     // Update current state
