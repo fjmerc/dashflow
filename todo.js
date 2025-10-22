@@ -90,6 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 function updateTitle() {
     document.title = `${username}'s Task List`;
+    document.querySelector('h1').textContent = `${username}'s Task List`;
 }
 
 /**
