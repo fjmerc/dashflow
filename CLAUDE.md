@@ -19,6 +19,64 @@ This is a vanilla JavaScript PWA with no build system. Development is done by:
 
 **IMPORTANT**: Never suggest build tools, bundlers, or transpilers. This is intentionally a vanilla JS project.
 
+### Common Development Commands
+
+```bash
+# Serve the application locally (Python 3)
+python3 -m http.server 8000
+
+# Serve the application locally (Node.js)
+npx http-server -p 8000
+
+# View git status
+git status
+
+# Create feature branch
+git checkout -b feature/feature-name
+
+# Commit changes (always use conventional commits)
+git add .
+git commit -m "feat: description"
+
+# Check service worker cache version
+grep CACHE_NAME sw.js
+```
+
+## File Boundaries and Edit Permissions
+
+### Files You CAN Edit Freely
+**Application Logic:**
+- `script.js` - Dashboard functionality
+- `todo.js` - Task management UI
+- `task-data.js` - Task data models
+
+**Shared Utilities:**
+- `theme.js`, `export-utils.js`, `logger.js`
+- `keyboard-nav.js`, `auto-backup.js`
+- `input-validator.js`, `error-handler.js`, `modal-manager.js`
+- `retirement-timer.js`
+
+**Styles and Pages:**
+- `styles.css` - All application styles
+- `index.html`, `todo.html`, `help.html` - Application pages
+
+**Configuration:**
+- `sw.js` - Service worker (increment CACHE_NAME when editing)
+- `manifest.json` - PWA configuration
+- `README.md`, `help.html` - Documentation
+
+### Files You Should NOT Edit
+- `.gitignore` - Git configuration (ask user first)
+- Any user data in localStorage (NEVER clear or manipulate directly)
+- Browser cache or IndexedDB (use proper APIs only)
+
+### Critical Edit Rules
+1. **NEVER delete localStorage data**: User data is sacred
+2. **ALWAYS increment service worker version**: When editing cached files
+3. **ALWAYS update export-utils.js**: When adding new localStorage keys
+4. **READ before EDIT**: Always read file contents before making changes
+5. **Maintain backward compatibility**: Don't break existing user data
+
 ## Architecture Overview
 
 ### State Management
@@ -322,6 +380,236 @@ When implementing new features, verify:
 
 **Styles:**
 - `styles.css` - All application styles (shared across pages)
+
+## Code Examples and Patterns
+
+### Adding a New localStorage Key
+
+When adding new data that needs persistence:
+
+```javascript
+// 1. Save data
+const myNewData = { setting: 'value' };
+localStorage.setItem('myNewKey', JSON.stringify(myNewData));
+
+// 2. Load data with validation
+function loadMyNewData() {
+    try {
+        const data = localStorage.getItem('myNewKey');
+        return data ? JSON.parse(data) : { /* default values */ };
+    } catch (error) {
+        Logger.error('Failed to load myNewKey:', error);
+        return { /* default values */ };
+    }
+}
+
+// 3. Update export-utils.js exportAllData()
+const myNewData = JSON.parse(localStorage.getItem('myNewKey') || 'null');
+const exportData = {
+    version: '2.1', // Increment version
+    data: {
+        // ... existing keys
+        myNewKey: myNewData // Add new key
+    }
+};
+
+// 4. Update export-utils.js importAllData()
+if (parseFloat(importedData.version) >= 2.1) {
+    if (importedData.data.myNewKey) {
+        localStorage.setItem('myNewKey', JSON.stringify(importedData.data.myNewKey));
+    }
+}
+
+// 5. Update service worker
+// In sw.js: const CACHE_NAME = 'dashboard-v20'; // Increment
+```
+
+### Adding a Task Management Feature
+
+When extending the task system:
+
+```javascript
+// 1. Add to Task model (task-data.js)
+class Task {
+    constructor(data = {}) {
+        // ... existing fields
+        this.myNewField = data.myNewField || 'default';
+    }
+
+    toJSON() {
+        return {
+            // ... existing fields
+            myNewField: this.myNewField
+        };
+    }
+}
+
+// 2. Add UI in todo.js
+function renderTaskDetail(task) {
+    return `
+        <!-- ... existing fields -->
+        <div class="detail-field">
+            <label>My New Field</label>
+            <input type="text" value="${escapeHtml(task.myNewField)}">
+        </div>
+    `;
+}
+
+// 3. Add update handler
+taskDataManager.updateTask(taskId, {
+    myNewField: newValue
+});
+
+// 4. No export-utils.js change needed (tasks already exported)
+```
+
+### Adding Event Listeners
+
+Always use event delegation for dynamic content:
+
+```javascript
+// ❌ BAD - Creates listener for each item
+items.forEach(item => {
+    item.addEventListener('click', handleClick);
+});
+
+// ✅ GOOD - Single listener on parent
+parentElement.addEventListener('click', (e) => {
+    const item = e.target.closest('.item');
+    if (item) {
+        handleClick(item);
+    }
+});
+```
+
+### Working with TaskDataManager
+
+Never manipulate tasks directly - always use TaskDataManager:
+
+```javascript
+// ❌ BAD - Direct manipulation
+tasks.push(newTask);
+localStorage.setItem('tasks', JSON.stringify(tasks));
+
+// ✅ GOOD - Use TaskDataManager
+const task = taskDataManager.addTask({
+    text: 'New task',
+    projectId: 'inbox'
+});
+// TaskDataManager handles validation, ID generation, and saving
+
+// ✅ Updating tasks
+taskDataManager.updateTask(taskId, {
+    completed: true,
+    completedAt: new Date().toISOString()
+});
+
+// ✅ Deleting tasks
+taskDataManager.deleteTask(taskId);
+
+// ✅ Querying tasks
+const myDayTasks = taskDataManager.getMyDayTasks();
+const importantTasks = taskDataManager.getImportantTasks();
+```
+
+### Theme Integration
+
+Use CSS variables for themeable colors:
+
+```css
+/* ✅ GOOD - Uses theme variables */
+.my-component {
+    background: var(--bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+/* ❌ BAD - Hard-coded colors */
+.my-component {
+    background: #ffffff;
+    color: #000000;
+}
+```
+
+### Error Handling Pattern
+
+Always handle errors gracefully:
+
+```javascript
+function myFeature() {
+    try {
+        // Attempt operation
+        const data = JSON.parse(localStorage.getItem('myKey'));
+        processData(data);
+    } catch (error) {
+        // Log error
+        Logger.error('myFeature failed:', error);
+
+        // Use error handler if available
+        if (window.errorHandler) {
+            window.errorHandler.handleError(error, 'feature', {
+                operation: 'my_feature'
+            });
+        }
+
+        // Provide user feedback
+        alert('Something went wrong. Please try again.');
+
+        // Return safe default
+        return defaultValue;
+    }
+}
+```
+
+### Modal Dialog Pattern
+
+Use modal-manager for consistent dialogs:
+
+```javascript
+// Simple confirmation
+if (window.showModal) {
+    showModal(
+        'Confirm Action',
+        'Are you sure you want to do this?',
+        () => {
+            // User clicked Yes
+            performAction();
+        },
+        () => {
+            // User clicked No (optional)
+            cancelAction();
+        }
+    );
+} else {
+    // Fallback to native confirm
+    if (confirm('Are you sure?')) {
+        performAction();
+    }
+}
+```
+
+## Session Persistence and Context
+
+This file is loaded at the **start of every Claude Code session** in this directory. This means:
+
+- ✅ **No re-explanation needed**: Project architecture is always in context
+- ✅ **Consistent coding style**: Standards apply across all sessions
+- ✅ **Reliable task execution**: Critical rules (like backup integration) are never forgotten
+- ✅ **Project-aware decisions**: Claude knows this is vanilla JS, not React
+- ✅ **Persistent knowledge**: Common pitfalls documented once, remembered always
+
+### What This Enables
+
+**Without CLAUDE.md:**
+- "Don't use React" → Suggests React components
+- "Update backups" → Forgets to update export-utils.js
+- "Increment cache" → Skips service worker version bump
+
+**With CLAUDE.md:**
+- Automatically uses vanilla JS patterns
+- Always updates export/import for new localStorage keys
+- Never forgets to bump service worker cache version
+- Follows established conventions without prompting
 
 ## Emergency Contacts
 
