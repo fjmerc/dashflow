@@ -1098,7 +1098,9 @@ function showTaskDetails(taskId) {
             font-size: 14px;
             line-height: 1.4;
             color: var(--text-color);
-            overflow-wrap: break-word;
+            white-space: normal;
+            word-wrap: normal;
+            display: inline-block;
             min-width: 0;
         }
         .subtask-text.completed {
