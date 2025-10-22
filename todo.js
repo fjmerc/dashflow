@@ -1073,56 +1073,58 @@ function showTaskDetails(taskId) {
         .subtasks-list {
             display: flex;
             flex-direction: column;
-            gap: 0;
-            margin-bottom: 12px;
+            gap: 2px;
+            margin-bottom: 16px;
         }
         .subtask-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 12px 4px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            transition: background 0.15s ease;
+            gap: 8px;
+            padding: 8px 0;
+            transition: opacity 0.15s ease;
         }
-        .subtask-item:last-child { border-bottom: none; }
-        .subtask-item:hover { background: rgba(255, 255, 255, 0.03); }
         .subtask-checkbox {
             cursor: pointer;
             width: 16px;
             height: 16px;
             margin: 0;
             flex-shrink: 0;
+            accent-color: var(--primary-color);
         }
         .subtask-text {
             flex: 1;
             font-size: 14px;
-            line-height: 1.4;
+            line-height: 1.5;
             color: var(--text-color);
             white-space: normal;
-            word-wrap: normal;
-            display: inline-block;
             min-width: 0;
         }
         .subtask-text.completed {
             text-decoration: line-through;
-            opacity: 0.5;
+            opacity: 0.6;
         }
         .subtask-delete-btn {
             background: none;
             border: none;
             color: var(--text-muted);
             cursor: pointer;
-            padding: 4px 8px;
-            transition: all 0.15s ease;
+            padding: 2px;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
             opacity: 0;
             border-radius: 4px;
-            font-size: 16px;
+            font-size: 12px;
             flex-shrink: 0;
         }
-        .subtask-item:hover .subtask-delete-btn { opacity: 0.6; }
+        .subtask-item:hover .subtask-delete-btn { opacity: 0.5; }
         .subtask-delete-btn:hover {
             opacity: 1 !important;
             color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
         }
         .subtask-add-form { display: flex; gap: 8px; }
         .subtask-input { flex: 1; padding: 8px; border: 1px solid var(--border-color);
