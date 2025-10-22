@@ -991,16 +991,7 @@ function showTaskDetails(taskId) {
         <div class="task-detail-section">
             <label class="task-detail-label">Subtasks</label>
             <div class="subtasks-list" id="subtasksList">
-                ${task.subtasks.map((subtask, index) => `
-                    <div class="subtask-item" data-subtask-id="${subtask.id}">
-                        <input type="checkbox" class="subtask-checkbox" ${subtask.completed ? 'checked' : ''}
-                            data-subtask-index="${index}">
-                        <span class="subtask-text ${subtask.completed ? 'completed' : ''}">${escapeHtml(subtask.text)}</span>
-                        <button class="subtask-delete-btn" data-subtask-index="${index}" title="Delete subtask">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                `).join('')}
+                ${task.subtasks.map((subtask, index) => `<div class="subtask-item" data-subtask-id="${subtask.id}"><input type="checkbox" class="subtask-checkbox" ${subtask.completed ? 'checked' : ''} data-subtask-index="${index}"><span class="subtask-text ${subtask.completed ? 'completed' : ''}">${escapeHtml(subtask.text)}</span><button class="subtask-delete-btn" data-subtask-index="${index}" title="Delete subtask"><i class="fas fa-times"></i></button></div>`).join('')}
             </div>
             <div class="subtask-add-form">
                 <input type="text" class="subtask-input" id="subtaskInput" placeholder="Add a subtask..." />
