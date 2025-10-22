@@ -2295,11 +2295,51 @@ form select {
     color: var(--text-color);
     margin-bottom: 4px;
     word-wrap: break-word;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .task-list-item.completed .task-list-item-title {
     text-decoration: line-through;
     color: var(--text-muted);
+}
+
+/* My Day Badge */
+.my-day-badge {
+    font-size: 14px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+/* My Day Toggle Button */
+.my-day-toggle-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+}
+
+.my-day-toggle-btn:hover {
+    background: var(--hover-color);
+    color: var(--primary-color);
+}
+
+.my-day-toggle-btn.active {
+    color: #f59e0b;
+}
+
+.my-day-toggle-btn.active:hover {
+    color: #d97706;
 }
 
 .task-list-item-meta {
@@ -2489,12 +2529,33 @@ form select {
     transform: translateY(-1px);
 }
 
+/* Kanban Card Header */
+.kanban-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
 .kanban-card-title {
     font-size: 14px;
     font-weight: 500;
     color: var(--text-color);
-    margin-bottom: 8px;
     line-height: 1.4;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.kanban-card-header .my-day-toggle-btn {
+    width: 28px;
+    height: 28px;
+    padding: 4px;
+    font-size: 12px;
 }
 
 .kanban-card-meta {

@@ -131,6 +131,19 @@ function setupEventListeners() {
     // Task list (event delegation)
     taskList.addEventListener('click', handleTaskClick);
 
+    // Kanban board (event delegation for My Day toggles)
+    kanbanBoard.addEventListener('click', (e) => {
+        const myDayBtn = e.target.closest('.my-day-toggle-btn');
+        if (myDayBtn) {
+            const card = e.target.closest('.kanban-card');
+            if (card) {
+                const taskId = card.dataset.taskId;
+                toggleTaskMyDay(taskId);
+                e.stopPropagation();
+            }
+        }
+    });
+
     // Detail panel close
     closeDetailPanel.addEventListener('click', hideDetailPanel);
 
@@ -685,8 +698,21 @@ function createKanbanCard(task) {
         </div>
     ` : '';
 
+    // My Day badge
+    const myDayBadgeHTML = task.isMyDay ? `<span class="my-day-badge" title="In My Day">✨</span>` : '';
+
     card.innerHTML = `
-        <div class="kanban-card-title">${escapeHtml(task.text)}</div>
+        <div class="kanban-card-header">
+            <div class="kanban-card-title">
+                ${myDayBadgeHTML}
+                ${escapeHtml(task.text)}
+            </div>
+            <button class="my-day-toggle-btn ${task.isMyDay ? 'active' : ''}"
+                    data-action="toggle-my-day"
+                    title="${task.isMyDay ? 'Remove from My Day' : 'Add to My Day'}">
+                <i class="fas fa-sun"></i>
+            </button>
+        </div>
         <div class="kanban-card-meta">
             <span class="kanban-card-priority ${task.priority}">${task.priority}</span>
             ${dueDateHTML}
@@ -694,8 +720,12 @@ function createKanbanCard(task) {
         </div>
     `;
 
-    // Click to open detail panel
-    card.addEventListener('click', () => showTaskDetails(task.id));
+    // Click to open detail panel (except for My Day button)
+    card.addEventListener('click', (e) => {
+        if (!e.target.closest('.my-day-toggle-btn')) {
+            showTaskDetails(task.id);
+        }
+    });
 
     return card;
 }
@@ -749,10 +779,25 @@ function createTaskElement(task) {
         `;
     }
 
+    // My Day badge
+    const myDayBadgeHTML = task.isMyDay ? `<span class="my-day-badge" title="In My Day">✨</span>` : '';
+
+    // My Day toggle button
+    const myDayToggleHTML = `
+        <button class="my-day-toggle-btn ${task.isMyDay ? 'active' : ''}"
+                data-action="toggle-my-day"
+                title="${task.isMyDay ? 'Remove from My Day' : 'Add to My Day'}">
+            <i class="fas fa-sun"></i>
+        </button>
+    `;
+
     li.innerHTML = `
         <div class="task-checkbox ${task.completed ? 'checked' : ''}" data-action="toggle-complete"></div>
         <div class="task-list-item-content">
-            <div class="task-list-item-title">${escapeHtml(task.text)}</div>
+            <div class="task-list-item-title">
+                ${myDayBadgeHTML}
+                ${escapeHtml(task.text)}
+            </div>
             ${task.description ? `<div class="task-list-item-description">${escapeHtml(task.description).substring(0, 100)}${task.description.length > 100 ? '...' : ''}</div>` : ''}
             <div class="task-list-item-meta">
                 ${priorityHTML}
@@ -760,6 +805,7 @@ function createTaskElement(task) {
                 ${subtasksHTML}
             </div>
         </div>
+        ${myDayToggleHTML}
     `;
 
     return li;
@@ -777,6 +823,9 @@ function handleTaskClick(e) {
 
     if (action === 'toggle-complete') {
         toggleTaskComplete(taskId);
+    } else if (action === 'toggle-my-day') {
+        toggleTaskMyDay(taskId);
+        e.stopPropagation(); // Prevent opening detail panel
     } else {
         // Show task details
         showTaskDetails(taskId);
@@ -800,6 +849,23 @@ function toggleTaskComplete(taskId) {
     reRenderCurrentView();
 
     Logger.debug('Task toggled:', taskId, updates.completed);
+}
+
+/**
+ * Toggle task My Day status
+ */
+function toggleTaskMyDay(taskId) {
+    const task = taskDataManager.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const updates = {
+        isMyDay: !task.isMyDay
+    };
+
+    taskDataManager.updateTask(taskId, updates);
+    reRenderCurrentView();
+
+    Logger.debug('Task My Day toggled:', taskId, updates.isMyDay);
 }
 
 /**
