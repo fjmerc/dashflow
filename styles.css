@@ -2077,6 +2077,28 @@ form select {
     color: var(--text-color);
 }
 
+/* Sidebar Toggle Button (hidden on desktop) */
+.sidebar-toggle-btn {
+    display: none;
+    width: 36px;
+    height: 36px;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--text-color);
+    font-size: 18px;
+    transition: all 0.15s ease;
+}
+
+.sidebar-toggle-btn:hover {
+    background: var(--hover-background);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
 .view-header-actions {
     display: flex;
     gap: 8px;
@@ -2402,6 +2424,7 @@ form select {
 
 /* Responsive Design */
 @media (max-width: 1024px) {
+    /* Detail panel becomes overlay on tablets */
     .task-detail-panel {
         position: fixed;
         right: 0;
@@ -2410,9 +2433,15 @@ form select {
         z-index: 100;
         box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
     }
+
+    /* Main content takes remaining space */
+    .task-main {
+        width: 100%;
+    }
 }
 
 @media (max-width: 768px) {
+    /* Sidebar becomes overlay and hidden by default */
     .task-sidebar {
         position: fixed;
         left: 0;
@@ -2420,10 +2449,21 @@ form select {
         height: calc(100vh - 60px);
         z-index: 200;
         box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+
+    .task-sidebar:not(.collapsed) {
+        transform: translateX(0);
     }
 
     .task-sidebar.collapsed {
         transform: translateX(-100%);
+    }
+
+    /* Main content takes full width */
+    .task-main {
+        width: 100%;
     }
 
     .task-main-header {
@@ -2437,6 +2477,11 @@ form select {
 
     .task-main-title h2 {
         font-size: 20px;
+    }
+
+    /* Show sidebar toggle button on mobile */
+    .sidebar-toggle-btn {
+        display: flex;
     }
 
     /* Make header actions wrap to next line on small screens */

@@ -5,6 +5,7 @@
 
 // DOM Elements
 const taskSidebar = document.getElementById('taskSidebar');
+const sidebarToggle = document.getElementById('sidebarToggle');
 const projectsList = document.getElementById('projectsList');
 const smartViewsList = document.getElementById('smartViewsList');
 const addProjectBtn = document.getElementById('addProjectBtn');
@@ -50,6 +51,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update title
     updateTitle();
+
+    // Initialize sidebar state for mobile
+    if (window.innerWidth <= 768) {
+        taskSidebar.classList.add('collapsed');
+    }
 
     Logger.debug('Task List App: Initialized');
 });
@@ -128,6 +134,20 @@ function setupEventListeners() {
         if (deleteBtn) {
             const projectId = deleteBtn.dataset.projectId;
             deleteProject(projectId);
+        }
+    });
+
+    // Sidebar toggle for mobile
+    sidebarToggle.addEventListener('click', () => {
+        taskSidebar.classList.toggle('collapsed');
+    });
+
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768) {
+            if (!taskSidebar.contains(e.target) && !sidebarToggle.contains(e.target)) {
+                taskSidebar.classList.add('collapsed');
+            }
         }
     });
 
