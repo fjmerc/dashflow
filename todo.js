@@ -10,6 +10,11 @@ const projectsList = document.getElementById('projectsList');
 const smartViewsList = document.getElementById('smartViewsList');
 const addProjectBtn = document.getElementById('addProjectBtn');
 const taskList = document.getElementById('taskList');
+const kanbanBoard = document.getElementById('kanbanBoard');
+const todoColumn = document.getElementById('todoColumn');
+const inProgressColumn = document.getElementById('inProgressColumn');
+const doneColumn = document.getElementById('doneColumn');
+const blockedColumn = document.getElementById('blockedColumn');
 const quickAddForm = document.getElementById('quickAddForm');
 const quickAddInput = document.getElementById('quickAddInput');
 const emptyState = document.getElementById('emptyState');
@@ -33,6 +38,7 @@ let taskDataManager;
 let currentView = 'my-day';
 let currentProjectId = null;
 let selectedTaskId = null;
+let currentLayout = 'list'; // 'list' or 'board'
 let username = localStorage.getItem('username') || 'User';
 
 // Initialize
@@ -118,19 +124,18 @@ function setupEventListeners() {
     importInput.addEventListener('change', handleImport);
     exportAllBtn.addEventListener('click', () => exportAllData(false));
 
-    // View switcher - Board view coming in Checkpoint 3
+    // View switcher - Toggle between list and board
     document.querySelectorAll('.view-switcher-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const layout = btn.dataset.layout;
 
-            if (layout === 'board') {
-                // Show coming soon message
-                alert('📊 Board view is coming in the next update!\n\nFor now, enjoy the List view. The Kanban board will be available soon with drag-and-drop between columns.');
-                return;
-            }
-
+            // Update active button
             document.querySelectorAll('.view-switcher-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+
+            // Switch layout
+            currentLayout = layout;
+            switchViewLayout(layout);
         });
     });
 
@@ -396,6 +401,172 @@ function renderTasks() {
     renderSidebar();
 
     Logger.debug('Rendered', tasks.length, 'tasks');
+}
+
+/**
+ * Switch between list and board layouts
+ */
+function switchViewLayout(layout) {
+    if (layout === 'board') {
+        // Show board, hide list
+        taskList.classList.add('hidden');
+        kanbanBoard.classList.remove('hidden');
+        renderBoardView();
+    } else {
+        // Show list, hide board
+        taskList.classList.remove('hidden');
+        kanbanBoard.classList.add('hidden');
+        renderTasks();
+    }
+
+    Logger.debug('Switched to layout:', layout);
+}
+
+/**
+ * Render Kanban Board View
+ */
+function renderBoardView() {
+    Logger.debug('Rendering board view for:', currentView);
+
+    // Get tasks using same logic as list view
+    let tasks = [];
+
+    switch (currentView) {
+        case 'my-day':
+            tasks = taskDataManager.getMyDayTasks();
+            break;
+        case 'inbox':
+            tasks = taskDataManager.getTasksByProject(DEFAULT_PROJECTS.INBOX);
+            break;
+        case 'all':
+            tasks = taskDataManager.getAllTasks();
+            break;
+        case 'project':
+            if (currentProjectId) {
+                tasks = taskDataManager.getTasksByProject(currentProjectId);
+            }
+            break;
+    }
+
+    // Filter out completed tasks for board view
+    tasks = tasks.filter(t => !t.completed);
+
+    // Group tasks by status
+    const tasksByStatus = {
+        'todo': tasks.filter(t => t.status === 'todo'),
+        'in-progress': tasks.filter(t => t.status === 'in-progress'),
+        'done': tasks.filter(t => t.status === 'done'),
+        'blocked': tasks.filter(t => t.status === 'blocked')
+    };
+
+    // Clear columns
+    todoColumn.innerHTML = '';
+    inProgressColumn.innerHTML = '';
+    doneColumn.innerHTML = '';
+    blockedColumn.innerHTML = '';
+
+    // Render cards in each column
+    Object.keys(tasksByStatus).forEach(status => {
+        const columnTasks = tasksByStatus[status];
+        const column = getColumnElement(status);
+
+        columnTasks.forEach(task => {
+            const card = createKanbanCard(task);
+            column.appendChild(card);
+        });
+
+        // Update count
+        updateColumnCount(status, columnTasks.length);
+    });
+
+    // Show/hide empty state
+    if (tasks.length === 0) {
+        emptyState.style.display = 'block';
+    } else {
+        emptyState.style.display = 'none';
+    }
+
+    // Update sidebar counts
+    renderSidebar();
+
+    Logger.debug('Rendered board with', tasks.length, 'tasks');
+}
+
+/**
+ * Get column element by status
+ */
+function getColumnElement(status) {
+    switch (status) {
+        case 'todo': return todoColumn;
+        case 'in-progress': return inProgressColumn;
+        case 'done': return doneColumn;
+        case 'blocked': return blockedColumn;
+        default: return todoColumn;
+    }
+}
+
+/**
+ * Update column count badge
+ */
+function updateColumnCount(status, count) {
+    const countId = {
+        'todo': 'todoCount',
+        'in-progress': 'inProgressCount',
+        'done': 'doneCount',
+        'blocked': 'blockedCount'
+    }[status];
+
+    const countEl = document.getElementById(countId);
+    if (countEl) {
+        countEl.textContent = count;
+    }
+}
+
+/**
+ * Create Kanban card element
+ */
+function createKanbanCard(task) {
+    const card = document.createElement('div');
+    card.className = 'kanban-card';
+    card.dataset.taskId = task.id;
+
+    // Due date
+    let dueDateHTML = '';
+    if (task.dueDate) {
+        const dueDate = new Date(task.dueDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const isOverdue = dueDate < today;
+
+        dueDateHTML = `
+            <div class="kanban-card-due ${isOverdue ? 'overdue' : ''}">
+                <i class="fas fa-calendar"></i>
+                ${dueDate.toLocaleDateString()}
+            </div>
+        `;
+    }
+
+    // Project
+    const project = taskDataManager.getProjectById(task.projectId);
+    const projectHTML = project ? `
+        <div class="kanban-card-project">
+            ${project.icon} ${project.name}
+        </div>
+    ` : '';
+
+    card.innerHTML = `
+        <div class="kanban-card-title">${escapeHtml(task.text)}</div>
+        <div class="kanban-card-meta">
+            <span class="kanban-card-priority ${task.priority}">${task.priority}</span>
+            ${dueDateHTML}
+            ${projectHTML}
+        </div>
+    `;
+
+    // Click to open detail panel
+    card.addEventListener('click', () => showTaskDetails(task.id));
+
+    return card;
 }
 
 /**
