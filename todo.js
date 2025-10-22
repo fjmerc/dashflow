@@ -710,7 +710,7 @@ function createKanbanCard(task) {
             <button class="my-day-toggle-btn ${task.isMyDay ? 'active' : ''}"
                     data-action="toggle-my-day"
                     title="${task.isMyDay ? 'Remove from My Day' : 'Add to My Day'}">
-                <i class="fas fa-star"></i>
+                <i class="fas fa-circle-plus"></i>
             </button>
         </div>
         <div class="kanban-card-meta">
@@ -787,7 +787,7 @@ function createTaskElement(task) {
         <button class="my-day-toggle-btn ${task.isMyDay ? 'active' : ''}"
                 data-action="toggle-my-day"
                 title="${task.isMyDay ? 'Remove from My Day' : 'Add to My Day'}">
-            <i class="fas fa-star"></i>
+            <i class="fas fa-circle-plus"></i>
         </button>
     `;
 
