@@ -1,116 +1,69 @@
-// Custom modal dialog functions
-// Modal showModal function now provided by modal-manager.js
+/**
+ * Enterprise Task List - Main Application Logic
+ * Integrates with TaskDataManager for data persistence
+ */
 
-// Modal hideModal function now provided by modal-manager.js
+// DOM Elements
+const taskSidebar = document.getElementById('taskSidebar');
+const projectsList = document.getElementById('projectsList');
+const smartViewsList = document.getElementById('smartViewsList');
+const addProjectBtn = document.getElementById('addProjectBtn');
+const taskList = document.getElementById('taskList');
+const quickAddForm = document.getElementById('quickAddForm');
+const quickAddInput = document.getElementById('quickAddInput');
+const emptyState = document.getElementById('emptyState');
+const viewTitle = document.getElementById('viewTitle');
+const viewSubtitle = document.getElementById('viewSubtitle');
+const taskDetailPanel = document.getElementById('taskDetailPanel');
+const closeDetailPanel = document.getElementById('closeDetailPanel');
+const detailPanelContent = document.getElementById('detailPanelContent');
 
-const todoForm = document.getElementById('todoForm');
-const todoInput = document.getElementById('todoInput');
-const todoNotes = document.getElementById('todoNotes');
-const todoList = document.getElementById('todoList');
+// Header buttons
 const backToDashboard = document.getElementById('backToDashboard');
 const settingsBtn = document.getElementById('settingsBtn');
 const darkModeBtn = document.getElementById('darkModeBtn');
 const themeColorBtn = document.getElementById('themeColorBtn');
 const importTodosBtn = document.getElementById('importTodosBtn');
+const exportAllBtn = document.getElementById('exportAllBtn');
 const importInput = document.getElementById('importInput');
 
-let todos = [];
+// State
+let taskDataManager;
+let currentView = 'my-day';
+let currentProjectId = null;
+let selectedTaskId = null;
 let username = localStorage.getItem('username') || 'User';
-let searchDebounceTimer;
 
-// Function to reload todos from localStorage with enhanced debugging
-function reloadTodos() {
-    try {
-        const storedTodos = localStorage.getItem('todos');
-        Logger.debug('Current localStorage todos:', storedTodos);
-
-        if (!storedTodos) {
-            Logger.debug('No todos found in localStorage');
-            todos = [];
-        } else {
-            todos = JSON.parse(storedTodos);
-            Logger.debug('Successfully parsed todos:', todos);
-        }
-
-        renderTodos();
-        Logger.debug('Todos rendered, current count:', todos.length);
-    } catch (error) {
-        Logger.error('Error loading todos:', error);
-        if (window.errorHandler) {
-            window.errorHandler.handleError(error, 'storage', {
-                operation: 'load_todos'
-            });
-        }
-        todos = [];
-        renderTodos();
-    }
-}
-
-// Enhanced initialization
-function initializeTodos() {
-    Logger.debug('Initializing todos page');
-    reloadTodos();
-    updateTitle();
-}
-
-// Listen for changes to localStorage (e.g., from import)
-window.addEventListener('storage', function(e) {
-    Logger.debug('Storage event received:', e.key, e.newValue);
-    if (e.key === 'todos') {
-        reloadTodos();
-    } else if (e.key === 'username') {
-        username = e.newValue || 'User';
-        updateTitle();
-    }
-});
-
-// Create a proxy for localStorage to detect changes in the same window
-// Use a flag to prevent infinite loops from our own updates
-let isUpdatingTodos = false;
-const originalSetItem = localStorage.setItem;
-localStorage.setItem = function(key, value) {
-    originalSetItem.apply(this, arguments);
-    if (key === 'todos' && !isUpdatingTodos) {
-        // Set flag to prevent loop and reload todos after a brief delay
-        setTimeout(() => reloadTodos(), 50);
-    }
-};
-
-// Initialize on DOMContentLoaded
+// Initialize
 document.addEventListener('DOMContentLoaded', function() {
-    Logger.debug('DOMContentLoaded event fired');
+    Logger.debug('Task List App: Initializing');
 
-    // Make sure modal is hidden initially
-    const modal = document.getElementById('customModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
+    // Initialize TaskDataManager
+    taskDataManager = new TaskDataManager();
 
-    initializeTodos();
+    // Render UI
+    renderSidebar();
+    renderTasks();
+
+    // Setup event listeners
+    setupEventListeners();
+
+    // Update title
+    updateTitle();
+
+    Logger.debug('Task List App: Initialized');
 });
 
-// Reload when page becomes visible
-document.addEventListener('visibilitychange', function() {
-    if (!document.hidden) {
-        Logger.debug('Page became visible, reloading todos');
-        reloadTodos();
-    }
-});
-
-// Enhanced todosUpdated event listener
-window.addEventListener('todosUpdated', function(e) {
-    Logger.debug('todosUpdated event received:', e.detail);
-    // Force a direct localStorage check
-    const currentTodos = localStorage.getItem('todos');
-    Logger.debug('Current localStorage state:', currentTodos);
-    reloadTodos();
-});
-
+/**
+ * Update page title
+ */
 function updateTitle() {
     document.title = `${username}'s Task List`;
-    document.querySelector('h1').textContent = `${username}'s Task List`;
 }
 
+/**
+ * Change username
+ */
 function changeUsername() {
     const newUsername = prompt('Enter your name:', username);
     if (newUsername && newUsername.trim()) {
@@ -120,495 +73,600 @@ function changeUsername() {
     }
 }
 
-// Priority levels
-const PRIORITIES = {
-    LOW: 'low',
-    MEDIUM: 'medium',
-    HIGH: 'high'
-};
+/**
+ * Setup Event Listeners
+ */
+function setupEventListeners() {
+    // Quick add form
+    quickAddForm.addEventListener('submit', handleQuickAdd);
 
-function saveTodos() {
-    isUpdatingTodos = true;
-    localStorage.setItem('todos', JSON.stringify(todos));
-    // Clear flag after storage is complete
-    setTimeout(() => {
-        isUpdatingTodos = false;
-    }, 100);
-}
+    // Sidebar view items
+    smartViewsList.addEventListener('click', handleViewClick);
 
-function filterTodos(searchText = '', priorityFilter = 'all') {
-    return todos.filter(todo => {
-        const matchesSearch = todo.text.toLowerCase().includes(searchText.toLowerCase()) ||
-                            (todo.summary && todo.summary.toLowerCase().includes(searchText.toLowerCase())) ||
-                            (todo.notes && todo.notes.toLowerCase().includes(searchText.toLowerCase()));
-        const matchesPriority = priorityFilter === 'all' || todo.priority === priorityFilter;
-        return matchesSearch && matchesPriority;
+    // Projects list
+    projectsList.addEventListener('click', handleProjectClick);
+
+    // Add project button
+    addProjectBtn.addEventListener('click', showAddProjectModal);
+
+    // Task list (event delegation)
+    taskList.addEventListener('click', handleTaskClick);
+
+    // Detail panel close
+    closeDetailPanel.addEventListener('click', hideDetailPanel);
+
+    // Header buttons
+    backToDashboard.addEventListener('click', () => window.location.href = 'index.html');
+    darkModeBtn.addEventListener('click', () => themeManager.toggleDarkMode());
+    themeColorBtn.addEventListener('click', () => themeManager.changeThemeColor());
+    settingsBtn.addEventListener('click', changeUsername);
+
+    // Import/Export
+    importTodosBtn.addEventListener('click', () => importInput.click());
+    importInput.addEventListener('change', handleImport);
+    exportAllBtn.addEventListener('click', () => exportAllData(false));
+
+    // View switcher
+    document.querySelectorAll('.view-switcher-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.view-switcher-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            // TODO: Implement board view in later checkpoint
+        });
     });
+
+    Logger.debug('Event listeners setup complete');
 }
 
-function renderTodos(searchText = '', priorityFilter = 'all') {
-    Logger.debug('Rendering todos with filter:', searchText, priorityFilter);
-    todoList.innerHTML = '';
-    const filteredTodos = filterTodos(searchText, priorityFilter);
-    filteredTodos.forEach((todo, index) => {
-        const li = document.createElement('li');
-        li.className = `todo-item priority-${todo.priority || 'none'} ${todo.completed ? 'completed-task' : ''}`;
-        li.setAttribute('data-index', index); // Add original index as a data attribute
-        const dueDate = todo.dueDate ? new Date(todo.dueDate).toLocaleDateString() : 'No due date';
-        const isOverdue = todo.dueDate && new Date(todo.dueDate) < new Date() && !todo.completed;
+/**
+ * Render Sidebar
+ */
+function renderSidebar() {
+    Logger.debug('Rendering sidebar');
 
-        li.innerHTML = `
-            <div class="todo-content">
-                <div class="todo-header">
-                    <span class="todo-text ${todo.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}">${todo.text}</span>
-                    <span class="todo-due-date ${isOverdue ? 'overdue' : ''}">${dueDate}</span>
-                </div>
-                ${todo.summary || todo.notes ?
-                    `<div class="todo-notes-container">
-                        <p class="todo-summary${todo.summary && todo.summary.length > 100 ? ' truncated' : ''}">${(todo.summary || todo.notes).slice(0, 100)}${(todo.summary || todo.notes).length > 100 ? '...' : ''}</p>
-                        ${(todo.summary || todo.notes).length > 100 ? '<span class="todo-summary-expand" data-index="' + index + '">Show more</span>' : ''}
-                    </div>`
-                : ''}
-                <span class="todo-priority">Priority: <span class="priority-indicator priority-${todo.priority || 'none'}">${todo.priority || 'None'}</span></span>
-            </div>
-            <div class="todo-actions">
-                <button class="todo-btn complete-btn" data-action="complete" data-index="${index}" title="Toggle Complete">
-                    <i class="fas fa-check"></i>
-                </button>
-                <button class="todo-btn edit-btn" data-action="edit" data-index="${index}" title="Edit Task" style="background-color: #eab308;">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="todo-btn delete-btn" data-action="delete" data-index="${index}" title="Delete Task">
-                    <i class="fas fa-trash"></i>
-                </button>
-                <button class="todo-btn summary-btn" data-action="summary" data-index="${index}" title="Edit Summary" style="background-color: #3498db;">
-                    <i class="fas fa-comment"></i>
-                </button>
-                <button class="todo-btn date-btn" data-action="date" data-index="${index}" title="Set Due Date">
-                    <i class="fas fa-calendar"></i>
-                </button>
-                <button class="todo-btn priority-btn priority-${todo.priority || 'none'}-btn" data-action="priority" data-index="${index}" title="Toggle Priority">
-                    <i class="fas fa-flag"></i>
-                </button>
-            </div>
+    // Update counts for smart views
+    const myDayTasks = taskDataManager.getMyDayTasks();
+    const inboxTasks = taskDataManager.getTasksByProject(DEFAULT_PROJECTS.INBOX);
+    const allTasks = taskDataManager.getAllTasks().filter(t => !t.completed);
+
+    document.getElementById('myDayCount').textContent = myDayTasks.length;
+    document.getElementById('inboxCount').textContent = inboxTasks.filter(t => !t.completed).length;
+    document.getElementById('allCount').textContent = allTasks.length;
+
+    // Render projects
+    const projects = taskDataManager.getAllProjects();
+    projectsList.innerHTML = '';
+
+    projects.forEach(project => {
+        const projectTasks = taskDataManager.getTasksByProject(project.id).filter(t => !t.completed);
+        const projectItem = document.createElement('div');
+        projectItem.className = 'sidebar-item project-item';
+        projectItem.dataset.projectId = project.id;
+        projectItem.style.setProperty('--project-color', project.color);
+
+        // Check if this project is currently selected
+        if (currentView === 'project' && currentProjectId === project.id) {
+            projectItem.classList.add('active');
+        }
+
+        projectItem.innerHTML = `
+            <div class="sidebar-item-icon">${project.icon}</div>
+            <div class="sidebar-item-text">${project.name}</div>
+            <span class="sidebar-item-count">${projectTasks.length}</span>
         `;
-        todoList.appendChild(li);
+
+        projectsList.appendChild(projectItem);
     });
+
+    Logger.debug('Sidebar rendered with', projects.length, 'projects');
 }
 
-function addTodo(event) {
-    event.preventDefault();
-    const todoText = todoInput.value.trim();
-    const notes = todoNotes.value.trim();
-    if (todoText) {
-        todos.unshift({
-            text: todoText,
-            completed: false,
-            summary: notes, // Use the notes field for summary
-            notes: notes,  // Add a dedicated notes field for future compatibility
-            priority: PRIORITIES.MEDIUM,
-            dueDate: null
+/**
+ * Handle view click
+ */
+function handleViewClick(e) {
+    const viewItem = e.target.closest('.sidebar-item');
+    if (!viewItem) return;
+
+    const view = viewItem.dataset.view;
+    if (!view) return;
+
+    // Update active state
+    smartViewsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    viewItem.classList.add('active');
+
+    // Clear project selection
+    projectsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // Update current view
+    currentView = view;
+    currentProjectId = null;
+
+    // Update header
+    updateViewHeader();
+
+    // Render tasks
+    renderTasks();
+}
+
+/**
+ * Handle project click
+ */
+function handleProjectClick(e) {
+    const projectItem = e.target.closest('.sidebar-item');
+    if (!projectItem) return;
+
+    const projectId = projectItem.dataset.projectId;
+    if (!projectId) return;
+
+    // Update active state
+    projectsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    projectItem.classList.add('active');
+
+    // Clear view selection
+    smartViewsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // Update current view
+    currentView = 'project';
+    currentProjectId = projectId;
+
+    // Update header
+    updateViewHeader();
+
+    // Render tasks
+    renderTasks();
+}
+
+/**
+ * Update view header
+ */
+function updateViewHeader() {
+    let title = '';
+    let subtitle = '';
+
+    switch (currentView) {
+        case 'my-day':
+            title = 'My Day';
+            subtitle = 'Focus on what matters today';
+            break;
+        case 'inbox':
+            title = 'Inbox';
+            subtitle = 'Organize your tasks';
+            break;
+        case 'all':
+            title = 'All Tasks';
+            subtitle = 'View all your tasks';
+            break;
+        case 'project':
+            const project = taskDataManager.getProjectById(currentProjectId);
+            if (project) {
+                title = project.icon + ' ' + project.name;
+                subtitle = project.description || 'Project tasks';
+            }
+            break;
+    }
+
+    viewTitle.textContent = title;
+    viewSubtitle.textContent = subtitle;
+}
+
+/**
+ * Render Tasks
+ */
+function renderTasks() {
+    Logger.debug('Rendering tasks for view:', currentView);
+
+    let tasks = [];
+
+    switch (currentView) {
+        case 'my-day':
+            tasks = taskDataManager.getMyDayTasks();
+            break;
+        case 'inbox':
+            tasks = taskDataManager.getTasksByProject(DEFAULT_PROJECTS.INBOX);
+            break;
+        case 'all':
+            tasks = taskDataManager.getAllTasks();
+            break;
+        case 'project':
+            if (currentProjectId) {
+                tasks = taskDataManager.getTasksByProject(currentProjectId);
+            }
+            break;
+    }
+
+    // Sort: incomplete first, then by position
+    tasks.sort((a, b) => {
+        if (a.completed !== b.completed) {
+            return a.completed ? 1 : -1;
+        }
+        return b.position - a.position; // Newer tasks first
+    });
+
+    // Render
+    taskList.innerHTML = '';
+
+    if (tasks.length === 0) {
+        emptyState.style.display = 'block';
+    } else {
+        emptyState.style.display = 'none';
+
+        tasks.forEach(task => {
+            const taskItem = createTaskElement(task);
+            taskList.appendChild(taskItem);
         });
-        saveTodos();
-        todoInput.value = '';
-        todoNotes.value = '';
-        renderTodos();
     }
+
+    // Update sidebar counts
+    renderSidebar();
+
+    Logger.debug('Rendered', tasks.length, 'tasks');
 }
 
-function editDueDate(index) {
-    const currentDate = todos[index].dueDate ? new Date(todos[index].dueDate).toISOString().split('T')[0] : '';
-    const newDate = prompt('Enter due date (YYYY-MM-DD):', currentDate);
-    if (newDate !== null) {
-        todos[index].dueDate = newDate ? new Date(newDate).toISOString() : null;
-        saveTodos();
-        renderTodos();
+/**
+ * Create task element
+ */
+function createTaskElement(task) {
+    const li = document.createElement('li');
+    li.className = 'task-list-item';
+    li.dataset.taskId = task.id;
+
+    if (task.completed) {
+        li.classList.add('completed');
     }
-}
 
-function togglePriority(index) {
-    const priorities = Object.values(PRIORITIES);
-    const currentPriorityIndex = priorities.indexOf(todos[index].priority || PRIORITIES.MEDIUM);
-    const nextPriorityIndex = (currentPriorityIndex + 1) % priorities.length;
-    todos[index].priority = priorities[nextPriorityIndex];
-    saveTodos();
-    renderTodos();
-}
+    // Format due date
+    let dueDateHTML = '';
+    if (task.dueDate) {
+        const dueDate = new Date(task.dueDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-function toggleComplete(index) {
-    todos[index].completed = !todos[index].completed;
-    saveTodos();
-    renderTodos();
-}
+        const isOverdue = dueDate < today && !task.completed;
+        const dueDateStr = dueDate.toLocaleDateString();
 
-function editTodo(index) {
-    Logger.debug('editTodo called for index:', index);
-    // Create a modal for editing the entire task
-    const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.style.display = 'block';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Edit Task</h3>
-                <span class="close">&times;</span>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="editTaskText">Task</label>
-                    <input type="text" id="editTaskText" value="${todos[index].text}" required>
-                </div>
-                <div class="form-group">
-                    <label for="editTaskNotes">Notes</label>
-                    <textarea id="editTaskNotes" rows="4" placeholder="Add notes or details about this task">${todos[index].summary || todos[index].notes || ''}</textarea>
-                </div>
-                <div class="form-group">
-                    <label for="editTaskPriority">Priority</label>
-                    <select id="editTaskPriority">
-                        <option value="low" ${todos[index].priority === 'low' ? 'selected' : ''}>Low</option>
-                        <option value="medium" ${todos[index].priority === 'medium' ? 'selected' : ''}>Medium</option>
-                        <option value="high" ${todos[index].priority === 'high' ? 'selected' : ''}>High</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="editTaskDueDate">Due Date</label>
-                    <input type="date" id="editTaskDueDate" value="${todos[index].dueDate ? new Date(todos[index].dueDate).toISOString().split('T')[0] : ''}">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="saveTaskBtn" class="modal-btn primary">Save</button>
-                <button id="cancelTaskBtn" class="modal-btn">Cancel</button>
+        dueDateHTML = `
+            <span class="task-list-item-meta-item ${isOverdue ? 'overdue' : ''}">
+                <i class="fas fa-calendar"></i>
+                ${dueDateStr}
+            </span>
+        `;
+    }
+
+    // Priority badge
+    const priorityHTML = `
+        <span class="task-priority-badge priority-${task.priority}">
+            ${task.priority}
+        </span>
+    `;
+
+    // Subtasks count
+    let subtasksHTML = '';
+    if (task.subtasks && task.subtasks.length > 0) {
+        const completedSubtasks = task.subtasks.filter(st => st.completed).length;
+        subtasksHTML = `
+            <span class="task-list-item-meta-item">
+                <i class="fas fa-list-check"></i>
+                ${completedSubtasks}/${task.subtasks.length}
+            </span>
+        `;
+    }
+
+    li.innerHTML = `
+        <div class="task-checkbox ${task.completed ? 'checked' : ''}" data-action="toggle-complete"></div>
+        <div class="task-list-item-content">
+            <div class="task-list-item-title">${escapeHtml(task.text)}</div>
+            ${task.description ? `<div class="task-list-item-description">${escapeHtml(task.description).substring(0, 100)}${task.description.length > 100 ? '...' : ''}</div>` : ''}
+            <div class="task-list-item-meta">
+                ${priorityHTML}
+                ${dueDateHTML}
+                ${subtasksHTML}
             </div>
         </div>
     `;
-    document.body.appendChild(modal);
 
-    // Add event listeners
-    modal.querySelector('.close').addEventListener('click', () => {
-        document.body.removeChild(modal);
-    });
-
-    modal.querySelector('#cancelTaskBtn').addEventListener('click', () => {
-        document.body.removeChild(modal);
-    });
-
-    modal.querySelector('#saveTaskBtn').addEventListener('click', () => {
-        const taskText = document.getElementById('editTaskText').value.trim();
-
-        if (!taskText) {
-            alert('Task text cannot be empty');
-            return;
-        }
-
-        const taskNotes = document.getElementById('editTaskNotes').value.trim();
-        const taskPriority = document.getElementById('editTaskPriority').value;
-        const taskDueDate = document.getElementById('editTaskDueDate').value;
-
-        todos[index].text = taskText;
-        todos[index].summary = taskNotes;
-        todos[index].notes = taskNotes;
-        todos[index].priority = taskPriority;
-        todos[index].dueDate = taskDueDate ? new Date(taskDueDate).toISOString() : null;
-
-        saveTodos();
-        renderTodos();
-        document.body.removeChild(modal);
-    });
-
-    // Allow clicking outside modal to close
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            document.body.removeChild(modal);
-        }
-    });
-
-    // Focus the task text input
-    setTimeout(() => {
-        document.getElementById('editTaskText').focus();
-    }, 0);
+    return li;
 }
 
-function deleteTodo(index) {
-    showModal(
-        'Delete Task',
-        'Are you sure you want to delete this task?',
-        // Yes callback
-        () => {
-            todos.splice(index, 1);
-            saveTodos();
-            renderTodos();
-        },
-        // No callback
-        () => {
-            // Do nothing
-        }
-    );
+/**
+ * Handle task click
+ */
+function handleTaskClick(e) {
+    const taskItem = e.target.closest('.task-list-item');
+    if (!taskItem) return;
+
+    const taskId = taskItem.dataset.taskId;
+    const action = e.target.closest('[data-action]')?.dataset.action;
+
+    if (action === 'toggle-complete') {
+        toggleTaskComplete(taskId);
+    } else {
+        // Show task details
+        showTaskDetails(taskId);
+    }
 }
 
-function viewFullNotes(index) {
-    Logger.debug('viewFullNotes called for index:', index);
-    // Create a modal to display the full notes
-    const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.style.display = 'block';
-    const notesContent = todos[index].summary || todos[index].notes || 'No notes available.';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>${todos[index].text}</h3>
-                <span class="close">&times;</span>
+/**
+ * Toggle task complete
+ */
+function toggleTaskComplete(taskId) {
+    const task = taskDataManager.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const updates = {
+        completed: !task.completed,
+        completedAt: !task.completed ? new Date().toISOString() : null,
+        status: !task.completed ? TaskStatus.DONE : TaskStatus.TODO
+    };
+
+    taskDataManager.updateTask(taskId, updates);
+    renderTasks();
+
+    Logger.debug('Task toggled:', taskId, updates.completed);
+}
+
+/**
+ * Show task details
+ */
+function showTaskDetails(taskId) {
+    selectedTaskId = taskId;
+    const task = taskDataManager.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    // Get project
+    const project = taskDataManager.getProjectById(task.projectId);
+
+    // Format dates
+    const createdDate = new Date(task.createdAt).toLocaleDateString();
+    const dueDate = task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'Not set';
+
+    // Render detail panel
+    detailPanelContent.innerHTML = `
+        <div class="task-detail-section">
+            <label class="task-detail-label">Task</label>
+            <input type="text" class="task-detail-input" id="detailTaskText" value="${escapeHtml(task.text)}">
+        </div>
+
+        <div class="task-detail-section">
+            <label class="task-detail-label">Description</label>
+            <textarea class="task-detail-textarea" id="detailTaskDescription" rows="4" placeholder="Add a description...">${escapeHtml(task.description)}</textarea>
+        </div>
+
+        <div class="task-detail-section">
+            <label class="task-detail-label">Project</label>
+            <select class="task-detail-select" id="detailTaskProject">
+                ${taskDataManager.getAllProjects().map(p => `
+                    <option value="${p.id}" ${p.id === task.projectId ? 'selected' : ''}>
+                        ${p.icon} ${p.name}
+                    </option>
+                `).join('')}
+            </select>
+        </div>
+
+        <div class="task-detail-row">
+            <div class="task-detail-section">
+                <label class="task-detail-label">Priority</label>
+                <select class="task-detail-select" id="detailTaskPriority">
+                    <option value="low" ${task.priority === 'low' ? 'selected' : ''}>Low</option>
+                    <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>Medium</option>
+                    <option value="high" ${task.priority === 'high' ? 'selected' : ''}>High</option>
+                </select>
             </div>
-            <div class="modal-body notes-view">
-                <p>${notesContent.replace(/\n/g, '<br>')}</p>
-            </div>
-            <div class="modal-footer">
-                <button id="editNotesBtn" class="modal-btn primary">Edit Notes</button>
-                <button id="closeNotesBtn" class="modal-btn">Close</button>
+
+            <div class="task-detail-section">
+                <label class="task-detail-label">Due Date</label>
+                <input type="date" class="task-detail-input" id="detailTaskDueDate"
+                    value="${task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : ''}">
             </div>
         </div>
-    `;
-    document.body.appendChild(modal);
 
-    // Add event listeners
-    modal.querySelector('.close').addEventListener('click', () => {
-        document.body.removeChild(modal);
-    });
+        <div class="task-detail-section">
+            <label class="task-detail-label">
+                <input type="checkbox" id="detailTaskMyDay" ${task.isMyDay ? 'checked' : ''}>
+                Add to My Day
+            </label>
+        </div>
 
-    modal.querySelector('#closeNotesBtn').addEventListener('click', () => {
-        document.body.removeChild(modal);
-    });
+        <div class="task-detail-section">
+            <button class="task-detail-btn danger" id="deleteTaskBtn">
+                <i class="fas fa-trash"></i>
+                Delete Task
+            </button>
+        </div>
 
-    modal.querySelector('#editNotesBtn').addEventListener('click', () => {
-        document.body.removeChild(modal);
-        editSummary(index);
-    });
-
-    // Allow clicking outside modal to close
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            document.body.removeChild(modal);
-        }
-    });
-}
-
-function editSummary(index) {
-    Logger.debug('editSummary called for index:', index);
-    // Create a modal for editing notes
-    const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.style.display = 'block';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Edit Notes</h3>
-                <span class="close">&times;</span>
-            </div>
-            <div class="modal-body">
-                <textarea id="editNotesTextarea" rows="6" placeholder="Add detailed notes about this task">${todos[index].summary || ''}</textarea>
-            </div>
-            <div class="modal-footer">
-                <button id="saveNotesBtn" class="modal-btn primary">Save</button>
-                <button id="cancelNotesBtn" class="modal-btn">Cancel</button>
-            </div>
+        <div class="task-detail-meta">
+            <small>Created: ${createdDate}</small>
+            ${task.completedAt ? `<small>Completed: ${new Date(task.completedAt).toLocaleDateString()}</small>` : ''}
         </div>
     `;
-    document.body.appendChild(modal);
 
-    // Add event listeners
-    modal.querySelector('.close').addEventListener('click', () => {
-        document.body.removeChild(modal);
-    });
+    // Add styles for detail panel elements (inline for now)
+    const style = document.createElement('style');
+    style.textContent = `
+        .task-detail-section { margin-bottom: 20px; }
+        .task-detail-label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 8px; color: var(--text-muted); }
+        .task-detail-input, .task-detail-textarea, .task-detail-select {
+            width: 100%; padding: 10px; border: 1px solid var(--border-color);
+            border-radius: 6px; background: var(--background-color); color: var(--text-color);
+            font-size: 14px; font-family: inherit;
+        }
+        .task-detail-input:focus, .task-detail-textarea:focus, .task-detail-select:focus {
+            outline: none; border-color: var(--primary-color);
+        }
+        .task-detail-row { display: flex; gap: 12px; }
+        .task-detail-row .task-detail-section { flex: 1; }
+        .task-detail-btn {
+            width: 100%; padding: 10px; border: none; border-radius: 6px;
+            font-weight: 500; cursor: pointer; transition: all 0.15s ease;
+        }
+        .task-detail-btn.danger {
+            background: rgba(239, 68, 68, 0.1); color: #ef4444;
+        }
+        .task-detail-btn.danger:hover { background: #ef4444; color: white; }
+        .task-detail-meta { margin-top: 20px; padding-top: 20px;
+            border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 4px;
+        }
+        .task-detail-meta small { color: var(--text-muted); font-size: 12px; }
+    `;
+    if (!document.getElementById('detailPanelStyles')) {
+        style.id = 'detailPanelStyles';
+        document.head.appendChild(style);
+    }
 
-    modal.querySelector('#cancelNotesBtn').addEventListener('click', () => {
-        document.body.removeChild(modal);
-    });
+    // Show panel
+    taskDetailPanel.classList.remove('hidden');
 
-    modal.querySelector('#saveNotesBtn').addEventListener('click', () => {
-        const newNotes = document.getElementById('editNotesTextarea').value.trim();
-        todos[index].summary = newNotes;
-        todos[index].notes = newNotes; // Update both fields for compatibility
-        saveTodos();
-        renderTodos();
-        document.body.removeChild(modal);
-    });
-
-    // Allow clicking outside modal to close
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            document.body.removeChild(modal);
+    // Auto-save on changes
+    const inputs = ['detailTaskText', 'detailTaskDescription', 'detailTaskProject', 'detailTaskPriority', 'detailTaskDueDate', 'detailTaskMyDay'];
+    inputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('change', () => saveTaskDetails(taskId));
         }
     });
 
-    // Focus the textarea
-    setTimeout(() => {
-        document.getElementById('editNotesTextarea').focus();
-    }, 0);
-}
-
-// Get new filter elements
-const searchTodo = document.getElementById('searchTodo');
-const priorityFilter = document.getElementById('priorityFilter');
-
-// Add event listeners for filters with debouncing
-searchTodo.addEventListener('input', (e) => {
-    clearTimeout(searchDebounceTimer);
-    searchDebounceTimer = setTimeout(() => {
-        renderTodos(e.target.value, priorityFilter.value);
-    }, 300); // Wait 300ms after user stops typing
-});
-
-priorityFilter.addEventListener('change', (e) => {
-    renderTodos(searchTodo.value, e.target.value);
-});
-
-// Initialize Sortable and setup drag functionality
-new Sortable(todoList, {
-    animation: 150,
-    ghostClass: 'todo-item-ghost',
-    onEnd: () => {
-        // Extract data attributes to maintain original indices
-        const newOrder = Array.from(todoList.children).map((li, newIndex) => {
-            // Try to get the original index from the data attribute
-            const originalIndex = parseInt(li.getAttribute('data-index'), 10);
-            return { originalIndex, newIndex };
-        });
-
-        // Reorder the todos array based on the new order
-        const reorderedTodos = [];
-        newOrder.forEach(item => {
-            if (!isNaN(item.originalIndex) && todos[item.originalIndex]) {
-                reorderedTodos[item.newIndex] = todos[item.originalIndex];
-            }
-        });
-
-        // Update todos with valid entries only
-        todos = reorderedTodos.filter(Boolean);
-
-        // Save and re-render
-        saveTodos();
-        renderTodos();
-    }
-});
-
-// Initialize everything
-updateTitle();
-
-// Initialize todos in localStorage if not present
-if (!localStorage.getItem('todos')) {
-    localStorage.setItem('todos', JSON.stringify([]));
-}
-
-// Ensure todos are loaded, with retry mechanism
-function ensureTodosLoaded() {
-    Logger.debug('Ensuring todos are loaded...');
-    const storedTodos = localStorage.getItem('todos');
-    if (storedTodos) {
-        try {
-            const parsed = JSON.parse(storedTodos);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-                Logger.debug('Found valid todos in localStorage:', parsed.length);
-                todos = parsed;
-                renderTodos();
-                return;
-            }
-        } catch (e) {
-            Logger.error('Error parsing stored todos:', e);
-            if (window.errorHandler) {
-                window.errorHandler.handleError(e, 'storage', {
-                    operation: 'parse_todos'
-                });
-            }
+    // Delete button
+    document.getElementById('deleteTaskBtn').addEventListener('click', () => {
+        if (confirm('Are you sure you want to delete this task?')) {
+            taskDataManager.deleteTask(taskId);
+            hideDetailPanel();
+            renderTasks();
         }
-    }
+    });
 
-    // If we get here, either no todos or invalid format
-    Logger.debug('No valid todos found, will retry in 1 second...');
-    setTimeout(ensureTodosLoaded, 1000); // Retry after 1 second
+    Logger.debug('Showing task details:', taskId);
 }
 
-// Start the initialization process
-reloadTodos();
-ensureTodosLoaded();
+/**
+ * Save task details
+ */
+function saveTaskDetails(taskId) {
+    const text = document.getElementById('detailTaskText').value.trim();
+    const description = document.getElementById('detailTaskDescription').value.trim();
+    const projectId = document.getElementById('detailTaskProject').value;
+    const priority = document.getElementById('detailTaskPriority').value;
+    const dueDate = document.getElementById('detailTaskDueDate').value;
+    const isMyDay = document.getElementById('detailTaskMyDay').checked;
 
-// Add event delegation for todo actions
-todoList.addEventListener('click', (e) => {
-    // Find the button or element clicked
-    const actionButton = e.target.closest('[data-action]');
-    const showMoreLink = e.target.closest('.todo-summary-expand');
-
-    if (actionButton) {
-        const index = parseInt(actionButton.getAttribute('data-index'), 10);
-        const action = actionButton.getAttribute('data-action');
-
-        // Execute the appropriate action based on button clicked
-        switch(action) {
-            case 'complete':
-                Logger.debug('Toggle complete for index:', index);
-                toggleComplete(index);
-                break;
-            case 'edit':
-                Logger.debug('Edit todo for index:', index);
-                editTodo(index);
-                break;
-            case 'delete':
-                Logger.debug('Delete todo for index:', index);
-                deleteTodo(index);
-                break;
-            case 'summary':
-                Logger.debug('Edit summary for index:', index);
-                editSummary(index);
-                break;
-            case 'date':
-                Logger.debug('Edit due date for index:', index);
-                editDueDate(index);
-                break;
-            case 'priority':
-                Logger.debug('Toggle priority for index:', index);
-                togglePriority(index);
-                break;
-        }
-    } else if (showMoreLink) {
-        const index = parseInt(showMoreLink.getAttribute('data-index'), 10);
-        Logger.debug('View full notes for index:', index);
-        viewFullNotes(index);
+    if (!text) {
+        alert('Task text cannot be empty');
+        return;
     }
-});
 
-// Add all event listeners
-todoForm.addEventListener('submit', addTodo);
-backToDashboard.addEventListener('click', () => window.location.href = 'index.html');
-darkModeBtn.addEventListener('click', () => themeManager.toggleDarkMode());
-themeColorBtn.addEventListener('click', () => themeManager.changeThemeColor());
-settingsBtn.addEventListener('click', changeUsername);
+    const updates = {
+        text,
+        description,
+        projectId,
+        priority,
+        dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+        isMyDay
+    };
 
-// Import functionality
-importTodosBtn.addEventListener('click', () => {
-    importInput.click();
-});
+    taskDataManager.updateTask(taskId, updates);
+    renderTasks();
 
-importInput.addEventListener('change', (event) => {
+    Logger.debug('Task details saved:', taskId);
+}
+
+/**
+ * Hide detail panel
+ */
+function hideDetailPanel() {
+    taskDetailPanel.classList.add('hidden');
+    selectedTaskId = null;
+}
+
+/**
+ * Handle quick add
+ */
+function handleQuickAdd(e) {
+    e.preventDefault();
+
+    const text = quickAddInput.value.trim();
+    if (!text) return;
+
+    // Determine project ID
+    let projectId = currentProjectId || DEFAULT_PROJECTS.INBOX;
+    if (currentView === 'inbox') {
+        projectId = DEFAULT_PROJECTS.INBOX;
+    }
+
+    // Create task
+    const taskData = {
+        text,
+        projectId,
+        isMyDay: currentView === 'my-day'
+    };
+
+    taskDataManager.addTask(taskData);
+
+    // Clear input
+    quickAddInput.value = '';
+
+    // Re-render
+    renderTasks();
+
+    Logger.debug('Task added via quick add:', text);
+}
+
+/**
+ * Show add project modal
+ */
+function showAddProjectModal() {
+    const projectName = prompt('Enter project name:');
+    if (!projectName || !projectName.trim()) return;
+
+    // Simple icon picker (emoji)
+    const projectIcon = prompt('Enter project icon (emoji):', '📁');
+
+    const projectData = {
+        name: projectName.trim(),
+        icon: projectIcon || '📁'
+    };
+
+    taskDataManager.addProject(projectData);
+    renderSidebar();
+
+    Logger.debug('Project added:', projectName);
+}
+
+/**
+ * Handle import
+ */
+function handleImport(event) {
     const file = event.target.files[0];
-    if (file) {
-        importAllData(file)
-            .then(() => {
-                Logger.debug('Import completed successfully');
-                // No need for alert as importAllData already shows one
-                // Reload todos from localStorage since importAllData updates it
-                reloadTodos();
-            })
-            .catch(error => {
-                Logger.error('Error importing data:', error);
-                alert('Failed to import data: ' + error.message);
-            });
-    }
-});
+    if (!file) return;
 
+    importAllData(file)
+        .then(() => {
+            Logger.info('Import completed successfully');
+            // Reinitialize with new data
+            taskDataManager = new TaskDataManager();
+            renderSidebar();
+            renderTasks();
+        })
+        .catch(error => {
+            Logger.error('Error importing data:', error);
+            alert('Failed to import data: ' + error.message);
+        });
+}
 
-// Export All functionality (both dashboard and todos)
-exportAllBtn.addEventListener('click', () => {
-    exportAllData(false); // false for non-silent export
-});
+/**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 
-// Log the initial state
-Logger.debug('Initial todos state:', todos);
-Logger.debug('Initial localStorage state:', localStorage.getItem('todos'));
+// Initialize on load
+Logger.debug('todo.js loaded');

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dashboard-v6';
+const CACHE_NAME = 'dashboard-v7';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -16,6 +16,7 @@ const ASSETS_TO_CACHE = [
   '/modal-manager.js',
   '/export-utils.js',
   '/retirement-timer.js',
+  '/task-data.js',
   '/manifest.json',
   'https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css',
