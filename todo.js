@@ -305,11 +305,6 @@ function renderSidebar() {
             <div class="sidebar-item-icon">${project.icon}</div>
             <div class="sidebar-item-text">${project.name}</div>
             <span class="sidebar-item-count">${projectTasks.length}</span>
-            <div class="project-actions">
-                <button class="project-action-btn edit" data-action="edit-project" data-project-id="${project.id}" title="Edit Project">
-                    <i class="fas fa-pencil"></i>
-                </button>
-            </div>
         `;
 
         projectsList.appendChild(projectItem);
@@ -378,21 +373,6 @@ function handleViewClick(e) {
  * Handle project click
  */
 function handleProjectClick(e) {
-    // Check if clicking on action button
-    const actionBtn = e.target.closest('[data-action]');
-    if (actionBtn) {
-        e.stopPropagation();
-        const action = actionBtn.dataset.action;
-        const projectId = actionBtn.dataset.projectId;
-
-        if (action === 'edit-project') {
-            showEditProjectModal(projectId);
-        } else if (action === 'delete-project') {
-            deleteProject(projectId);
-        }
-        return;
-    }
-
     const projectItem = e.target.closest('.sidebar-item');
     if (!projectItem) return;
 
@@ -503,11 +483,11 @@ function updateViewHeader() {
                     headerActions.innerHTML = `
                         <button class="header-action-btn edit-project" data-project-id="${project.id}" title="Edit Project">
                             <i class="fas fa-pencil"></i>
-                            Edit Project
+                            Edit
                         </button>
                         <button class="header-action-btn delete-project" data-project-id="${project.id}" title="Delete Project">
                             <i class="fas fa-trash"></i>
-                            Delete Project
+                            Delete
                         </button>
                     `;
                     viewTitle.parentElement.appendChild(headerActions);
