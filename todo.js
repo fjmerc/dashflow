@@ -42,6 +42,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize TaskDataManager
     taskDataManager = new TaskDataManager();
 
+    // Create and insert backdrop for detail panel
+    const backdrop = document.createElement('div');
+    backdrop.className = 'detail-panel-backdrop';
+    backdrop.id = 'detailPanelBackdrop';
+    document.body.appendChild(backdrop);
+
     // Render UI
     renderSidebar();
     renderTasks();
@@ -150,6 +156,12 @@ function setupEventListeners() {
             }
         }
     });
+
+    // Backdrop click to close detail panel
+    const backdrop = document.getElementById('detailPanelBackdrop');
+    if (backdrop) {
+        backdrop.addEventListener('click', hideDetailPanel);
+    }
 
     Logger.debug('Event listeners setup complete');
 }
@@ -596,8 +608,16 @@ function showTaskDetails(taskId) {
         document.head.appendChild(style);
     }
 
-    // Show panel
+    // Show panel and backdrop
     taskDetailPanel.classList.remove('hidden');
+
+    // Show backdrop on mobile/tablet
+    if (window.innerWidth <= 1024) {
+        const backdrop = document.getElementById('detailPanelBackdrop');
+        if (backdrop) {
+            setTimeout(() => backdrop.classList.add('active'), 10);
+        }
+    }
 
     // Auto-save on changes
     const inputs = ['detailTaskText', 'detailTaskDescription', 'detailTaskProject', 'detailTaskPriority', 'detailTaskDueDate', 'detailTaskMyDay'];
@@ -657,6 +677,12 @@ function saveTaskDetails(taskId) {
 function hideDetailPanel() {
     taskDetailPanel.classList.add('hidden');
     selectedTaskId = null;
+
+    // Hide backdrop
+    const backdrop = document.getElementById('detailPanelBackdrop');
+    if (backdrop) {
+        backdrop.classList.remove('active');
+    }
 }
 
 /**

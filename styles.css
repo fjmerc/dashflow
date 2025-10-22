@@ -2422,6 +2422,25 @@ form select {
     line-height: 1.5;
 }
 
+/* Detail Panel Backdrop for small screens */
+.detail-panel-backdrop {
+    display: none;
+    position: fixed;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.detail-panel-backdrop.active {
+    display: block;
+    opacity: 1;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
     /* Detail panel becomes overlay on tablets */
@@ -2431,7 +2450,15 @@ form select {
         top: 60px;
         height: calc(100vh - 60px);
         z-index: 100;
-        box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+        box-shadow: -4px 0 16px rgba(0, 0, 0, 0.2);
+        width: 90%;
+        max-width: 400px;
+        min-width: 320px;
+    }
+
+    /* Show backdrop when detail panel is open */
+    .detail-panel-backdrop {
+        display: block;
     }
 
     /* Main content takes remaining space */
@@ -2517,6 +2544,7 @@ form select {
     .task-detail-panel {
         width: 100%;
         min-width: 100%;
+        max-width: 100%;
     }
 
     .detail-panel-header {
@@ -2525,6 +2553,15 @@ form select {
 
     .detail-panel-content {
         padding: 16px 20px;
+    }
+}
+
+@media (max-width: 600px) {
+    /* Full width detail panel on very small screens */
+    .task-detail-panel {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
     }
 }
 
