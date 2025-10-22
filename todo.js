@@ -1515,6 +1515,74 @@ function escapeHtml(text) {
 
 /**
  * ========================================
+ * NAVIGATION HELPERS
+ * ========================================
+ */
+
+/**
+ * Activate a smart view programmatically
+ */
+function activateSmartView(view) {
+    // Update active state on smart views
+    smartViewsList.querySelectorAll('.sidebar-item').forEach(item => {
+        if (item.dataset.view === view) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+
+    // Clear project selection
+    projectsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // Update current view
+    currentView = view;
+    currentProjectId = null;
+
+    // Update header
+    updateViewHeader();
+
+    // Re-render
+    reRenderCurrentView();
+
+    Logger.debug('Activated smart view:', view);
+}
+
+/**
+ * Activate a project programmatically
+ */
+function activateProject(projectId) {
+    // Update active state on projects
+    projectsList.querySelectorAll('.sidebar-item').forEach(item => {
+        if (item.dataset.projectId === projectId) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+
+    // Clear view selection
+    smartViewsList.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // Update current view
+    currentView = 'project';
+    currentProjectId = projectId;
+
+    // Update header
+    updateViewHeader();
+
+    // Re-render
+    reRenderCurrentView();
+
+    Logger.debug('Activated project:', projectId);
+}
+
+/**
+ * ========================================
  * COMMAND PALETTE
  * ========================================
  */
