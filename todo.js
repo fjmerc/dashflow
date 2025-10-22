@@ -1147,20 +1147,20 @@ function showTaskDetails(taskId) {
         .subtask-add-btn:hover { opacity: 0.9; }
 
         /* Tags styles */
-        .tags-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; min-height: 32px; }
-        .tag-chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px;
-            background: rgba(59, 130, 246, 0.15); color: var(--primary-color);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            border-radius: 20px; font-size: 13px; font-weight: 500;
-            transition: all 0.15s ease;
+        .tags-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+        .tag-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px;
+            background: rgba(59, 130, 246, 0.12); color: var(--primary-color);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            border-radius: 12px; font-size: 12px; font-weight: 500;
+            transition: all 0.15s ease; line-height: 1.4;
         }
-        .tag-chip:hover { background: rgba(59, 130, 246, 0.25); }
+        .tag-chip:hover { background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.4); }
         .tag-remove-btn { background: none; border: none; color: var(--primary-color);
-            cursor: pointer; padding: 0; width: 16px; height: 16px; display: flex;
+            cursor: pointer; padding: 0; width: 14px; height: 14px; display: flex;
             align-items: center; justify-content: center; border-radius: 50%;
-            opacity: 0.7; transition: all 0.15s ease; font-size: 14px;
+            opacity: 0.6; transition: all 0.15s ease; font-size: 11px;
         }
-        .tag-remove-btn:hover { opacity: 1; background: rgba(59, 130, 246, 0.2); }
+        .tag-remove-btn:hover { opacity: 1; background: rgba(59, 130, 246, 0.25); transform: scale(1.1); }
         .tag-add-form { display: flex; gap: 8px; }
         .tag-input { flex: 1; padding: 8px; border: 1px solid var(--border-color);
             border-radius: 6px; background: var(--background-color); color: var(--text-color);
