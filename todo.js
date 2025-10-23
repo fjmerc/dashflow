@@ -164,6 +164,10 @@ function setupEventListeners() {
     closeDetailPanel.addEventListener('click', hideDetailPanel);
 
     // Header buttons
+    const notesBtn = document.getElementById('notesBtn');
+    if (notesBtn) {
+        notesBtn.addEventListener('click', () => window.openNotesModal());
+    }
     backToDashboard.addEventListener('click', () => window.location.href = 'index.html');
     darkModeBtn.addEventListener('click', () => themeManager.toggleDarkMode());
     themeColorBtn.addEventListener('click', () => themeManager.changeThemeColor());

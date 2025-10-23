@@ -49,6 +49,8 @@ grep CACHE_NAME sw.js
 - `script.js` - Dashboard functionality
 - `todo.js` - Task management UI
 - `task-data.js` - Task data models
+- `notes.js` - Quick Notes data layer
+- `notes-ui.js` - Quick Notes UI and interactions
 
 **Shared Utilities:**
 - `theme.js`, `export-utils.js`, `logger.js`
@@ -86,6 +88,7 @@ The application uses a decentralized state management pattern:
   - `tasks` - Task management system tasks (enterprise format)
   - `projects` - Task management projects
   - `taskSettings` - Task management view state and preferences
+  - `notes` - Quick Notes feature notes data (version 2.1+)
   - `todos` - Legacy todo format (auto-migrated to `tasks` on load)
   - `username`, `theme`, `primaryColor` - User settings
   - `retirementTimer` - Retirement countdown data
@@ -139,7 +142,7 @@ The task system uses a layered architecture:
 #### 4. Modular Feature Integration
 Features are implemented as separate modules that integrate with core state:
 - `retirement-timer.js` - Self-contained countdown feature with settings modal
-- `auto-backup.js` - Automatic backup scheduling with version 2.0 format
+- `auto-backup.js` - Automatic backup scheduling with version 2.1 format
 - Individual features can be toggled on/off with persistent settings
 
 ### Data Flow
@@ -157,7 +160,7 @@ Features are implemented as separate modules that integrate with core state:
 3. State updated in memory (tasks, projects, taskSettings)
 4. Changes immediately saved to localStorage (synchronous)
 5. UI re-rendered to reflect new state
-6. Export system includes all task data in version 2.0 backups
+6. Export system includes all task and notes data in version 2.1 backups
 
 #### Data Migration Flow
 1. On task page load, TaskDataManager.init() runs
@@ -249,6 +252,18 @@ When adding new features:
 }
 ```
 
+### Note Object (Quick Notes)
+```javascript
+{
+  id: string,              // Unique identifier
+  title: string,           // Note title
+  content: string,         // Note content/body
+  tags: string[],          // Array of tag strings
+  createdAt: string,       // ISO timestamp
+  modifiedAt: string       // ISO timestamp
+}
+```
+
 ## Coding Standards and Conventions
 
 ### JavaScript Style
@@ -277,7 +292,7 @@ When adding new features:
 ### localStorage Management
 - **NEVER use localStorage.clear()**: This would delete user data across all keys
 - **Always validate before parsing**: Use try-catch when parsing JSON from localStorage
-- **Synchronous saves**: Task data saves immediately (no debouncing)
+- **Synchronous saves**: Task and notes data save immediately (no debouncing for notes after 500ms auto-save)
 - **Debounced saves**: Link data uses debouncing to reduce writes
 - **Key consistency**: Use documented keys (see State Management section)
 
@@ -363,9 +378,13 @@ When implementing new features, verify:
 - `todo.js` - UI rendering, interactions, views, kanban board
 - `task-data.js` - Data models, storage, migration, queries
 
+**JavaScript - Quick Notes:**
+- `notes.js` - Data layer, Note class, NotesDataManager
+- `notes-ui.js` - UI rendering, modal, auto-save, search
+
 **JavaScript - Shared Utilities:**
 - `theme.js` - Theme management, dark mode, color schemes
-- `export-utils.js` - **CRITICAL** - Backup/restore, version 2.0 format
+- `export-utils.js` - **CRITICAL** - Backup/restore, version 2.1 format
 - `logger.js` - Logging with severity levels
 - `keyboard-nav.js` - Global keyboard shortcuts
 - `auto-backup.js` - Automatic backup scheduling

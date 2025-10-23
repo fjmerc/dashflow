@@ -32,9 +32,12 @@ async function exportAllData(silent = false) {
         // Get retirement timer data
         const retirementTimerData = JSON.parse(localStorage.getItem('retirementTimer') || 'null');
 
+        // Get notes data
+        const notesData = JSON.parse(localStorage.getItem('notes') || 'null');
+
         // Combine data
         const exportData = {
-            version: '2.0', // Version 2.0 includes new task management system
+            version: '2.1', // Version 2.1 includes notes feature
             timestamp: new Date().toISOString(),
             data: {
                 bookmarks: dashboardData.data.bookmarks,
@@ -42,6 +45,8 @@ async function exportAllData(silent = false) {
                 tasks: tasksData,
                 projects: projectsData,
                 taskSettings: taskSettingsData,
+                // Notes data (version 2.1+)
+                notes: notesData,
                 // Keep legacy todos for backward compatibility
                 todos: todoData,
                 settings: dashboardData.data.settings,
@@ -121,6 +126,13 @@ async function importAllData(file) {
                         if (importedData.data.taskSettings) {
                             localStorage.setItem('taskSettings', JSON.stringify(importedData.data.taskSettings));
                             success = true;
+                        }
+
+                        // Import notes data (version 2.1+)
+                        if (parseFloat(importedData.version) >= 2.1 && importedData.data.notes) {
+                            localStorage.setItem('notes', JSON.stringify(importedData.data.notes));
+                            success = true;
+                            Logger.info('Imported notes data');
                         }
 
                         // Dispatch event to notify todo.js that tasks have been updated

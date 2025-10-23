@@ -681,6 +681,13 @@ exportAllBtn.addEventListener('click', () => {
 });
 undoBtn.addEventListener('click', undo);
 importInput.addEventListener('change', handleImport);
+const notesBtn = document.getElementById('notesBtn');
+if (notesBtn) {
+    notesBtn.addEventListener('click', () => {
+        window.openNotesModal();
+    });
+}
+
 todoListBtn.addEventListener('click', () => {
     window.location.href = 'todo.html';
 });

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dashboard-v23';
+const CACHE_NAME = 'dashboard-v31';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -17,6 +17,8 @@ const ASSETS_TO_CACHE = [
   '/export-utils.js',
   '/retirement-timer.js',
   '/task-data.js',
+  '/notes.js',
+  '/notes-ui.js',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
