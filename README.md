@@ -28,6 +28,17 @@ A modern, feature-rich Progressive Web App (PWA) for organizing and managing you
   - Enable/disable functionality
   - Settings persistence
 
+- **Quick Notes**
+  - Floating scratchpad accessible from any page
+  - Multiple notes with titles and content
+  - Auto-save with debouncing (500ms)
+  - Search and filter functionality
+  - Tags for categorization
+  - Timestamps (created and modified)
+  - Keyboard shortcuts (Ctrl+Shift+N, Ctrl+`)
+  - Two-column interface (notes list + editor)
+  - Integrated with backup system
+
 - **Data Management**
   - Unified Import/Export system for all application data
   - Combined backup of bookmarks, todos, and settings in a single file
@@ -95,6 +106,8 @@ dashboard/
 ├── script.js           # Main dashboard logic
 ├── todo.js             # Task management UI and interactions
 ├── task-data.js        # Task data models and storage management
+├── notes.js            # Quick Notes data layer
+├── notes-ui.js         # Quick Notes UI and interactions
 ├── theme.js            # Theme management (shared)
 ├── export-utils.js     # Unified data export/import utilities (shared)
 ├── retirement-timer.js # Retirement countdown logic
@@ -135,13 +148,25 @@ dashboard/
    - Settings are included in data backups
 
 6. **Data Management**
-   - Export all data (bookmarks, todos, settings) for comprehensive backup
+   - Export all data (bookmarks, todos, notes, settings) for comprehensive backup
    - Import data from unified or legacy backup formats
    - Cross-page integration between dashboard and todo list
    - Use undo for reversing actions
    - Clear storage if needed
 
-7. **Task Management System**
+7. **Quick Notes**
+   - **Access**: Click the sticky note icon in the header or use keyboard shortcuts:
+     - Ctrl+Shift+N (Cmd+Shift+N on Mac)
+     - Ctrl+` (Cmd+` on Mac)
+   - **Creating Notes**: Click the "+ New" button to create a new note
+   - **Editing**: Select a note from the sidebar to view and edit
+   - **Auto-save**: Changes are automatically saved after 500ms of inactivity
+   - **Search**: Use the search bar to find notes by title or content
+   - **Tags**: Add tags to notes for better organization (comma-separated)
+   - **Navigation**: Keyboard-friendly with Tab/Shift+Tab navigation
+   - **Data Safety**: Notes are included in all data backups (version 2.1+)
+
+8. **Task Management System**
    - **Access**: Click the tasks icon from the main dashboard or visit todo.html
    - **Creating Tasks**: Use the quick add bar at the top to create tasks instantly
    - **Smart Views**:

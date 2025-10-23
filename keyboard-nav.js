@@ -50,6 +50,12 @@ class KeyboardNavigationManager {
 
         // Escape actions
         this.shortcuts.set('escape', () => this.handleEscape());
+
+        // Notes shortcuts
+        this.shortcuts.set('ctrl+shift+n', () => this.openNotes());
+        this.shortcuts.set('cmd+shift+n', () => this.openNotes()); // Mac
+        this.shortcuts.set('ctrl+`', () => this.openNotes());
+        this.shortcuts.set('cmd+`', () => this.openNotes()); // Mac
     }
 
     handleKeyDown(event) {
@@ -391,6 +397,14 @@ class KeyboardNavigationManager {
     goToHome() {
         if (!window.location.pathname.includes('index.html') && window.location.pathname !== '/') {
             window.location.href = 'index.html';
+        }
+    }
+
+    openNotes() {
+        if (window.openNotesModal) {
+            window.openNotesModal();
+        } else {
+            Logger.warn('Notes feature not available');
         }
     }
 
