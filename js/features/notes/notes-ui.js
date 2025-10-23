@@ -82,6 +82,10 @@ class NotesUIManager {
     createNotesModal() {
         const modal = document.createElement('div');
         modal.id = 'notesModal';
+        // To test different styles, change the className below:
+        // Option 1 (Default): 'modal notes-modal'
+        // Option 2 (Glass): 'modal notes-modal notes-modal-glass'
+        // Option 3 (Minimal): 'modal notes-modal notes-modal-minimal'
         modal.className = 'modal notes-modal';
         modal.style.display = 'block';
 

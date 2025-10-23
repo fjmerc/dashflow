@@ -3279,14 +3279,15 @@ body.dark-mode .task-main {
    =========================== */
 
 /* Notes Modal */
+/* Option 1: Lighter, Breathable Modal (Default - Recommended) */
 .notes-modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.96);
-    backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.50);
+    backdrop-filter: blur(3px);
     z-index: 2000;
     display: flex;
     align-items: center;
@@ -3295,9 +3296,12 @@ body.dark-mode .task-main {
 }
 
 .notes-modal-content {
-    background: var(--card-background);
-    border-radius: 12px;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+    background: var(--card-bg);
+    border-radius: 16px;
+    box-shadow:
+        0 24px 80px rgba(0, 0, 0, 0.4),
+        0 8px 24px rgba(0, 0, 0, 0.25),
+        0 0 0 1px rgba(0, 0, 0, 0.05);
     width: 100%;
     max-width: 1200px;
     height: 80vh;
@@ -3306,6 +3310,46 @@ body.dark-mode .task-main {
     flex-direction: column;
     overflow: hidden;
     animation: notesModalSlideIn 0.3s ease-out;
+}
+
+/* Option 2: Modern Glass Effect (Alternative)
+   To use: Add 'notes-modal-glass' class in notes-ui.js line 89 */
+.notes-modal.notes-modal-glass {
+    background: rgba(0, 0, 0, 0.70);
+    backdrop-filter: blur(5px);
+}
+
+.notes-modal.notes-modal-glass .notes-modal-content {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.notes-modal.notes-modal-glass .notes-sidebar,
+.notes-modal.notes-modal-glass .notes-editor {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+[data-theme="dark"] .notes-modal.notes-modal-glass .notes-modal-content {
+    background: rgba(30, 41, 59, 0.95);
+}
+
+[data-theme="dark"] .notes-modal.notes-modal-glass .notes-sidebar,
+[data-theme="dark"] .notes-modal.notes-modal-glass .notes-editor {
+    background: rgba(51, 65, 85, 0.5);
+}
+
+/* Option 3: Minimal/Clean (Alternative)
+   To use: Add 'notes-modal-minimal' class in notes-ui.js line 89 */
+.notes-modal.notes-modal-minimal {
+    background: rgba(0, 0, 0, 0.40);
+    backdrop-filter: none;
+}
+
+.notes-modal.notes-modal-minimal .notes-modal-content {
+    background: var(--card-bg);
+    border: 2px solid var(--border-color);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
 @keyframes notesModalSlideIn {
@@ -3330,8 +3374,9 @@ body.dark-mode .task-main {
 .notes-sidebar {
     width: 320px;
     min-width: 320px;
-    background: var(--background-color);
+    background: var(--bg-color);
     border-right: 1px solid var(--border-color);
+    border-radius: 16px 0 0 16px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -3404,7 +3449,7 @@ body.dark-mode .task-main {
     padding-right: 40px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    background: var(--card-background);
+    background: var(--card-bg);
     color: var(--text-color);
     font-size: 14px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -3472,8 +3517,9 @@ body.dark-mode .task-main {
 }
 
 .notes-new-btn:hover {
-    background: var(--primary-color-dark);
+    background: var(--primary-hover);
     transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
 }
 
 /* Tags Filter */
@@ -3662,7 +3708,8 @@ body.dark-mode .task-main {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: var(--card-background);
+    background: var(--card-bg);
+    border-radius: 0 16px 16px 0;
 }
 
 .notes-editor-empty {
@@ -3677,34 +3724,43 @@ body.dark-mode .task-main {
 }
 
 .notes-editor-empty i {
-    font-size: 64px;
-    margin-bottom: 16px;
+    font-size: 48px;
+    margin-bottom: 12px;
     opacity: 0.3;
 }
 
 .notes-editor-empty p {
-    font-size: 16px;
-    margin-bottom: 20px;
+    font-size: 14px;
+    margin-bottom: 16px;
 }
 
 .notes-new-btn-alt {
-    padding: 12px 24px;
+    padding: 10px 24px;
     background: var(--primary-color);
     color: white;
     border: none;
-    border-radius: 8px;
-    font-size: 14px;
+    border-radius: 6px;
+    font-size: 15px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
+    width: auto;
+    min-width: auto;
+    max-width: fit-content;
 }
 
 .notes-new-btn-alt:hover {
-    background: var(--primary-color-dark);
-    transform: translateY(-2px);
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.notes-new-btn-alt:active {
+    transform: translateY(0);
 }
 
 .notes-editor-content {
@@ -3746,7 +3802,7 @@ body.dark-mode .task-main {
     padding: 8px 12px;
     border: 1px solid var(--border-color);
     border-radius: 6px;
-    background: var(--card-background);
+    background: var(--card-bg);
     color: var(--text-color);
     cursor: pointer;
     transition: all 0.2s ease;
@@ -3806,7 +3862,7 @@ body.dark-mode .task-main {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: var(--background-color);
+    background: var(--bg-color);
 }
 
 .note-metadata {
@@ -3838,10 +3894,12 @@ body.dark-mode .task-main {
         max-height: 50%;
         border-right: none;
         border-bottom: 1px solid var(--border-color);
+        border-radius: 12px 12px 0 0;
     }
 
     .notes-editor {
         width: 100%;
+        border-radius: 0 0 0 0;
     }
 }
 
@@ -3854,6 +3912,14 @@ body.dark-mode .task-main {
         border-radius: 0;
         height: 100vh;
         max-height: 100vh;
+    }
+
+    .notes-sidebar {
+        border-radius: 0;
+    }
+
+    .notes-editor {
+        border-radius: 0;
     }
 
     .notes-sidebar-header {
@@ -3885,19 +3951,59 @@ body.dark-mode .task-main {
 }
 
 /* Dark mode adjustments for notes */
-body.dark-mode .notes-modal {
-    background: rgba(0, 0, 0, 0.90);
+body.dark-mode .notes-modal,
+[data-theme="dark"] .notes-modal {
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
 }
 
 body.dark-mode .notes-modal-content,
-body.dark-mode .notes-sidebar,
-body.dark-mode .notes-editor,
-body.dark-mode .notes-search-input,
-body.dark-mode .notes-tag-filter,
-body.dark-mode .notes-action-btn {
-    background: var(--card-background);
+[data-theme="dark"] .notes-modal-content {
+    background: var(--card-bg);
+    box-shadow:
+        0 24px 80px rgba(0, 0, 0, 0.6),
+        0 8px 24px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-body.dark-mode .note-item:hover {
-    background: rgba(255, 255, 255, 0.05);
+body.dark-mode .notes-sidebar,
+[data-theme="dark"] .notes-sidebar {
+    background: rgba(15, 23, 42, 0.5);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body.dark-mode .notes-editor,
+[data-theme="dark"] .notes-editor {
+    background: var(--card-bg);
+}
+
+body.dark-mode .notes-search-input,
+[data-theme="dark"] .notes-search-input,
+body.dark-mode .notes-tag-filter,
+[data-theme="dark"] .notes-tag-filter,
+body.dark-mode .notes-action-btn,
+[data-theme="dark"] .notes-action-btn {
+    background: rgba(15, 23, 42, 0.6);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .note-item:hover,
+[data-theme="dark"] .note-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-mode .notes-sidebar-header,
+[data-theme="dark"] .notes-sidebar-header,
+body.dark-mode .notes-sidebar-controls,
+[data-theme="dark"] .notes-sidebar-controls {
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-mode .notes-editor-header,
+[data-theme="dark"] .notes-editor-header,
+body.dark-mode .notes-editor-footer,
+[data-theme="dark"] .notes-editor-footer {
+    border-color: rgba(255, 255, 255, 0.08);
+    background: rgba(15, 23, 42, 0.4);
 }
