@@ -39,31 +39,31 @@ git add .
 git commit -m "feat: description"
 
 # Check service worker cache version
-grep CACHE_NAME sw.js
+grep CACHE_NAME js/sw.js
 ```
 
 ## File Boundaries and Edit Permissions
 
 ### Files You CAN Edit Freely
 **Application Logic:**
-- `script.js` - Dashboard functionality
-- `todo.js` - Task management UI
-- `task-data.js` - Task data models
-- `notes.js` - Quick Notes data layer
-- `notes-ui.js` - Quick Notes UI and interactions
+- `js/features/dashboard/script.js` - Dashboard functionality
+- `js/features/tasks/todo.js` - Task management UI
+- `js/features/tasks/task-data.js` - Task data models
+- `js/features/notes/notes.js` - Quick Notes data layer
+- `js/features/notes/notes-ui.js` - Quick Notes UI and interactions
 
 **Shared Utilities:**
-- `theme.js`, `export-utils.js`, `logger.js`
-- `keyboard-nav.js`, `auto-backup.js`
-- `input-validator.js`, `error-handler.js`, `modal-manager.js`
-- `retirement-timer.js`
+- `js/core/theme.js`, `js/core/export-utils.js`, `js/core/logger.js`
+- `js/core/keyboard-nav.js`, `js/features/retirement/auto-backup.js`
+- `js/core/input-validator.js`, `js/core/error-handler.js`, `js/core/modal-manager.js`
+- `js/features/retirement/retirement-timer.js`
 
 **Styles and Pages:**
 - `styles.css` - All application styles
 - `index.html`, `todo.html`, `help.html` - Application pages
 
 **Configuration:**
-- `sw.js` - Service worker (increment CACHE_NAME when editing)
+- `js/sw.js` - Service worker (increment CACHE_NAME when editing)
 - `manifest.json` - PWA configuration
 - `README.md`, `help.html` - Documentation
 
@@ -75,7 +75,7 @@ grep CACHE_NAME sw.js
 ### Critical Edit Rules
 1. **NEVER delete localStorage data**: User data is sacred
 2. **ALWAYS increment service worker version**: When editing cached files
-3. **ALWAYS update export-utils.js**: When adding new localStorage keys
+3. **ALWAYS update js/core/export-utils.js**: When adding new localStorage keys
 4. **READ before EDIT**: Always read file contents before making changes
 5. **Maintain backward compatibility**: Don't break existing user data
 
@@ -94,17 +94,17 @@ The application uses a decentralized state management pattern:
   - `retirementTimer` - Retirement countdown data
 - **Cross-page synchronization**: ThemeManager listens to storage events to sync themes between dashboard and todo pages
 - **History system**: Links state changes are tracked in memory for undo functionality with debounced saves
-- **Migration system**: task-data.js automatically migrates legacy `todos` format to new `tasks/projects/taskSettings` format
+- **Migration system**: js/features/tasks/task-data.js automatically migrates legacy `todos` format to new `tasks/projects/taskSettings` format
 
 ### Multi-Page Application Structure
 - `index.html` - Main dashboard with link management
 - `todo.html` - Enterprise task management system with projects, tags, subtasks, kanban board
-- Both pages share common utilities (`theme.js`, `export-utils.js`) but maintain separate state
+- Both pages share common utilities (`js/core/theme.js`, `js/core/export-utils.js`) but maintain separate state
 
 ### Key Architectural Patterns
 
 #### 1. Unified Data Export/Import System
-`export-utils.js` provides versioned backup system:
+`js/core/export-utils.js` provides versioned backup system:
 - **Version 2.0** (current): Includes bookmarks, tasks, projects, taskSettings, settings, and retirement timer
 - **Version 1.2** (legacy): Includes bookmarks, todos (old format), settings, and retirement timer
 - **Version 1.0** (legacy): Dashboard-only backups
@@ -113,7 +113,7 @@ The application uses a decentralized state management pattern:
 - `exportAllData()` creates comprehensive backups with all application data
 - `importAllData()` handles version detection and appropriate data restoration
 
-#### 2. Theme System (`theme.js`)
+#### 2. Theme System (`js/core/theme.js`)
 ThemeManager class provides:
 - Centralized theme state management
 - Cross-page synchronization via storage events
@@ -122,12 +122,12 @@ ThemeManager class provides:
 
 #### 3. Enterprise Task Management System
 The task system uses a layered architecture:
-- **Data Layer** (`task-data.js`): TaskDataManager class handles all data operations
+- **Data Layer** (`js/features/tasks/task-data.js`): TaskDataManager class handles all data operations
   - Task, Subtask, and Project model classes with validation
   - localStorage persistence with automatic migration from legacy format
   - Smart query methods (getMyDayTasks, getImportantTasks, etc.)
   - Default project creation (Inbox, Personal)
-- **UI Layer** (`todo.js`): Handles rendering and user interactions
+- **UI Layer** (`js/features/tasks/todo.js`): Handles rendering and user interactions
   - Smart Views: My Day, Inbox, All Tasks, Important, Upcoming, Completed
   - Project management with custom colors/icons
   - Tag filtering and sidebar navigation
@@ -141,8 +141,8 @@ The task system uses a layered architecture:
 
 #### 4. Modular Feature Integration
 Features are implemented as separate modules that integrate with core state:
-- `retirement-timer.js` - Self-contained countdown feature with settings modal
-- `auto-backup.js` - Automatic backup scheduling with version 2.1 format
+- `js/features/retirement/retirement-timer.js` - Self-contained countdown feature with settings modal
+- `js/features/retirement/auto-backup.js` - Automatic backup scheduling with version 2.1 format
 - Individual features can be toggled on/off with persistent settings
 
 ### Data Flow
@@ -155,7 +155,7 @@ Features are implemented as separate modules that integrate with core state:
 5. Export system creates unified backups of all application data
 
 #### Task Management System
-1. User creates/edits tasks through UI (todo.js)
+1. User creates/edits tasks through UI (js/features/tasks/todo.js)
 2. TaskDataManager validates and processes changes
 3. State updated in memory (tasks, projects, taskSettings)
 4. Changes immediately saved to localStorage (synchronous)
@@ -177,14 +177,14 @@ Features are implemented as separate modules that integrate with core state:
 - XSS prevention through proper DOM manipulation
 
 ### PWA Implementation
-- Service Worker (`sw.js`) caches static assets for offline functionality
+- Service Worker (`js/sw.js`) caches static assets for offline functionality
 - Manifest file enables installation
 - Local storage provides offline data persistence
 
 ## Key Integration Points
 
 When adding new features:
-- **Integrate with `export-utils.js` for data backup/restore**:
+- **Integrate with `js/core/export-utils.js` for data backup/restore**:
   - Add new localStorage keys to `exportAllData()` function
   - Add import logic to `importAllData()` with version checking
   - Bump version number if adding new data structures
@@ -197,8 +197,8 @@ When adding new features:
   - Document all keys in this file's State Management section
   - Use JSON.parse/stringify for complex data structures
 - **Add to service worker cache if creating new static files**:
-  - Update `ASSETS_TO_CACHE` array in `sw.js`
-  - Increment `CACHE_NAME` version (e.g., `dashboard-v17` → `dashboard-v18`)
+  - Update `ASSETS_TO_CACHE` array in `js/sw.js`
+  - Increment `CACHE_NAME` version (e.g., `dashboard-v31` → `dashboard-v32`)
 - **Consider cross-page synchronization needs**:
   - Use storage events for real-time sync if needed
   - Test data flow between index.html and todo.html
@@ -276,10 +276,10 @@ When adding new features:
 
 ### File Organization
 - **Separation of concerns**: Each JS file has a specific purpose
-  - `script.js` - Main dashboard logic
-  - `todo.js` - Task management UI
-  - `task-data.js` - Task data models and storage
-  - Shared utilities: `theme.js`, `export-utils.js`, `logger.js`, etc.
+  - `js/features/dashboard/script.js` - Main dashboard logic
+  - `js/features/tasks/todo.js` - Task management UI
+  - `js/features/tasks/task-data.js` - Task data models and storage
+  - Shared utilities: `js/core/theme.js`, `js/core/export-utils.js`, `js/core/logger.js`, etc.
 - **No inline JavaScript**: Keep JS in separate files, reference via `<script>` tags
 - **Load order matters**: Utilities must load before dependent files
 
@@ -302,8 +302,8 @@ When adding new features:
 
 **ALWAYS:**
 1. **Read before writing**: Use Read tool to examine files before editing
-2. **Update service worker**: Increment `CACHE_NAME` version in `sw.js` when modifying cached files
-3. **Update export/import**: Add new localStorage keys to `exportAllData()` and `importAllData()`
+2. **Update service worker**: Increment `CACHE_NAME` version in `js/sw.js` when modifying cached files
+3. **Update export/import**: Add new localStorage keys to `exportAllData()` and `importAllData()` in `js/core/export-utils.js`
 4. **Test backward compatibility**: Ensure old backups still work after schema changes
 5. **Maintain migration paths**: Don't break existing data - provide migration code
 6. **Use sequential thinking**: For complex features, plan before implementing
@@ -372,33 +372,38 @@ When implementing new features, verify:
 - `help.html` - User documentation
 
 **JavaScript - Dashboard:**
-- `script.js` - Link management, sections, favorites, undo
+- `js/features/dashboard/script.js` - Link management, sections, favorites, undo
 
 **JavaScript - Task System:**
-- `todo.js` - UI rendering, interactions, views, kanban board
-- `task-data.js` - Data models, storage, migration, queries
+- `js/features/tasks/todo.js` - UI rendering, interactions, views, kanban board
+- `js/features/tasks/task-data.js` - Data models, storage, migration, queries
 
 **JavaScript - Quick Notes:**
-- `notes.js` - Data layer, Note class, NotesDataManager
-- `notes-ui.js` - UI rendering, modal, auto-save, search
+- `js/features/notes/notes.js` - Data layer, Note class, NotesDataManager
+- `js/features/notes/notes-ui.js` - UI rendering, modal, auto-save, search
 
 **JavaScript - Shared Utilities:**
-- `theme.js` - Theme management, dark mode, color schemes
-- `export-utils.js` - **CRITICAL** - Backup/restore, version 2.1 format
-- `logger.js` - Logging with severity levels
-- `keyboard-nav.js` - Global keyboard shortcuts
-- `auto-backup.js` - Automatic backup scheduling
-- `input-validator.js` - Input sanitization, XSS prevention
-- `error-handler.js` - Error logging and user feedback
-- `modal-manager.js` - Modal dialog system
-- `retirement-timer.js` - Retirement countdown feature
+- `js/core/theme.js` - Theme management, dark mode, color schemes
+- `js/core/export-utils.js` - **CRITICAL** - Backup/restore, version 2.1 format
+- `js/core/logger.js` - Logging with severity levels
+- `js/core/keyboard-nav.js` - Global keyboard shortcuts
+- `js/features/retirement/auto-backup.js` - Automatic backup scheduling
+- `js/core/input-validator.js` - Input sanitization, XSS prevention
+- `js/core/error-handler.js` - Error logging and user feedback
+- `js/core/modal-manager.js` - Modal dialog system
+- `js/features/retirement/retirement-timer.js` - Retirement countdown feature
 
 **PWA Files:**
-- `sw.js` - Service worker (offline functionality)
+- `js/sw.js` - Service worker (offline functionality)
 - `manifest.json` - PWA configuration
 
 **Styles:**
 - `styles.css` - All application styles (shared across pages)
+
+**Assets:**
+- `assets/icons/icon.svg` - SVG icon source
+- `assets/icons/icon-192.png` - PWA icon 192x192
+- `assets/icons/icon-512.png` - PWA icon 512x512
 
 ## Code Examples and Patterns
 
@@ -422,7 +427,7 @@ function loadMyNewData() {
     }
 }
 
-// 3. Update export-utils.js exportAllData()
+// 3. Update js/core/export-utils.js exportAllData()
 const myNewData = JSON.parse(localStorage.getItem('myNewKey') || 'null');
 const exportData = {
     version: '2.1', // Increment version
@@ -432,7 +437,7 @@ const exportData = {
     }
 };
 
-// 4. Update export-utils.js importAllData()
+// 4. Update js/core/export-utils.js importAllData()
 if (parseFloat(importedData.version) >= 2.1) {
     if (importedData.data.myNewKey) {
         localStorage.setItem('myNewKey', JSON.stringify(importedData.data.myNewKey));
@@ -440,7 +445,7 @@ if (parseFloat(importedData.version) >= 2.1) {
 }
 
 // 5. Update service worker
-// In sw.js: const CACHE_NAME = 'dashboard-v20'; // Increment
+// In js/sw.js: const CACHE_NAME = 'dashboard-v32'; // Increment
 ```
 
 ### Adding a Task Management Feature
@@ -448,7 +453,7 @@ if (parseFloat(importedData.version) >= 2.1) {
 When extending the task system:
 
 ```javascript
-// 1. Add to Task model (task-data.js)
+// 1. Add to Task model (js/features/tasks/task-data.js)
 class Task {
     constructor(data = {}) {
         // ... existing fields
@@ -463,7 +468,7 @@ class Task {
     }
 }
 
-// 2. Add UI in todo.js
+// 2. Add UI in js/features/tasks/todo.js
 function renderTaskDetail(task) {
     return `
         <!-- ... existing fields -->
@@ -479,7 +484,7 @@ taskDataManager.updateTask(taskId, {
     myNewField: newValue
 });
 
-// 4. No export-utils.js change needed (tasks already exported)
+// 4. No js/core/export-utils.js change needed (tasks already exported)
 ```
 
 ### Adding Event Listeners
@@ -621,13 +626,13 @@ This file is loaded at the **start of every Claude Code session** in this direct
 
 **Without CLAUDE.md:**
 - "Don't use React" → Suggests React components
-- "Update backups" → Forgets to update export-utils.js
+- "Update backups" → Forgets to update js/core/export-utils.js
 - "Increment cache" → Skips service worker version bump
 
 **With CLAUDE.md:**
 - Automatically uses vanilla JS patterns
 - Always updates export/import for new localStorage keys
-- Never forgets to bump service worker cache version
+- Never forgets to bump service worker cache version in js/sw.js
 - Follows established conventions without prompting
 
 ## Emergency Contacts

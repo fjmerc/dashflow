@@ -98,26 +98,38 @@ A modern, feature-rich Progressive Web App (PWA) for organizing and managing you
 
 ```
 dashboard/
-├── index.html          # Main dashboard page
-├── help.html           # Help documentation
-├── todo.html           # Enterprise task management page
-├── manifest.json       # PWA configuration
-├── sw.js               # Service Worker
-├── script.js           # Main dashboard logic
-├── todo.js             # Task management UI and interactions
-├── task-data.js        # Task data models and storage management
-├── notes.js            # Quick Notes data layer
-├── notes-ui.js         # Quick Notes UI and interactions
-├── theme.js            # Theme management (shared)
-├── export-utils.js     # Unified data export/import utilities (shared)
-├── retirement-timer.js # Retirement countdown logic
-├── logger.js           # Logging utility (shared)
-├── keyboard-nav.js     # Keyboard navigation handler (shared)
-├── auto-backup.js      # Automatic backup system (shared)
-├── input-validator.js  # Input validation (shared)
-├── error-handler.js    # Error handling (shared)
-├── modal-manager.js    # Modal dialog manager (shared)
-└── styles.css          # Application styles (shared)
+├── index.html                               # Main dashboard page
+├── todo.html                                # Enterprise task management page
+├── help.html                                # Help documentation
+├── manifest.json                            # PWA configuration
+├── styles.css                               # Application styles (shared)
+├── js/
+│   ├── core/                                # Core utilities (shared across pages)
+│   │   ├── theme.js                         # Theme management
+│   │   ├── logger.js                        # Logging utility
+│   │   ├── keyboard-nav.js                  # Keyboard navigation handler
+│   │   ├── error-handler.js                 # Error handling
+│   │   ├── modal-manager.js                 # Modal dialog manager
+│   │   ├── input-validator.js               # Input validation
+│   │   └── export-utils.js                  # Unified data export/import utilities
+│   ├── features/                            # Feature-specific modules
+│   │   ├── dashboard/
+│   │   │   └── script.js                    # Main dashboard logic
+│   │   ├── tasks/
+│   │   │   ├── todo.js                      # Task management UI and interactions
+│   │   │   └── task-data.js                 # Task data models and storage
+│   │   ├── notes/
+│   │   │   ├── notes.js                     # Quick Notes data layer
+│   │   │   └── notes-ui.js                  # Quick Notes UI and interactions
+│   │   └── retirement/
+│   │       ├── retirement-timer.js          # Retirement countdown logic
+│   │       └── auto-backup.js               # Automatic backup system
+│   └── sw.js                                # Service Worker
+└── assets/
+    └── icons/
+        ├── icon.svg                         # SVG icon
+        ├── icon-192.png                     # PWA icon 192x192
+        └── icon-512.png                     # PWA icon 512x512
 ```
 
 ## Usage

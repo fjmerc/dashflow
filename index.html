@@ -165,22 +165,22 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
-    <script src="logger.js"></script>
-    <script src="theme.js"></script>
-    <script src="export-utils.js"></script>
-    <script src="keyboard-nav.js"></script>
-    <script src="auto-backup.js"></script>
-    <script src="input-validator.js"></script>
-    <script src="error-handler.js"></script>
-    <script src="modal-manager.js"></script>
-    <script src="notes.js"></script>
-    <script src="notes-ui.js"></script>
-    <script src="script.js"></script>
-    <script src="retirement-timer.js"></script>
+    <script src="js/core/logger.js"></script>
+    <script src="js/core/theme.js"></script>
+    <script src="js/core/export-utils.js"></script>
+    <script src="js/core/keyboard-nav.js"></script>
+    <script src="js/features/retirement/auto-backup.js"></script>
+    <script src="js/core/input-validator.js"></script>
+    <script src="js/core/error-handler.js"></script>
+    <script src="js/core/modal-manager.js"></script>
+    <script src="js/features/notes/notes.js"></script>
+    <script src="js/features/notes/notes-ui.js"></script>
+    <script src="js/features/dashboard/script.js"></script>
+    <script src="js/features/retirement/retirement-timer.js"></script>
     <script>
         // Register service worker for offline functionality
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js')
+            navigator.serviceWorker.register('/js/sw.js')
                 .then(registration => {
                     console.log('ServiceWorker registration successful');
                 })
