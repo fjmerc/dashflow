@@ -565,13 +565,13 @@ function showImportReminder() {
         showModal(
             'Import Data',
             'Would you like to import your previously exported dashboard data?\n\n' +
-            'Note: Due to browser cache clearing policies, it is recommended to:\n' +
+            'Note: Due to browser cache clearing policies, it is recommended to:\n\n' +
             '1. Export your data regularly\n' +
             '2. Create a dedicated folder on your computer (e.g., "Dashboard Backups") to store exports\n' +
             '3. Exports are saved to your browser\'s default downloads folder\n' +
             '4. Move exported files from downloads to your backup folder\n' +
             '5. Import your data when you start your browser\n\n' +
-            'Click "Yes" to open the file browser or "No" to continue.',
+            '[center]Click "Yes" to open the file browser or "No" to continue.[/center]',
             // Yes callback
             () => {
                 importBookmarks();

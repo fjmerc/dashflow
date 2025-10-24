@@ -47,7 +47,10 @@ class ModalManager {
             div.textContent = message;
             sanitized = div.innerHTML;
         }
-        modalMessage.innerHTML = sanitized.replace(/\n/g, '<br>');
+        // Replace newlines with <br> and support [center] markup for centered text
+        sanitized = sanitized.replace(/\n/g, '<br>')
+            .replace(/\[center\](.*?)\[\/center\]/g, '<div style="text-align: center;">$1</div>');
+        modalMessage.innerHTML = sanitized;
 
         // Remove any existing event listeners by cloning nodes
         const newYesBtn = modalYes.cloneNode(true);
