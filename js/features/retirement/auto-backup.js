@@ -117,8 +117,11 @@ class AutoBackupManager {
                 this.settings.lastBackup = new Date().toISOString();
                 this.saveBackupSettings();
 
-                // Show subtle notification
-                this.showBackupNotification('Automatic backup completed successfully');
+                // Only show notification on index.html to avoid interrupting users on other pages
+                const pathname = window.location.pathname;
+                if (pathname === '/' || pathname === '/index.html') {
+                    this.showBackupNotification('Automatic backup completed successfully');
+                }
 
                 Logger.debug('Automatic backup completed');
             } else {
@@ -126,15 +129,21 @@ class AutoBackupManager {
             }
         } catch (e) {
             Logger.error('Automatic backup failed:', e);
-            this.showBackupNotification('Automatic backup failed - please check your storage', 'error');
+            // Only show error notification on index.html
+            const pathname = window.location.pathname;
+            if (pathname === '/' || pathname === '/index.html') {
+                this.showBackupNotification('Automatic backup failed - please check your storage', 'error');
+            }
         }
     }
 
     setupBackupReminders() {
         if (!this.settings.reminderEnabled) return;
 
-        // Check for backup reminders on app load
-        this.checkBackupReminder();
+        // Delay initial reminder check to avoid flash on page load/navigation
+        setTimeout(() => {
+            this.checkBackupReminder();
+        }, 2000); // Wait 2 seconds after page load
 
         // Set up periodic reminder checks
         setInterval(() => {
@@ -172,6 +181,14 @@ class AutoBackupManager {
     }
 
     showBackupReminder() {
+        // Only show backup reminders on the main dashboard page (index.html)
+        // to avoid interrupting users on other pages like todo.html
+        const pathname = window.location.pathname;
+        if (pathname !== '/' && pathname !== '/index.html') {
+            Logger.debug('Skipping backup reminder - not on dashboard page');
+            return;
+        }
+
         if (typeof showModal === 'function') {
             showModal(
                 'Backup Reminder',
@@ -437,10 +454,28 @@ class AutoBackupManager {
     }
 }
 
-// Create global instance
-window.autoBackupManager = new AutoBackupManager();
+// Create global instance only on index.html to avoid notification spam on other pages
+// On other pages, create instance without automatic backup checks
+const pathname = window.location.pathname;
+if (pathname === '/' || pathname === '/index.html') {
+    // Full initialization with automatic backups on dashboard
+    window.autoBackupManager = new AutoBackupManager();
+} else {
+    // Create instance but don't run automatic checks on other pages
+    // This allows manual backups to still work via the settings menu
+    window.autoBackupManager = {
+        settings: null,
+        showBackupSettings: function() {
+            // Create a temporary full instance for settings
+            const tempManager = new AutoBackupManager();
+            tempManager.showBackupSettings();
+        }
+    };
+}
 
 // Expose settings function globally
 window.showBackupSettings = () => {
-    window.autoBackupManager.showBackupSettings();
+    if (typeof window.autoBackupManager.showBackupSettings === 'function') {
+        window.autoBackupManager.showBackupSettings();
+    }
 };
