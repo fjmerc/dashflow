@@ -1682,7 +1682,7 @@ function showAddProjectModal() {
         iconBtn.type = 'button';
         iconBtn.className = 'icon-option';
         iconBtn.innerHTML = `<i class="fas fa-${icon}"></i>`;
-        iconBtn.style.cssText = 'padding: 12px; border: 2px solid transparent; border-radius: 6px; background: var(--card-background); cursor: pointer; transition: all 0.15s ease; font-size: 20px;';
+        iconBtn.style.cssText = 'padding: 12px; border: 2px solid transparent; border-radius: 6px; background: var(--card-background); color: var(--text-color); cursor: pointer; transition: all 0.15s ease; font-size: 20px;';
 
         if (icon === 'folder') {
             iconBtn.style.borderColor = 'var(--primary-color)';
@@ -1893,7 +1893,7 @@ function showEditProjectModal(projectId) {
         iconBtn.type = 'button';
         iconBtn.className = 'icon-option';
         iconBtn.innerHTML = `<i class="fas fa-${icon}"></i>`;
-        iconBtn.style.cssText = 'padding: 12px; border: 2px solid transparent; border-radius: 6px; background: var(--card-background); cursor: pointer; transition: all 0.15s ease; font-size: 20px;';
+        iconBtn.style.cssText = 'padding: 12px; border: 2px solid transparent; border-radius: 6px; background: var(--card-background); color: var(--text-color); cursor: pointer; transition: all 0.15s ease; font-size: 20px;';
 
         if (icon === currentIconName) {
             iconBtn.style.borderColor = 'var(--primary-color)';
