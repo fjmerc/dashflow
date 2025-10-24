@@ -401,8 +401,8 @@ input, select, button {
 
 /* Fix dropdown option visibility in dark mode */
 select option {
-    background-color: var(--bg-color);
-    color: var(--text-color);
+    background-color: var(--bg-color) !important;
+    color: var(--text-color) !important;
 }
 
 button {
@@ -3242,6 +3242,38 @@ body.dark-mode .task-detail-panel {
 
 body.dark-mode .task-main {
     background: var(--background-color);
+}
+
+/* Dark mode select and option styling */
+body.dark-mode select {
+    background-color: var(--bg-color) !important;
+    color: var(--text-color) !important;
+    border-color: var(--border-color);
+}
+
+body.dark-mode select option {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+}
+
+body.dark-mode select:hover {
+    border-color: var(--primary-color);
+}
+
+body.dark-mode select:focus {
+    background-color: var(--bg-color) !important;
+    color: var(--text-color) !important;
+}
+
+/* Ensure detail panel dropdowns work in dark mode */
+body.dark-mode .task-detail-panel select {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+}
+
+body.dark-mode .task-detail-panel select option {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
 }
 
 /* Utility Classes */
