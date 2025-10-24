@@ -853,11 +853,6 @@ document.addEventListener('DOMContentLoaded', () => {
         showImportReminder();
     }, 100);
 
-    // Show export reminder when user is about to leave
-    window.addEventListener('beforeunload', () => {
-        showExportReminder();
-    });
-
-    // Set up periodic export reminders
+    // Set up periodic export reminders (removed beforeunload to prevent flash when navigating)
     setInterval(showExportReminder, 60 * 60 * 1000); // Check every hour
 });
