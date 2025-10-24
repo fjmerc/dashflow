@@ -4007,3 +4007,67 @@ body.dark-mode .notes-editor-footer,
     border-color: rgba(255, 255, 255, 0.08);
     background: rgba(15, 23, 42, 0.4);
 }
+
+/* ===========================
+   Drag and Drop Recategorization
+   =========================== */
+
+/* Task being dragged */
+.task-list-item.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+    transform: scale(0.98);
+}
+
+/* All tasks get cursor to indicate draggability */
+.task-list-item {
+    cursor: grab;
+}
+
+.task-list-item:active {
+    cursor: grabbing;
+}
+
+/* Project drop zone highlight */
+.project-item.drag-over {
+    background: var(--primary-color);
+    color: white;
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+}
+
+.project-item.drag-over .sidebar-item-icon,
+.project-item.drag-over .sidebar-item-text,
+.project-item.drag-over .sidebar-item-count {
+    color: white;
+}
+
+/* Task move notification */
+.task-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--primary-color);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+    z-index: 10000;
+}
+
+.task-notification.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Dark mode adjustments */
+body.dark-mode .task-notification,
+[data-theme="dark"] .task-notification {
+    background: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
