@@ -18,22 +18,8 @@ class ErrorHandler {
     }
 
     setupGlobalErrorHandling() {
-        // Override console.error to catch and handle errors better
-        const originalError = console.error;
-        console.error = (...args) => {
-            // Call original console.error
-            originalError.apply(console, args);
-
-            // Handle the error with our system
-            if (args.length > 0) {
-                const error = args[0];
-                if (error instanceof Error) {
-                    this.handleError(error, 'global');
-                } else if (typeof error === 'string') {
-                    this.handleError(new Error(error), 'global');
-                }
-            }
-        };
+        // Store reference to original console.error
+        this.originalConsoleError = console.error;
 
         // Global error event listener
         window.addEventListener('error', (event) => {
@@ -70,8 +56,12 @@ class ErrorHandler {
             severity: this.determineSeverity(error, type)
         };
 
-        // Log to console for debugging
-        Logger.error('Error handled:', errorEntry);
+        // Log to console for debugging using original console.error to avoid recursion
+        if (this.originalConsoleError) {
+            this.originalConsoleError('Error handled:', errorEntry);
+        } else {
+            console.log('Error handled:', errorEntry);
+        }
 
         // Add to queue
         this.errorQueue.push(errorEntry);

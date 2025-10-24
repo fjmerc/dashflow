@@ -56,7 +56,7 @@ A modern, feature-rich Progressive Web App (PWA) for organizing and managing you
   - **Kanban Board**: Visual board view with Todo, In Progress, Done, and Blocked columns
   - **Command Palette**: Quick access to tasks and actions with keyboard shortcuts (Ctrl+K)
   - **Task Filtering**: Filter by project, tag, status, priority, and date
-  - **Drag & Drop**: Reorder tasks and move between kanban columns
+  - **Drag & Drop**: Reorder tasks, move between kanban columns, and drag tasks onto sidebar projects to recategorize
   - **Detail Panel**: Comprehensive task editing with inline subtask management
 
 - **Additional Features**
@@ -206,6 +206,11 @@ dashboard/
    - **Kanban Board**:
      - Switch to board view for visual task management
      - Drag tasks between Todo, In Progress, Done, and Blocked columns
+   - **Drag & Drop Task Recategorization**:
+     - Drag any task from the task list
+     - Drop it onto a project in the sidebar to move it to that project
+     - Visual feedback shows valid drop zones with highlight
+     - Notification confirms successful move
    - **Command Palette**:
      - Press Ctrl+K (Cmd+K on Mac) to open
      - Quick access to navigation and actions

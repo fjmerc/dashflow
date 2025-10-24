@@ -391,6 +391,11 @@ function renderSidebar() {
             <span class="sidebar-item-count">${projectTasks.length}</span>
         `;
 
+        // Add drop zone handlers for drag-and-drop recategorization
+        projectItem.addEventListener('dragover', handleProjectDragOver);
+        projectItem.addEventListener('dragleave', handleProjectDragLeave);
+        projectItem.addEventListener('drop', handleProjectDrop);
+
         projectsList.appendChild(projectItem);
     });
 
@@ -940,6 +945,13 @@ function createTaskElement(task) {
     const li = document.createElement('li');
     li.className = 'task-list-item';
     li.dataset.taskId = task.id;
+
+    // Make task draggable for recategorization
+    li.draggable = true;
+
+    // Attach drag event handlers directly to this element
+    li.addEventListener('dragstart', handleTaskDragStart);
+    li.addEventListener('dragend', handleTaskDragEnd);
 
     if (task.completed) {
         li.classList.add('completed');
@@ -2454,6 +2466,126 @@ function executeSelectedCommand() {
     if (filteredCommands.length > 0 && selectedCommandIndex < filteredCommands.length) {
         executeCommand(filteredCommands[selectedCommandIndex]);
     }
+}
+
+/**
+ * Drag and Drop Handlers for Task Recategorization
+ */
+
+let draggedTaskId = null;
+
+/**
+ * Handle task drag start
+ */
+function handleTaskDragStart(e) {
+    // e.currentTarget is the <li> element with the event listener
+    const taskItem = e.currentTarget;
+
+    draggedTaskId = taskItem.dataset.taskId;
+    taskItem.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', taskItem.innerHTML);
+
+    Logger.debug('Started dragging task:', draggedTaskId);
+}
+
+/**
+ * Handle task drag end
+ */
+function handleTaskDragEnd(e) {
+    // e.currentTarget is the <li> element with the event listener
+    const taskItem = e.currentTarget;
+    taskItem.classList.remove('dragging');
+
+    // Remove all drag-over highlights
+    document.querySelectorAll('.project-item.drag-over').forEach(item => {
+        item.classList.remove('drag-over');
+    });
+
+    Logger.debug('Ended dragging task');
+}
+
+/**
+ * Handle drag over project
+ */
+function handleProjectDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+
+    const projectItem = e.target.closest('.project-item');
+    if (projectItem && !projectItem.classList.contains('drag-over')) {
+        projectItem.classList.add('drag-over');
+    }
+}
+
+/**
+ * Handle drag leave project
+ */
+function handleProjectDragLeave(e) {
+    const projectItem = e.target.closest('.project-item');
+    if (projectItem) {
+        projectItem.classList.remove('drag-over');
+    }
+}
+
+/**
+ * Handle drop on project
+ */
+function handleProjectDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const projectItem = e.target.closest('.project-item');
+    if (!projectItem || !draggedTaskId) return;
+
+    const targetProjectId = projectItem.dataset.projectId;
+    const task = taskDataManager.tasks.find(t => t.id === draggedTaskId);
+
+    if (!task || task.projectId === targetProjectId) {
+        projectItem.classList.remove('drag-over');
+        return;
+    }
+
+    // Update task's project
+    taskDataManager.updateTask(draggedTaskId, {
+        projectId: targetProjectId
+    });
+
+    // Visual feedback
+    projectItem.classList.remove('drag-over');
+
+    // Re-render
+    renderSidebar();
+    reRenderCurrentView();
+
+    const project = taskDataManager.getProjectById(targetProjectId);
+    Logger.info(`Task moved to project: ${project?.name}`);
+
+    // Show brief success message
+    showNotification(`Task moved to ${project?.name}`);
+
+    draggedTaskId = null;
+}
+
+/**
+ * Show notification message
+ */
+function showNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'task-notification';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 10);
+
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 2000);
 }
 
 // Initialize on load
