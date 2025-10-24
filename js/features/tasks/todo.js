@@ -586,7 +586,12 @@ function updateViewHeader() {
             break;
     }
 
-    viewTitle.textContent = title;
+    // Handle Font Awesome icons properly
+    if (title.includes('<i class="fas')) {
+        viewTitle.innerHTML = title;
+    } else {
+        viewTitle.textContent = title;
+    }
     viewSubtitle.textContent = subtitle;
 }
 

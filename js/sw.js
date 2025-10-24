@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dashboard-v39';
+const CACHE_NAME = 'dashboard-v40';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -23,8 +23,12 @@ const ASSETS_TO_CACHE = [
   '/assets/icons/icon-192.png',
   '/assets/icons/icon-512.png',
   '/assets/icons/icon.svg',
+  '/assets/css/fontawesome-all.min.css',
+  '/assets/webfonts/fa-brands-400.woff2',
+  '/assets/webfonts/fa-regular-400.woff2',
+  '/assets/webfonts/fa-solid-900.woff2',
+  '/assets/webfonts/fa-v4compatibility.woff2',
   'https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js'
 ];
 
