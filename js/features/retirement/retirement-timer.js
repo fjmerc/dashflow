@@ -292,7 +292,10 @@ class RetirementTimer {
             // No callback
             () => {
                 // Do nothing
-            }
+            },
+            // Custom button labels
+            'Save',
+            'Cancel'
         );
 
         // After modal is shown, replace its content with our form

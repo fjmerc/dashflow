@@ -17,8 +17,10 @@ class ModalManager {
      * @param {string} message - Modal message (supports newlines)
      * @param {Function} yesCallback - Callback for Yes/OK button
      * @param {Function} noCallback - Optional callback for No/Cancel button
+     * @param {string} yesLabel - Optional custom label for Yes button
+     * @param {string} noLabel - Optional custom label for No button
      */
-    showModal(title, message, yesCallback, noCallback = null) {
+    showModal(title, message, yesCallback, noCallback = null, yesLabel = null, noLabel = null) {
         const modal = document.getElementById('customModal');
         const modalTitle = document.getElementById('modalTitle');
         const modalMessage = document.getElementById('modalMessage');
@@ -45,7 +47,10 @@ class ModalManager {
             div.textContent = message;
             sanitized = div.innerHTML;
         }
-        modalMessage.innerHTML = sanitized.replace(/\n/g, '<br>');
+        // Replace newlines with <br> and support [center] markup for centered text
+        sanitized = sanitized.replace(/\n/g, '<br>')
+            .replace(/\[center\](.*?)\[\/center\]/g, '<div style="text-align: center;">$1</div>');
+        modalMessage.innerHTML = sanitized;
 
         // Remove any existing event listeners by cloning nodes
         const newYesBtn = modalYes.cloneNode(true);
@@ -73,7 +78,8 @@ class ModalManager {
                 this.hideModal();
                 yesCallback();
             };
-            freshYesBtn.textContent = noCallback ? 'Yes' : 'OK';
+            // Use custom label if provided, otherwise use default
+            freshYesBtn.textContent = yesLabel || (noCallback ? 'Yes' : 'OK');
         }
 
         if (noCallback) {
@@ -83,7 +89,8 @@ class ModalManager {
                 noCallback();
             };
             freshNoBtn.style.display = 'block';
-            freshNoBtn.textContent = 'No';
+            // Use custom label if provided, otherwise use default
+            freshNoBtn.textContent = noLabel || 'No';
         } else {
             freshNoBtn.style.display = 'none';
         }
@@ -203,8 +210,8 @@ class ModalManager {
 window.modalManager = new ModalManager();
 
 // Create global convenience functions for backward compatibility
-window.showModal = (title, message, yesCallback, noCallback) =>
-    window.modalManager.showModal(title, message, yesCallback, noCallback);
+window.showModal = (title, message, yesCallback, noCallback, yesLabel, noLabel) =>
+    window.modalManager.showModal(title, message, yesCallback, noCallback, yesLabel, noLabel);
 
 window.hideModal = () =>
     window.modalManager.hideModal();
