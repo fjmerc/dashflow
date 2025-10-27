@@ -23,6 +23,8 @@ class KeyboardNavigationManager {
 
     registerShortcuts() {
         // Navigation shortcuts
+        this.shortcuts.set('ctrl+k', () => this.openCommandPalette());
+        this.shortcuts.set('cmd+k', () => this.openCommandPalette()); // Mac
         this.shortcuts.set('ctrl+f', () => this.toggleGlobalSearch());
         this.shortcuts.set('cmd+f', () => this.toggleGlobalSearch()); // Mac
         this.shortcuts.set('ctrl+/', () => this.showKeyboardHelp());
@@ -101,15 +103,8 @@ class KeyboardNavigationManager {
     }
 
     toggleGlobalSearch() {
-        // This will be implemented when we create the global search feature
-        const searchInput = document.getElementById('searchInput') || document.getElementById('searchTodo');
-        if (searchInput) {
-            searchInput.focus();
-            searchInput.select();
-        } else {
-            // Show global search modal (to be implemented)
-            this.showGlobalSearchModal();
-        }
+        // Always show global search modal for consistent cross-page search
+        this.showGlobalSearchModal();
     }
 
     showGlobalSearchModal() {
@@ -201,23 +196,40 @@ class KeyboardNavigationManager {
             Logger.error('Error searching links:', e);
         }
 
-        // Search todos
+        // Search tasks
         try {
-            const todos = JSON.parse(localStorage.getItem('todos') || '[]');
-            todos.forEach((todo, index) => {
-                if (todo.text.toLowerCase().includes(lowerQuery) ||
-                    (todo.notes && todo.notes.toLowerCase().includes(lowerQuery)) ||
-                    (todo.summary && todo.summary.toLowerCase().includes(lowerQuery))) {
+            const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+            const projects = JSON.parse(localStorage.getItem('projects') || '[]');
+
+            tasks.forEach(task => {
+                // Search in task text, description, tags, and subtasks
+                const matchesText = task.text.toLowerCase().includes(lowerQuery);
+                const matchesDescription = task.description && task.description.toLowerCase().includes(lowerQuery);
+                const matchesTags = task.tags && task.tags.some(tag => tag.toLowerCase().includes(lowerQuery));
+                const matchesSubtasks = task.subtasks && task.subtasks.some(subtask =>
+                    subtask.text.toLowerCase().includes(lowerQuery)
+                );
+
+                if (matchesText || matchesDescription || matchesTags || matchesSubtasks) {
+                    // Get project name
+                    const project = projects.find(p => p.id === task.projectId);
+                    const projectName = project ? project.name : 'Inbox';
+
+                    // Build subtitle with relevant info
+                    const statusInfo = task.completed ? 'Completed' : task.status || 'todo';
+                    const priorityInfo = task.priority ? `${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} priority` : '';
+                    const parts = [projectName, statusInfo, priorityInfo].filter(p => p);
+
                     results.push({
-                        type: 'todo',
-                        title: todo.text,
-                        subtitle: `Todo ${todo.completed ? '(Completed)' : '(Pending)'} • Priority: ${todo.priority || 'None'}`,
-                        index: index
+                        type: 'task',
+                        title: task.text,
+                        subtitle: `Task • ${parts.join(' • ')}`,
+                        taskId: task.id
                     });
                 }
             });
         } catch (e) {
-            Logger.error('Error searching todos:', e);
+            Logger.error('Error searching tasks:', e);
         }
 
         // Display results
@@ -231,7 +243,7 @@ class KeyboardNavigationManager {
         }
 
         container.innerHTML = results.map(result => `
-            <div class="search-result" data-type="${result.type}" data-url="${result.url || ''}" data-index="${result.index || ''}">
+            <div class="search-result" data-type="${result.type}" data-url="${result.url || ''}" data-task-id="${result.taskId || ''}">
                 <div class="result-title">${this.highlightMatch(result.title)}</div>
                 <div class="result-subtitle">${result.subtitle}</div>
             </div>
@@ -263,65 +275,142 @@ class KeyboardNavigationManager {
             if (url) {
                 window.open(url, '_blank');
             }
-        } else if (type === 'todo') {
-            // Navigate to todo page
-            window.location.href = 'todo.html';
+        } else if (type === 'task' || type === 'todo') {
+            // Navigate to todo page with task ID
+            const taskId = resultEl.dataset.taskId;
+            if (taskId) {
+                window.location.href = `todo.html?taskId=${taskId}`;
+            } else {
+                window.location.href = 'todo.html';
+            }
         }
+    }
+
+    openCommandPalette() {
+        // Check if we're on the todo page (which has its own command palette)
+        if (window.location.pathname.includes('todo.html')) {
+            // The todo page handles its own command palette
+            // This event will be caught by todo.js
+            return;
+        }
+
+        // For dashboard page, navigate to todo.html command palette
+        // Or show a simple dashboard command palette
+        window.location.href = 'todo.html';
     }
 
     showKeyboardHelp() {
         const helpModal = document.createElement('div');
         helpModal.className = 'modal keyboard-help-modal';
         helpModal.style.display = 'block';
+
+        // Check if we're on todo.html
+        const isTodoPage = window.location.pathname.includes('todo.html');
+
         helpModal.innerHTML = `
-            <div class="modal-content">
+            <div class="modal-content shortcuts-modal-content">
                 <div class="modal-header">
                     <h3>⌨️ Keyboard Shortcuts</h3>
                     <span class="close">&times;</span>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body shortcuts-modal-body">
                     <div class="shortcuts-grid">
                         <div class="shortcut-section">
-                            <h4>Navigation</h4>
+                            <h4>🧭 Navigation</h4>
                             <div class="shortcut-item">
-                                <kbd>Ctrl</kbd> + <kbd>K</kbd> <span>Command Palette</span>
+                                <div class="shortcut-keys">
+                                    <kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>K</kbd>
+                                </div>
+                                <span class="shortcut-desc">Command Palette</span>
                             </div>
                             <div class="shortcut-item">
-                                <kbd>Ctrl</kbd> + <kbd>F</kbd> <span>Global Search</span>
+                                <div class="shortcut-keys">
+                                    <kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>F</kbd>
+                                </div>
+                                <span class="shortcut-desc">Global Search</span>
+                            </div>
+                            ${isTodoPage ? `
+                            <div class="shortcut-item">
+                                <div class="shortcut-keys">
+                                    <kbd>/</kbd>
+                                </div>
+                                <span class="shortcut-desc">Task Search</span>
+                            </div>` : ''}
+                            <div class="shortcut-item">
+                                <div class="shortcut-keys">
+                                    <kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>T</kbd>
+                                </div>
+                                <span class="shortcut-desc">Go to Tasks</span>
                             </div>
                             <div class="shortcut-item">
-                                <kbd>Ctrl</kbd> + <kbd>T</kbd> <span>Go to Todos</span>
+                                <div class="shortcut-keys">
+                                    <kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>H</kbd>
+                                </div>
+                                <span class="shortcut-desc">Go to Dashboard</span>
                             </div>
                             <div class="shortcut-item">
-                                <kbd>Ctrl</kbd> + <kbd>H</kbd> <span>Go to Home</span>
+                                <div class="shortcut-keys">
+                                    <kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>/</kbd>
+                                </div>
+                                <span class="shortcut-desc">Show This Help</span>
                             </div>
                             <div class="shortcut-item">
-                                <kbd>Escape</kbd> <span>Close/Cancel</span>
+                                <div class="shortcut-keys">
+                                    <kbd>Escape</kbd>
+                                </div>
+                                <span class="shortcut-desc">Close/Cancel</span>
                             </div>
                         </div>
+
                         <div class="shortcut-section">
-                            <h4>Quick Actions</h4>
+                            <h4>⚡ Quick Actions</h4>
                             <div class="shortcut-item">
-                                <kbd>Ctrl</kbd> + <kbd>N</kbd> <span>New Section</span>
+                                <div class="shortcut-keys">
+                                    <kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>Shift</kbd><span class="key-plus">+</span><kbd>N</kbd>
+                                </div>
+                                <span class="shortcut-desc">Quick Notes</span>
+                            </div>
+                            ${!isTodoPage ? `
+                            <div class="shortcut-item">
+                                <div class="shortcut-keys">
+                                    <kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>N</kbd>
+                                </div>
+                                <span class="shortcut-desc">New Section</span>
                             </div>
                             <div class="shortcut-item">
-                                <kbd>Ctrl</kbd> + <kbd>L</kbd> <span>New Link</span>
+                                <div class="shortcut-keys">
+                                    <kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>L</kbd>
+                                </div>
+                                <span class="shortcut-desc">New Link</span>
+                            </div>` : ''}
+                            <div class="shortcut-item">
+                                <div class="shortcut-keys">
+                                    <kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>E</kbd>
+                                </div>
+                                <span class="shortcut-desc">Export Data</span>
                             </div>
                             <div class="shortcut-item">
-                                <kbd>Ctrl</kbd> + <kbd>E</kbd> <span>Export Data</span>
-                            </div>
-                            <div class="shortcut-item">
-                                <kbd>Ctrl</kbd> + <kbd>I</kbd> <span>Import Data</span>
+                                <div class="shortcut-keys">
+                                    <kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>I</kbd>
+                                </div>
+                                <span class="shortcut-desc">Import Data</span>
                             </div>
                         </div>
+
                         <div class="shortcut-section">
-                            <h4>Theme</h4>
+                            <h4>🎨 Theme</h4>
                             <div class="shortcut-item">
-                                <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> <span>Toggle Dark Mode</span>
+                                <div class="shortcut-keys">
+                                    <kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>Shift</kbd><span class="key-plus">+</span><kbd>D</kbd>
+                                </div>
+                                <span class="shortcut-desc">Toggle Dark Mode</span>
                             </div>
                         </div>
                     </div>
-                    <p class="help-note">💡 On Mac, use <kbd>Cmd</kbd> instead of <kbd>Ctrl</kbd></p>
+                    <div class="help-note">
+                        <span class="note-icon">💡</span>
+                        <span>On Mac, use <kbd>Cmd</kbd> instead of <kbd>Ctrl</kbd></span>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button class="modal-btn primary" onclick="this.closest('.modal').remove()">Got it!</button>
