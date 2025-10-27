@@ -399,10 +399,11 @@ input, select, button {
     color: var(--text-color);
 }
 
-/* Custom select dropdown styling - only for forms, not task detail panel */
+/* Custom select dropdown styling - for forms and task detail panel */
 .dashboard-forms select,
 .form-container select,
-#existingSections {
+#existingSections,
+.task-detail-panel select {
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -416,7 +417,8 @@ input, select, button {
 
 [data-theme="dark"] .dashboard-forms select,
 [data-theme="dark"] .form-container select,
-[data-theme="dark"] #existingSections {
+[data-theme="dark"] #existingSections,
+[data-theme="dark"] .task-detail-panel select {
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e1e4e8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
 }
 
