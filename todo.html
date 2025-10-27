@@ -170,6 +170,19 @@
                     Focus on what matters today
                 </div>
                 <div class="task-main-actions">
+                    <div class="task-search-container">
+                        <i class="fas fa-search task-search-icon"></i>
+                        <input
+                            type="text"
+                            class="task-search-input"
+                            id="taskSearchInput"
+                            placeholder="Search tasks..."
+                            autocomplete="off"
+                        />
+                        <button class="task-search-clear" id="taskSearchClear" style="display: none;" title="Clear search">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                     <div class="view-switcher">
                         <button class="view-switcher-btn" data-layout="list">
                             <i class="fas fa-list"></i>

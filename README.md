@@ -53,6 +53,7 @@ A modern, feature-rich Progressive Web App (PWA) for organizing and managing you
   - **Tags**: Tag tasks for flexible categorization and filtering
   - **Subtasks**: Break down complex tasks into manageable subtasks
   - **Task Details**: Rich task information including priority, due dates, descriptions, and notes
+  - **Search**: Real-time task search across titles, descriptions, tags, and subtasks with keyboard shortcut (/)
   - **Kanban Board**: Visual board view with Todo, In Progress, Done, and Blocked columns
   - **Command Palette**: Quick access to tasks and actions with keyboard shortcuts (Ctrl+K)
   - **Task Filtering**: Filter by project, tag, status, priority, and date
@@ -81,7 +82,7 @@ A modern, feature-rich Progressive Web App (PWA) for organizing and managing you
 - Sortable.js for drag-and-drop features
 
 ### External Dependencies
-- Font Awesome 6.1.1 for icons
+- Font Awesome 6.1.1 for icons (self-hosted for offline support)
 - Roboto font from Google Fonts
 - Sortable.js for drag-and-drop functionality
 
@@ -103,6 +104,7 @@ dashboard/
 ├── help.html                                # Help documentation
 ├── manifest.json                            # PWA configuration
 ├── styles.css                               # Application styles (shared)
+├── favicon.ico                              # Multi-size favicon for legacy browsers
 ├── js/
 │   ├── core/                                # Core utilities (shared across pages)
 │   │   ├── theme.js                         # Theme management
@@ -126,8 +128,17 @@ dashboard/
 │   │       └── auto-backup.js               # Automatic backup system
 │   └── sw.js                                # Service Worker
 └── assets/
+    ├── css/
+    │   └── fontawesome-all.min.css          # Font Awesome CSS (self-hosted)
+    ├── webfonts/                            # Font Awesome font files (self-hosted)
+    │   ├── fa-brands-400.woff2              # Brand icons font
+    │   ├── fa-regular-400.woff2             # Regular icons font
+    │   ├── fa-solid-900.woff2               # Solid icons font
+    │   └── fa-v4compatibility.woff2         # Legacy compatibility font
     └── icons/
-        ├── icon.svg                         # SVG icon
+        ├── icon.svg                         # SVG icon (modern browsers)
+        ├── icon-16.png                      # 16x16 favicon
+        ├── icon-32.png                      # 32x32 favicon
         ├── icon-192.png                     # PWA icon 192x192
         └── icon-512.png                     # PWA icon 512x512
 ```
@@ -211,6 +222,14 @@ dashboard/
      - Drop it onto a project in the sidebar to move it to that project
      - Visual feedback shows valid drop zones with highlight
      - Notification confirms successful move
+   - **Search**:
+     - Use the search box at the top to find tasks instantly
+     - Press **/** (slash key) to quickly focus the task search box
+     - Press **Ctrl+F** (Cmd+F on Mac) to open global search across all dashboard and tasks
+     - Searches across task titles, descriptions, tags, and subtasks
+     - Real-time filtering as you type
+     - Works in both list and board views
+     - Access via Command Palette: Ctrl+K → "Search Tasks"
    - **Command Palette**:
      - Press Ctrl+K (Cmd+K on Mac) to open
      - Quick access to navigation and actions

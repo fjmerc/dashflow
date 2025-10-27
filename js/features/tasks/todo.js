@@ -38,6 +38,10 @@ const commandPalette = document.getElementById('commandPalette');
 const commandPaletteInput = document.getElementById('commandPaletteInput');
 const commandPaletteResults = document.getElementById('commandPaletteResults');
 
+// Search elements
+const taskSearchInput = document.getElementById('taskSearchInput');
+const taskSearchClear = document.getElementById('taskSearchClear');
+
 // State
 let taskDataManager;
 let currentView = 'my-day';
@@ -46,6 +50,7 @@ let currentTag = null;
 let selectedTaskId = null;
 let currentLayout = localStorage.getItem('taskLayout') || 'list'; // 'list' or 'board'
 let username = localStorage.getItem('username') || 'User';
+let searchQuery = '';
 
 // Command Palette state
 let commandPaletteOpen = false;
@@ -82,6 +87,9 @@ document.addEventListener('DOMContentLoaded', function() {
         taskSidebar.classList.add('collapsed');
     }
 
+    // Check for task ID in URL (from global search)
+    checkUrlForTask();
+
     Logger.debug('Task List App: Initialized');
 });
 
@@ -91,6 +99,41 @@ document.addEventListener('DOMContentLoaded', function() {
 function updateTitle() {
     document.title = `${username}'s Task List`;
     document.querySelector('h1').textContent = `${username}'s Task List`;
+}
+
+/**
+ * Check URL for task ID parameter (from global search)
+ */
+function checkUrlForTask() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const taskId = urlParams.get('taskId');
+
+    if (taskId) {
+        // Find and open the task
+        const task = taskDataManager.getTaskById(taskId);
+        if (task) {
+            Logger.debug('Opening task from URL:', taskId);
+
+            // Navigate to the appropriate view first
+            if (task.projectId) {
+                currentView = 'project';
+                currentProjectId = task.projectId;
+            } else {
+                currentView = 'inbox';
+            }
+
+            // Re-render with the new view
+            activateSmartView(currentView, currentProjectId);
+
+            // Open the task detail panel after a short delay to allow rendering
+            setTimeout(() => {
+                openTaskDetail(taskId);
+            }, 100);
+
+            // Clean up URL without reloading page
+            window.history.replaceState({}, '', 'todo.html');
+        }
+    }
 }
 
 /**
@@ -257,8 +300,46 @@ function setupEventListeners() {
         window.location.href = 'help.html';
     });
 
+    // Search functionality
+    taskSearchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value.trim();
+
+        // Show/hide clear button
+        if (searchQuery) {
+            taskSearchClear.style.display = 'flex';
+        } else {
+            taskSearchClear.style.display = 'none';
+        }
+
+        // Re-render with search filter
+        reRenderCurrentView();
+    });
+
+    taskSearchClear.addEventListener('click', () => {
+        searchQuery = '';
+        taskSearchInput.value = '';
+        taskSearchClear.style.display = 'none';
+        reRenderCurrentView();
+    });
+
     // Command Palette keyboard shortcuts
     document.addEventListener('keydown', (e) => {
+        // / to focus task search (unless typing in an input)
+        if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+            // Don't trigger if already typing in an input or textarea
+            const activeElement = document.activeElement;
+            if (activeElement.tagName === 'INPUT' ||
+                activeElement.tagName === 'TEXTAREA' ||
+                activeElement.isContentEditable) {
+                return;
+            }
+
+            e.preventDefault();
+            taskSearchInput.focus();
+            taskSearchInput.select();
+            return;
+        }
+
         // Ctrl+K or Cmd+K to open command palette
         if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
             e.preventDefault();
@@ -612,6 +693,43 @@ function reRenderCurrentView() {
 }
 
 /**
+ * Filter tasks by search query
+ */
+function filterTasksBySearch(tasks, query) {
+    if (!query || query.trim() === '') {
+        return tasks;
+    }
+
+    const searchTerm = query.toLowerCase();
+
+    return tasks.filter(task => {
+        // Search in task text
+        if (task.text.toLowerCase().includes(searchTerm)) {
+            return true;
+        }
+
+        // Search in task description
+        if (task.description && task.description.toLowerCase().includes(searchTerm)) {
+            return true;
+        }
+
+        // Search in tags
+        if (task.tags && task.tags.some(tag => tag.toLowerCase().includes(searchTerm))) {
+            return true;
+        }
+
+        // Search in subtasks
+        if (task.subtasks && task.subtasks.some(subtask =>
+            subtask.text.toLowerCase().includes(searchTerm)
+        )) {
+            return true;
+        }
+
+        return false;
+    });
+}
+
+/**
  * Render Tasks
  */
 function renderTasks() {
@@ -650,12 +768,15 @@ function renderTasks() {
             break;
     }
 
-    // Sort: incomplete first, then by position
+    // Apply search filter
+    tasks = filterTasksBySearch(tasks, searchQuery);
+
+    // Sort: incomplete first, then by creation date (newest first)
     tasks.sort((a, b) => {
         if (a.completed !== b.completed) {
             return a.completed ? 1 : -1;
         }
-        return b.position - a.position; // Newer tasks first
+        return new Date(b.createdAt) - new Date(a.createdAt); // Newer tasks first
     });
 
     // Render
@@ -663,6 +784,17 @@ function renderTasks() {
 
     if (tasks.length === 0) {
         emptyState.style.display = 'block';
+
+        // Update empty state message for search
+        if (searchQuery) {
+            emptyState.querySelector('.empty-state-icon').textContent = '🔍';
+            emptyState.querySelector('.empty-state-title').textContent = 'No results found';
+            emptyState.querySelector('.empty-state-description').textContent = `No tasks match "${searchQuery}"`;
+        } else {
+            emptyState.querySelector('.empty-state-icon').textContent = '✅';
+            emptyState.querySelector('.empty-state-title').textContent = 'No tasks yet';
+            emptyState.querySelector('.empty-state-description').textContent = 'Add your first task using the input above';
+        }
     } else {
         emptyState.style.display = 'none';
 
@@ -740,6 +872,9 @@ function renderBoardView() {
             break;
     }
 
+    // Apply search filter
+    tasks = filterTasksBySearch(tasks, searchQuery);
+
     // Filter out completed tasks for board view
     tasks = tasks.filter(t => !t.completed);
 
@@ -774,6 +909,17 @@ function renderBoardView() {
     // Show/hide empty state
     if (tasks.length === 0) {
         emptyState.style.display = 'block';
+
+        // Update empty state message for search
+        if (searchQuery) {
+            emptyState.querySelector('.empty-state-icon').textContent = '🔍';
+            emptyState.querySelector('.empty-state-title').textContent = 'No results found';
+            emptyState.querySelector('.empty-state-description').textContent = `No tasks match "${searchQuery}"`;
+        } else {
+            emptyState.querySelector('.empty-state-icon').textContent = '✅';
+            emptyState.querySelector('.empty-state-title').textContent = 'No tasks yet';
+            emptyState.querySelector('.empty-state-description').textContent = 'Add your first task using the input above';
+        }
     } else {
         emptyState.style.display = 'none';
     }
@@ -2190,6 +2336,19 @@ function getCommands() {
             action: () => {
                 closeCommandPalette();
                 quickAddInput.focus();
+            }
+        },
+        {
+            id: 'search-tasks',
+            name: 'Search Tasks',
+            description: 'Focus search input to find tasks (Press /)',
+            icon: '🔍',
+            category: 'action',
+            keywords: ['search', 'find', 'filter', 'query', 'lookup'],
+            action: () => {
+                closeCommandPalette();
+                taskSearchInput.focus();
+                taskSearchInput.select();
             }
         },
         {
