@@ -1703,6 +1703,16 @@ function saveTaskDetails(taskId) {
         isMyDay
     };
 
+    // Synchronize 'completed' property with 'done' status
+    // This ensures strikethrough styling appears when status is set to 'done'
+    if (status === 'done') {
+        updates.completed = true;
+        updates.completedAt = new Date().toISOString();
+    } else {
+        updates.completed = false;
+        updates.completedAt = null;
+    }
+
     taskDataManager.updateTask(taskId, updates);
     reRenderCurrentView();
 
