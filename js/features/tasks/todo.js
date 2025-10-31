@@ -43,12 +43,7 @@ const pomodoroSettingsOverlay = document.getElementById('pomodoroSettingsOverlay
 const pomodoroSettingsClose = document.getElementById('pomodoroSettingsClose');
 const pomodoroSettingsSave = document.getElementById('pomodoroSettingsSave');
 const pomodoroSettingsCancel = document.getElementById('pomodoroSettingsCancel');
-const settingWorkDuration = document.getElementById('settingWorkDuration');
-const settingShortBreak = document.getElementById('settingShortBreak');
-const settingLongBreak = document.getElementById('settingLongBreak');
-const settingPomodorosUntilLongBreak = document.getElementById('settingPomodorosUntilLongBreak');
-const settingSoundEnabled = document.getElementById('settingSoundEnabled');
-const settingAutoStart = document.getElementById('settingAutoStart');
+// Settings form elements are now queried dynamically when needed to avoid timing issues
 
 // Header buttons
 const backToDashboard = document.getElementById('backToDashboard');
@@ -1088,8 +1083,12 @@ function createKanbanCard(task) {
         </div>
     ` : '';
 
-    // My Day badge
-    const myDayBadgeHTML = task.isMyDay ? `<span class="my-day-badge" title="In My Day">✨</span>` : '';
+    // My Day badge - removed as bookmark icon serves this purpose
+    const myDayBadgeHTML = '';
+
+    // Pomodoro count badge
+    const pomodoroCountHTML = task.pomodorosCompleted > 0 ?
+        `<span class="pomodoro-count-badge" title="${task.pomodorosCompleted} pomodoro${task.pomodorosCompleted > 1 ? 's' : ''} completed">🍅 ${task.pomodorosCompleted}</span>` : '';
 
     card.innerHTML = `
         <div class="kanban-card-header">
@@ -1107,6 +1106,7 @@ function createKanbanCard(task) {
             <span class="kanban-card-priority ${task.priority}">${task.priority}</span>
             ${dueDateHTML}
             ${projectHTML}
+            ${pomodoroCountHTML}
         </div>
     `;
 
@@ -1176,8 +1176,8 @@ function createTaskElement(task) {
         `;
     }
 
-    // My Day badge
-    const myDayBadgeHTML = task.isMyDay ? `<span class="my-day-badge" title="In My Day">✨</span>` : '';
+    // My Day badge - removed as bookmark icon serves this purpose
+    const myDayBadgeHTML = '';
 
     // Pomodoro count badge
     const pomodoroCountHTML = task.pomodorosCompleted > 0 ?
@@ -1206,7 +1206,6 @@ function createTaskElement(task) {
         <div class="task-list-item-content">
             <div class="task-list-item-title">
                 ${myDayBadgeHTML}
-                ${pomodoroCountHTML}
                 ${escapeHtml(task.text)}
             </div>
             ${task.description ? `<div class="task-list-item-description">${escapeHtml(task.description).substring(0, 100)}${task.description.length > 100 ? '...' : ''}</div>` : ''}
@@ -1214,6 +1213,7 @@ function createTaskElement(task) {
                 ${priorityHTML}
                 ${dueDateHTML}
                 ${subtasksHTML}
+                ${pomodoroCountHTML}
             </div>
         </div>
         ${pomodoroButtonHTML}
@@ -1259,6 +1259,12 @@ function toggleTaskComplete(taskId) {
         completedAt: !task.completed ? new Date().toISOString() : null,
         status: !task.completed ? TaskStatus.DONE : TaskStatus.TODO
     };
+
+    // Stop pomodoro timer if task is being marked as completed
+    if (!task.completed && pomodoroTimer && pomodoroTimer.state.isRunning && pomodoroTimer.state.taskId === taskId) {
+        pomodoroTimer.stop();
+        hidePomodoroPanel();
+    }
 
     taskDataManager.updateTask(taskId, updates);
     reRenderCurrentView();
@@ -1721,6 +1727,12 @@ function showTaskDetails(taskId) {
     // Delete button
     document.getElementById('deleteTaskBtn').addEventListener('click', () => {
         if (confirm('Are you sure you want to delete this task?')) {
+            // Stop pomodoro timer if it's running for this task
+            if (pomodoroTimer && pomodoroTimer.state.isRunning && pomodoroTimer.state.taskId === taskId) {
+                pomodoroTimer.stop();
+                hidePomodoroPanel();
+            }
+
             taskDataManager.deleteTask(taskId);
             hideDetailPanel();
             reRenderCurrentView();
@@ -1762,6 +1774,12 @@ function saveTaskDetails(taskId) {
     if (status === 'done') {
         updates.completed = true;
         updates.completedAt = new Date().toISOString();
+
+        // Stop pomodoro timer if it's running for this task
+        if (pomodoroTimer && pomodoroTimer.state.isRunning && pomodoroTimer.state.taskId === taskId) {
+            pomodoroTimer.stop();
+            hidePomodoroPanel();
+        }
     } else {
         updates.completed = false;
         updates.completedAt = null;
@@ -3088,29 +3106,58 @@ function showPomodoroSettings() {
     // Load current settings
     const settings = pomodoroTimer.getSettings();
 
+    // Query form elements (query each time to ensure they exist)
+    const settingWorkDuration = document.getElementById('settingWorkDuration');
+    const settingShortBreak = document.getElementById('settingShortBreak');
+    const settingLongBreak = document.getElementById('settingLongBreak');
+    const settingPomodorosUntilLongBreak = document.getElementById('settingPomodorosUntilLongBreak');
+    const settingSoundEnabled = document.getElementById('settingSoundEnabled');
+    const settingAutoStart = document.getElementById('settingAutoStart');
+
     // Populate form fields
-    settingWorkDuration.value = settings.workDuration;
-    settingShortBreak.value = settings.shortBreak;
-    settingLongBreak.value = settings.longBreak;
-    settingPomodorosUntilLongBreak.value = settings.pomodorosUntilLongBreak;
-    settingSoundEnabled.checked = settings.soundEnabled;
-    settingAutoStart.checked = settings.autoStart;
+    if (settingWorkDuration) settingWorkDuration.value = settings.workDuration;
+    if (settingShortBreak) settingShortBreak.value = settings.shortBreak;
+    if (settingLongBreak) settingLongBreak.value = settings.longBreak;
+    if (settingPomodorosUntilLongBreak) settingPomodorosUntilLongBreak.value = settings.pomodorosUntilLongBreak;
+    if (settingSoundEnabled) settingSoundEnabled.checked = settings.soundEnabled;
+    if (settingAutoStart) settingAutoStart.checked = settings.autoStart;
 
     // Show modal
-    pomodoroSettingsModal.classList.remove('hidden');
+    const pomodoroSettingsModal = document.getElementById('pomodoroSettingsModal');
+    if (pomodoroSettingsModal) {
+        pomodoroSettingsModal.classList.remove('hidden');
+    }
 }
 
 /**
  * Hide pomodoro settings modal
  */
 function hidePomodoroSettings() {
-    pomodoroSettingsModal.classList.add('hidden');
+    const pomodoroSettingsModal = document.getElementById('pomodoroSettingsModal');
+    if (pomodoroSettingsModal) {
+        pomodoroSettingsModal.classList.add('hidden');
+    }
 }
 
 /**
  * Save pomodoro settings
  */
 function savePomodoroSettings() {
+    // Query form elements (query each time to ensure they exist)
+    const settingWorkDuration = document.getElementById('settingWorkDuration');
+    const settingShortBreak = document.getElementById('settingShortBreak');
+    const settingLongBreak = document.getElementById('settingLongBreak');
+    const settingPomodorosUntilLongBreak = document.getElementById('settingPomodorosUntilLongBreak');
+    const settingSoundEnabled = document.getElementById('settingSoundEnabled');
+    const settingAutoStart = document.getElementById('settingAutoStart');
+
+    // Check if elements exist
+    if (!settingWorkDuration || !settingShortBreak || !settingLongBreak ||
+        !settingPomodorosUntilLongBreak || !settingSoundEnabled || !settingAutoStart) {
+        console.error('Settings form elements not found');
+        return;
+    }
+
     // Get values from form
     const newSettings = {
         workDuration: parseInt(settingWorkDuration.value),

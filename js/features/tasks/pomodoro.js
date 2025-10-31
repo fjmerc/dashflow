@@ -186,12 +186,7 @@ class PomodoroTimer {
             this.state.timeRemaining = this.durations.work;
         }
 
-        // Notify UI of session completion
-        if (this.callbacks.onSessionComplete) {
-            this.callbacks.onSessionComplete(completedSession, this.state.sessionType);
-        }
-
-        // Auto-start next session if enabled
+        // Auto-start next session if enabled (do this BEFORE notifying UI)
         if (this.settings.autoStart) {
             this.state.isPaused = false;
             // Interval will continue automatically
@@ -199,6 +194,11 @@ class PomodoroTimer {
             // Pause at the start of next session
             this.state.isPaused = true;
             this.stopInterval();
+        }
+
+        // Notify UI of session completion (after isPaused is updated)
+        if (this.callbacks.onSessionComplete) {
+            this.callbacks.onSessionComplete(completedSession, this.state.sessionType);
         }
 
         this.saveState();

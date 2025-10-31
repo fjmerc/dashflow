@@ -4488,7 +4488,7 @@ body.dark-mode .task-notification,
 }
 
 .pomodoro-start-btn:hover {
-    background: rgba(var(--primary-color-rgb), 0.1);
+    background: rgba(79, 70, 229, 0.1);
     color: var(--primary-color);
     transform: scale(1.1);
 }
@@ -4504,7 +4504,6 @@ body.dark-mode .task-notification,
     border-radius: 12px;
     font-size: 12px;
     font-weight: 600;
-    margin-right: 8px;
 }
 
 /* Dark mode adjustments */
@@ -4565,9 +4564,10 @@ body.dark-mode .pomodoro-panel,
     width: 90%;
     max-width: 500px;
     max-height: 80vh;
-    overflow-y: auto;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
     z-index: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .pomodoro-settings-header {
@@ -4576,7 +4576,7 @@ body.dark-mode .pomodoro-panel,
     align-items: center;
     padding: 20px 24px;
     border-bottom: 2px solid var(--primary-color);
-    background: linear-gradient(135deg, var(--primary-color), rgba(var(--primary-color-rgb), 0.85));
+    background: var(--primary-color);
 }
 
 .pomodoro-settings-header h3 {
@@ -4641,7 +4641,7 @@ body.dark-mode .pomodoro-panel,
 .pomodoro-setting-input:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
 .pomodoro-setting-toggle {
@@ -4704,11 +4704,11 @@ body.dark-mode .pomodoro-panel,
 .pomodoro-settings-save:hover {
     opacity: 0.9;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 
 /* Pomodoro settings button in header */
-.pomodoro-settings-btn {
+.pomodoro-header-actions .pomodoro-settings-btn {
     background: none;
     border: none;
     color: white;
