@@ -35,6 +35,20 @@ const pomodoroPauseBtn = document.getElementById('pomodoroPauseBtn');
 const pomodoroSkipBtn = document.getElementById('pomodoroSkipBtn');
 const pomodoroCloseBtn = document.getElementById('pomodoroCloseBtn');
 const pomodoroMinimizeBtn = document.getElementById('pomodoroMinimizeBtn');
+const pomodoroSettingsBtn = document.getElementById('pomodoroSettingsBtn');
+
+// Pomodoro settings modal elements
+const pomodoroSettingsModal = document.getElementById('pomodoroSettingsModal');
+const pomodoroSettingsOverlay = document.getElementById('pomodoroSettingsOverlay');
+const pomodoroSettingsClose = document.getElementById('pomodoroSettingsClose');
+const pomodoroSettingsSave = document.getElementById('pomodoroSettingsSave');
+const pomodoroSettingsCancel = document.getElementById('pomodoroSettingsCancel');
+const settingWorkDuration = document.getElementById('settingWorkDuration');
+const settingShortBreak = document.getElementById('settingShortBreak');
+const settingLongBreak = document.getElementById('settingLongBreak');
+const settingPomodorosUntilLongBreak = document.getElementById('settingPomodorosUntilLongBreak');
+const settingSoundEnabled = document.getElementById('settingSoundEnabled');
+const settingAutoStart = document.getElementById('settingAutoStart');
 
 // Header buttons
 const backToDashboard = document.getElementById('backToDashboard');
@@ -2931,6 +2945,28 @@ function initializePomodoroUI() {
         pomodoroPanel.classList.toggle('minimized');
     });
 
+    // Settings button
+    pomodoroSettingsBtn.addEventListener('click', () => {
+        showPomodoroSettings();
+    });
+
+    // Settings modal event listeners
+    pomodoroSettingsClose.addEventListener('click', () => {
+        hidePomodoroSettings();
+    });
+
+    pomodoroSettingsCancel.addEventListener('click', () => {
+        hidePomodoroSettings();
+    });
+
+    pomodoroSettingsOverlay.addEventListener('click', () => {
+        hidePomodoroSettings();
+    });
+
+    pomodoroSettingsSave.addEventListener('click', () => {
+        savePomodoroSettings();
+    });
+
     // Check if there's a running timer from previous session
     const state = pomodoroTimer.getState();
     if (state.isRunning) {
@@ -3043,6 +3079,79 @@ function showPomodoroPanel() {
  */
 function hidePomodoroPanel() {
     pomodoroPanel.classList.add('hidden');
+}
+
+/**
+ * Show pomodoro settings modal
+ */
+function showPomodoroSettings() {
+    // Load current settings
+    const settings = pomodoroTimer.getSettings();
+
+    // Populate form fields
+    settingWorkDuration.value = settings.workDuration;
+    settingShortBreak.value = settings.shortBreak;
+    settingLongBreak.value = settings.longBreak;
+    settingPomodorosUntilLongBreak.value = settings.pomodorosUntilLongBreak;
+    settingSoundEnabled.checked = settings.soundEnabled;
+    settingAutoStart.checked = settings.autoStart;
+
+    // Show modal
+    pomodoroSettingsModal.classList.remove('hidden');
+}
+
+/**
+ * Hide pomodoro settings modal
+ */
+function hidePomodoroSettings() {
+    pomodoroSettingsModal.classList.add('hidden');
+}
+
+/**
+ * Save pomodoro settings
+ */
+function savePomodoroSettings() {
+    // Get values from form
+    const newSettings = {
+        workDuration: parseInt(settingWorkDuration.value),
+        shortBreak: parseInt(settingShortBreak.value),
+        longBreak: parseInt(settingLongBreak.value),
+        pomodorosUntilLongBreak: parseInt(settingPomodorosUntilLongBreak.value),
+        soundEnabled: settingSoundEnabled.checked,
+        autoStart: settingAutoStart.checked
+    };
+
+    // Validate
+    if (newSettings.workDuration < 1 || newSettings.workDuration > 60) {
+        alert('Work duration must be between 1 and 60 minutes');
+        return;
+    }
+    if (newSettings.shortBreak < 1 || newSettings.shortBreak > 30) {
+        alert('Short break must be between 1 and 30 minutes');
+        return;
+    }
+    if (newSettings.longBreak < 1 || newSettings.longBreak > 60) {
+        alert('Long break must be between 1 and 60 minutes');
+        return;
+    }
+    if (newSettings.pomodorosUntilLongBreak < 2 || newSettings.pomodorosUntilLongBreak > 10) {
+        alert('Pomodoros until long break must be between 2 and 10');
+        return;
+    }
+
+    // Update timer settings
+    pomodoroTimer.updateSettings(newSettings);
+
+    // Update UI if timer is running
+    const state = pomodoroTimer.getState();
+    if (state.isRunning) {
+        updatePomodoroUI(state);
+    }
+
+    // Close modal
+    hidePomodoroSettings();
+
+    Logger.debug('Pomodoro settings saved:', newSettings);
 }
 
 // Initialize on load

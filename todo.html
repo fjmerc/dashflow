@@ -304,6 +304,9 @@
             <div class="pomodoro-header">
                 <h3 id="pomodoroSessionType">Focus Time</h3>
                 <div class="pomodoro-header-actions">
+                    <button class="pomodoro-settings-btn" id="pomodoroSettingsBtn" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </button>
                     <button class="pomodoro-minimize-btn" id="pomodoroMinimizeBtn" title="Minimize">
                         <i class="fas fa-minus"></i>
                     </button>
@@ -331,6 +334,53 @@
                 </div>
             </div>
         </aside>
+
+        <!-- Pomodoro Settings Modal -->
+        <div class="pomodoro-settings-modal hidden" id="pomodoroSettingsModal">
+            <div class="pomodoro-settings-overlay" id="pomodoroSettingsOverlay"></div>
+            <div class="pomodoro-settings-content">
+                <div class="pomodoro-settings-header">
+                    <h3>Pomodoro Settings</h3>
+                    <button class="pomodoro-settings-close" id="pomodoroSettingsClose">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="pomodoro-settings-body">
+                    <div class="pomodoro-setting-group">
+                        <label class="pomodoro-setting-label">Work Duration (minutes)</label>
+                        <input type="number" class="pomodoro-setting-input" id="settingWorkDuration" min="1" max="60" value="25">
+                    </div>
+                    <div class="pomodoro-setting-group">
+                        <label class="pomodoro-setting-label">Short Break (minutes)</label>
+                        <input type="number" class="pomodoro-setting-input" id="settingShortBreak" min="1" max="30" value="5">
+                    </div>
+                    <div class="pomodoro-setting-group">
+                        <label class="pomodoro-setting-label">Long Break (minutes)</label>
+                        <input type="number" class="pomodoro-setting-input" id="settingLongBreak" min="1" max="60" value="15">
+                    </div>
+                    <div class="pomodoro-setting-group">
+                        <label class="pomodoro-setting-label">Pomodoros Until Long Break</label>
+                        <input type="number" class="pomodoro-setting-input" id="settingPomodorosUntilLongBreak" min="2" max="10" value="4">
+                    </div>
+                    <div class="pomodoro-setting-group">
+                        <label class="pomodoro-setting-toggle">
+                            <input type="checkbox" id="settingSoundEnabled">
+                            <span>Enable Sound Notifications</span>
+                        </label>
+                    </div>
+                    <div class="pomodoro-setting-group">
+                        <label class="pomodoro-setting-toggle">
+                            <input type="checkbox" id="settingAutoStart">
+                            <span>Auto-start Next Session</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="pomodoro-settings-footer">
+                    <button class="pomodoro-settings-btn pomodoro-settings-cancel" id="pomodoroSettingsCancel">Cancel</button>
+                    <button class="pomodoro-settings-btn pomodoro-settings-save" id="pomodoroSettingsSave">Save Settings</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- File Input for Import -->

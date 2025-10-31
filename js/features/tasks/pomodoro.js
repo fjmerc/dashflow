@@ -23,19 +23,27 @@ const DEFAULT_DURATIONS = {
  */
 class PomodoroTimer {
     constructor() {
+        // Load settings first
+        this.settings = this.loadSettings();
+        this.durations = {
+            work: this.settings.workDuration * 60,
+            shortBreak: this.settings.shortBreak * 60,
+            longBreak: this.settings.longBreak * 60,
+            pomodorosUntilLongBreak: this.settings.pomodorosUntilLongBreak
+        };
+
         this.state = {
             isRunning: false,
             isPaused: false,
             taskId: null,
             taskText: '',
             sessionType: SessionType.WORK,
-            timeRemaining: DEFAULT_DURATIONS.work,
+            timeRemaining: this.durations.work,
             pomodoroCount: 0,        // Current pomodoro in cycle (1-4)
             totalPomodoros: 0,       // Total completed today
             cycleCount: 0            // Number of complete cycles
         };
 
-        this.durations = { ...DEFAULT_DURATIONS };
         this.interval = null;
         this.callbacks = {
             onTick: null,
@@ -146,6 +154,9 @@ class PomodoroTimer {
     handleSessionComplete() {
         const completedSession = this.state.sessionType;
 
+        // Play notification sound
+        this.playNotificationSound();
+
         // If work session completed, increment pomodoro count
         if (completedSession === SessionType.WORK) {
             this.state.pomodoroCount++;
@@ -178,6 +189,16 @@ class PomodoroTimer {
         // Notify UI of session completion
         if (this.callbacks.onSessionComplete) {
             this.callbacks.onSessionComplete(completedSession, this.state.sessionType);
+        }
+
+        // Auto-start next session if enabled
+        if (this.settings.autoStart) {
+            this.state.isPaused = false;
+            // Interval will continue automatically
+        } else {
+            // Pause at the start of next session
+            this.state.isPaused = true;
+            this.stopInterval();
         }
 
         this.saveState();
@@ -279,6 +300,86 @@ class PomodoroTimer {
     resetDailyStats() {
         this.state.totalPomodoros = 0;
         this.saveState();
+    }
+
+    /**
+     * Load settings from localStorage
+     */
+    loadSettings() {
+        const saved = localStorage.getItem('pomodoroSettings');
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                console.error('Failed to load pomodoro settings:', e);
+            }
+        }
+
+        // Return default settings
+        return {
+            workDuration: 25,
+            shortBreak: 5,
+            longBreak: 15,
+            pomodorosUntilLongBreak: 4,
+            soundEnabled: false,
+            autoStart: false
+        };
+    }
+
+    /**
+     * Update settings and save to localStorage
+     */
+    updateSettings(newSettings) {
+        this.settings = { ...this.settings, ...newSettings };
+        localStorage.setItem('pomodoroSettings', JSON.stringify(this.settings));
+
+        // Update durations in seconds
+        this.durations = {
+            work: this.settings.workDuration * 60,
+            shortBreak: this.settings.shortBreak * 60,
+            longBreak: this.settings.longBreak * 60,
+            pomodorosUntilLongBreak: this.settings.pomodorosUntilLongBreak
+        };
+
+        // If timer is not running, update the default time remaining
+        if (!this.state.isRunning) {
+            this.state.timeRemaining = this.durations.work;
+        }
+    }
+
+    /**
+     * Get current settings
+     */
+    getSettings() {
+        return { ...this.settings };
+    }
+
+    /**
+     * Play notification sound
+     */
+    playNotificationSound() {
+        if (!this.settings.soundEnabled) return;
+
+        // Create a simple beep sound using Web Audio API
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 800; // 800 Hz tone
+            oscillator.type = 'sine';
+
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        } catch (e) {
+            console.error('Failed to play notification sound:', e);
+        }
     }
 }
 
