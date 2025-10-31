@@ -24,6 +24,18 @@ const taskDetailPanel = document.getElementById('taskDetailPanel');
 const closeDetailPanel = document.getElementById('closeDetailPanel');
 const detailPanelContent = document.getElementById('detailPanelContent');
 
+// Pomodoro elements
+const pomodoroPanel = document.getElementById('pomodoroPanel');
+const pomodoroSessionType = document.getElementById('pomodoroSessionType');
+const pomodoroTaskName = document.getElementById('pomodoroTaskName');
+const pomodoroTimerDisplay = document.getElementById('pomodoroTimerDisplay');
+const pomodoroProgressFill = document.getElementById('pomodoroProgressFill');
+const pomodoroCycleInfo = document.getElementById('pomodoroCycleInfo');
+const pomodoroPauseBtn = document.getElementById('pomodoroPauseBtn');
+const pomodoroSkipBtn = document.getElementById('pomodoroSkipBtn');
+const pomodoroCloseBtn = document.getElementById('pomodoroCloseBtn');
+const pomodoroMinimizeBtn = document.getElementById('pomodoroMinimizeBtn');
+
 // Header buttons
 const backToDashboard = document.getElementById('backToDashboard');
 const settingsBtn = document.getElementById('settingsBtn');
@@ -44,6 +56,7 @@ const taskSearchClear = document.getElementById('taskSearchClear');
 
 // State
 let taskDataManager;
+let pomodoroTimer;
 let currentView = 'my-day';
 let currentProjectId = null;
 let currentTag = null;
@@ -63,6 +76,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize TaskDataManager
     taskDataManager = new TaskDataManager();
+
+    // Initialize Pomodoro Timer
+    pomodoroTimer = new PomodoroTimer();
+    initializePomodoroUI();
 
     // Create and insert backdrop for detail panel
     const backdrop = document.createElement('div');
@@ -1148,6 +1165,10 @@ function createTaskElement(task) {
     // My Day badge
     const myDayBadgeHTML = task.isMyDay ? `<span class="my-day-badge" title="In My Day">✨</span>` : '';
 
+    // Pomodoro count badge
+    const pomodoroCountHTML = task.pomodorosCompleted > 0 ?
+        `<span class="pomodoro-count-badge" title="${task.pomodorosCompleted} pomodoro${task.pomodorosCompleted > 1 ? 's' : ''} completed">🍅 ${task.pomodorosCompleted}</span>` : '';
+
     // My Day toggle button
     const myDayToggleHTML = `
         <button class="my-day-toggle-btn ${task.isMyDay ? 'active' : ''}"
@@ -1157,11 +1178,21 @@ function createTaskElement(task) {
         </button>
     `;
 
+    // Pomodoro timer button
+    const pomodoroButtonHTML = `
+        <button class="pomodoro-start-btn"
+                data-action="start-pomodoro"
+                title="Start Pomodoro">
+            <i class="fas fa-play-circle"></i>
+        </button>
+    `;
+
     li.innerHTML = `
         <div class="task-checkbox ${task.completed ? 'checked' : ''}" data-action="toggle-complete"></div>
         <div class="task-list-item-content">
             <div class="task-list-item-title">
                 ${myDayBadgeHTML}
+                ${pomodoroCountHTML}
                 ${escapeHtml(task.text)}
             </div>
             ${task.description ? `<div class="task-list-item-description">${escapeHtml(task.description).substring(0, 100)}${task.description.length > 100 ? '...' : ''}</div>` : ''}
@@ -1171,6 +1202,7 @@ function createTaskElement(task) {
                 ${subtasksHTML}
             </div>
         </div>
+        ${pomodoroButtonHTML}
         ${myDayToggleHTML}
     `;
 
@@ -1191,6 +1223,9 @@ function handleTaskClick(e) {
         toggleTaskComplete(taskId);
     } else if (action === 'toggle-my-day') {
         toggleTaskMyDay(taskId);
+        e.stopPropagation(); // Prevent opening detail panel
+    } else if (action === 'start-pomodoro') {
+        handleStartPomodoro(taskId);
         e.stopPropagation(); // Prevent opening detail panel
     } else {
         // Show task details
@@ -2846,6 +2881,168 @@ function showNotification(message) {
             document.body.removeChild(notification);
         }, 300);
     }, 2000);
+}
+
+/**
+ * Pomodoro Timer Functions
+ */
+
+/**
+ * Initialize Pomodoro UI and callbacks
+ */
+function initializePomodoroUI() {
+    // Setup pomodoro timer callbacks
+    pomodoroTimer.on('tick', (state) => {
+        updatePomodoroUI(state);
+    });
+
+    pomodoroTimer.on('sessionComplete', (completedSession, nextSession) => {
+        handleSessionComplete(completedSession, nextSession);
+    });
+
+    pomodoroTimer.on('pomodoroComplete', (taskId) => {
+        handlePomodoroComplete(taskId);
+    });
+
+    // Setup event listeners for pomodoro controls
+    pomodoroPauseBtn.addEventListener('click', () => {
+        const state = pomodoroTimer.getState();
+        if (state.isPaused) {
+            pomodoroTimer.resume();
+            pomodoroPauseBtn.innerHTML = '<i class="fas fa-pause"></i><span>Pause</span>';
+        } else {
+            pomodoroTimer.pause();
+            pomodoroPauseBtn.innerHTML = '<i class="fas fa-play"></i><span>Resume</span>';
+        }
+    });
+
+    pomodoroSkipBtn.addEventListener('click', () => {
+        pomodoroTimer.skip();
+    });
+
+    pomodoroCloseBtn.addEventListener('click', () => {
+        if (confirm('Stop the current pomodoro session?')) {
+            pomodoroTimer.stop();
+            hidePomodoroPanel();
+        }
+    });
+
+    pomodoroMinimizeBtn.addEventListener('click', () => {
+        pomodoroPanel.classList.toggle('minimized');
+    });
+
+    // Check if there's a running timer from previous session
+    const state = pomodoroTimer.getState();
+    if (state.isRunning) {
+        showPomodoroPanel();
+        updatePomodoroUI(state);
+    }
+}
+
+/**
+ * Start pomodoro for a task
+ */
+function handleStartPomodoro(taskId) {
+    const task = taskDataManager.getTaskById(taskId);
+    if (!task) return;
+
+    pomodoroTimer.start(taskId, task.text);
+    showPomodoroPanel();
+    updatePomodoroUI(pomodoroTimer.getState());
+
+    Logger.debug('Started pomodoro for task:', taskId);
+}
+
+/**
+ * Update pomodoro UI with current state
+ */
+function updatePomodoroUI(state) {
+    if (!state.isRunning) return;
+
+    // Update timer display
+    pomodoroTimerDisplay.textContent = pomodoroTimer.formatTime(state.timeRemaining);
+
+    // Update session type
+    pomodoroSessionType.textContent = pomodoroTimer.getSessionName(state.sessionType);
+
+    // Update task name
+    pomodoroTaskName.textContent = state.taskText || 'No task';
+
+    // Update cycle info
+    const cycleText = state.sessionType === 'work'
+        ? `Pomodoro ${state.pomodoroCount + 1}/4`
+        : 'Break Time';
+    pomodoroCycleInfo.textContent = cycleText;
+
+    // Update progress bar
+    const duration = state.sessionType === 'work' ? 25 * 60 :
+                     state.sessionType === 'short-break' ? 5 * 60 : 15 * 60;
+    const progress = ((duration - state.timeRemaining) / duration) * 100;
+    pomodoroProgressFill.style.width = `${progress}%`;
+
+    // Update button state
+    if (state.isPaused) {
+        pomodoroPauseBtn.innerHTML = '<i class="fas fa-play"></i><span>Resume</span>';
+    } else {
+        pomodoroPauseBtn.innerHTML = '<i class="fas fa-pause"></i><span>Pause</span>';
+    }
+}
+
+/**
+ * Handle session completion
+ */
+function handleSessionComplete(completedSession, nextSession) {
+    const sessionName = pomodoroTimer.getSessionName(completedSession);
+    const nextName = pomodoroTimer.getSessionName(nextSession);
+
+    // Show notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(`${sessionName} Complete!`, {
+            body: `Time for ${nextName}`,
+            icon: 'assets/icons/icon-192.png'
+        });
+    }
+
+    // Update UI for next session
+    updatePomodoroUI(pomodoroTimer.getState());
+
+    Logger.debug('Session complete:', completedSession, '-> Next:', nextSession);
+}
+
+/**
+ * Handle pomodoro completion (update task count)
+ */
+function handlePomodoroComplete(taskId) {
+    const task = taskDataManager.getTaskById(taskId);
+    if (!task) return;
+
+    // Increment pomodoro count
+    task.pomodorosCompleted = (task.pomodorosCompleted || 0) + 1;
+    taskDataManager.updateTask(taskId, { pomodorosCompleted: task.pomodorosCompleted });
+
+    // Refresh UI to show updated count
+    reRenderCurrentView();
+
+    Logger.debug('Pomodoro completed for task:', taskId, 'Total:', task.pomodorosCompleted);
+}
+
+/**
+ * Show pomodoro panel
+ */
+function showPomodoroPanel() {
+    pomodoroPanel.classList.remove('hidden');
+
+    // Request notification permission if not already granted
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}
+
+/**
+ * Hide pomodoro panel
+ */
+function hidePomodoroPanel() {
+    pomodoroPanel.classList.add('hidden');
 }
 
 // Initialize on load

@@ -4307,3 +4307,222 @@ body.dark-mode .task-notification,
     background: var(--primary-color);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
+
+/* ========================================
+   Pomodoro Timer Panel
+   ======================================== */
+
+/* Pomodoro Panel - Floating overlay */
+.pomodoro-panel {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 320px;
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.pomodoro-panel.hidden {
+    display: none;
+}
+
+.pomodoro-panel.minimized {
+    height: 60px;
+    overflow: hidden;
+}
+
+.pomodoro-panel.minimized .pomodoro-content {
+    display: none;
+}
+
+/* Pomodoro Header */
+.pomodoro-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 12px 12px 0 0;
+    cursor: move;
+}
+
+.pomodoro-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.pomodoro-header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.pomodoro-minimize-btn,
+.pomodoro-close-btn {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.pomodoro-minimize-btn:hover,
+.pomodoro-close-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Pomodoro Content */
+.pomodoro-content {
+    padding: 20px;
+}
+
+.pomodoro-task-name {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.pomodoro-timer-display {
+    font-size: 48px;
+    font-weight: 700;
+    text-align: center;
+    color: var(--text-color);
+    margin: 16px 0;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+}
+
+.pomodoro-progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--background-color);
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 16px 0;
+}
+
+.pomodoro-progress-fill {
+    height: 100%;
+    background: var(--primary-color);
+    transition: width 0.3s ease;
+    border-radius: 3px;
+}
+
+.pomodoro-cycle-info {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.pomodoro-controls {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.pomodoro-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background: var(--background-color);
+    color: var(--text-color);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pomodoro-btn:hover {
+    background: var(--border-color);
+    transform: translateY(-1px);
+}
+
+.pomodoro-btn i {
+    font-size: 16px;
+}
+
+.pomodoro-pause-btn {
+    background: var(--primary-color);
+    color: white;
+}
+
+.pomodoro-pause-btn:hover {
+    background: var(--primary-color);
+    opacity: 0.9;
+}
+
+/* Pomodoro Button on Task Cards */
+.pomodoro-start-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    opacity: 0;
+    font-size: 18px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.task-list-item:hover .pomodoro-start-btn {
+    opacity: 1;
+}
+
+.pomodoro-start-btn:hover {
+    background: rgba(var(--primary-color-rgb), 0.1);
+    color: var(--primary-color);
+    transform: scale(1.1);
+}
+
+/* Pomodoro Count Badge */
+.pomodoro-count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    background: rgba(255, 99, 71, 0.1);
+    color: #ff6347;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+/* Dark mode adjustments */
+body.dark-mode .pomodoro-panel,
+[data-theme="dark"] .pomodoro-panel {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .pomodoro-panel {
+        bottom: 10px;
+        right: 10px;
+        left: 10px;
+        width: auto;
+    }
+    
+    .pomodoro-timer-display {
+        font-size: 42px;
+    }
+}

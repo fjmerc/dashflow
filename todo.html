@@ -298,6 +298,39 @@
                 <!-- Task details will be shown here -->
             </div>
         </aside>
+
+        <!-- Pomodoro Timer Panel (Hidden by default) -->
+        <aside class="pomodoro-panel hidden" id="pomodoroPanel">
+            <div class="pomodoro-header">
+                <h3 id="pomodoroSessionType">Focus Time</h3>
+                <div class="pomodoro-header-actions">
+                    <button class="pomodoro-minimize-btn" id="pomodoroMinimizeBtn" title="Minimize">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <button class="pomodoro-close-btn" id="pomodoroCloseBtn" title="Stop Timer">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="pomodoro-content">
+                <div class="pomodoro-task-name" id="pomodoroTaskName">No task selected</div>
+                <div class="pomodoro-timer-display" id="pomodoroTimerDisplay">25:00</div>
+                <div class="pomodoro-progress-bar">
+                    <div class="pomodoro-progress-fill" id="pomodoroProgressFill"></div>
+                </div>
+                <div class="pomodoro-cycle-info" id="pomodoroCycleInfo">Pomodoro 1/4</div>
+                <div class="pomodoro-controls">
+                    <button class="pomodoro-btn pomodoro-pause-btn" id="pomodoroPauseBtn">
+                        <i class="fas fa-pause"></i>
+                        <span>Pause</span>
+                    </button>
+                    <button class="pomodoro-btn pomodoro-skip-btn" id="pomodoroSkipBtn">
+                        <i class="fas fa-forward"></i>
+                        <span>Skip</span>
+                    </button>
+                </div>
+            </div>
+        </aside>
     </div>
 
     <!-- File Input for Import -->
@@ -362,6 +395,7 @@
     <script src="js/features/notes/notes.js"></script>
     <script src="js/features/notes/notes-ui.js"></script>
     <script src="js/features/tasks/task-data.js"></script>
+    <script src="js/features/tasks/pomodoro.js"></script>
     <script src="js/features/tasks/todo.js"></script>
 </body>
 </html>

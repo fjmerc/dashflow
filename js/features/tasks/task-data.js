@@ -54,6 +54,10 @@ class Task {
         // Subtasks
         this.subtasks = (data.subtasks || []).map(st => new Subtask(st));
 
+        // Pomodoro tracking
+        this.pomodorosCompleted = data.pomodorosCompleted || 0;
+        this.estimatedPomodoros = data.estimatedPomodoros || null;
+
         // Activity tracking
         this.modifiedAt = data.modifiedAt || this.createdAt;
     }
@@ -80,6 +84,8 @@ class Task {
             position: this.position,
             isMyDay: this.isMyDay,
             subtasks: this.subtasks.map(st => st.toJSON()),
+            pomodorosCompleted: this.pomodorosCompleted,
+            estimatedPomodoros: this.estimatedPomodoros,
             modifiedAt: this.modifiedAt
         };
     }
