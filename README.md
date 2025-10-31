@@ -59,6 +59,7 @@ A modern, feature-rich Progressive Web App (PWA) for organizing and managing you
   - **Task Filtering**: Filter by project, tag, status, priority, and date
   - **Drag & Drop**: Reorder tasks, move between kanban columns, and drag tasks onto sidebar projects to recategorize
   - **Detail Panel**: Comprehensive task editing with inline subtask management
+  - **Pomodoro Timer**: Integrated focus timer with work/break sessions, customizable durations, sound notifications, and automatic task tracking
 
 - **Additional Features**
   - Offline functionality (PWA)
@@ -119,7 +120,8 @@ dashboard/
 │   │   │   └── script.js                    # Main dashboard logic
 │   │   ├── tasks/
 │   │   │   ├── todo.js                      # Task management UI and interactions
-│   │   │   └── task-data.js                 # Task data models and storage
+│   │   │   ├── task-data.js                 # Task data models and storage
+│   │   │   └── pomodoro.js                  # Pomodoro timer logic
 │   │   ├── notes/
 │   │   │   ├── notes.js                     # Quick Notes data layer
 │   │   │   └── notes-ui.js                  # Quick Notes UI and interactions
@@ -237,6 +239,16 @@ dashboard/
      - Tab/Shift+Tab to navigate
      - Enter to open task details
      - Escape to close panels
+   - **Pomodoro Timer**:
+     - Click the play button (▶) on any task to start a Pomodoro session
+     - Timer panel appears in the bottom-right corner with session type, countdown, and controls
+     - Default sessions: 25-min work, 5-min short break, 15-min long break (4 work sessions until long break)
+     - Pause/Resume, Skip, and Stop controls for flexible time management
+     - Settings (gear icon): Customize durations, enable sound notifications, toggle auto-start for next session
+     - Automatic tracking: Completed pomodoros are tracked per task (🍅 count badge in task metadata)
+     - Timer stops automatically when task is marked complete or deleted
+     - State persistence: Timer state saved to localStorage (survives page refresh for 30 minutes)
+     - Minimize button to reduce panel size while timer continues running
 
 ## License
 
