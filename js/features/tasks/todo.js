@@ -1418,10 +1418,29 @@ function showTaskDetails(taskId) {
             color: var(--text-color);
             white-space: normal;
             min-width: 0;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background-color 0.15s ease;
+        }
+        .subtask-text:hover {
+            background-color: rgba(255, 255, 255, 0.05);
         }
         .subtask-text.completed {
             text-decoration: line-through;
             opacity: 0.6;
+        }
+        .subtask-edit-input {
+            flex: 1;
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-color);
+            background: var(--background-color);
+            border: 1px solid var(--primary-color);
+            border-radius: 4px;
+            padding: 4px 8px;
+            outline: none;
+            font-family: inherit;
         }
         .subtask-delete-btn {
             background: none;
@@ -1550,6 +1569,54 @@ function showTaskDetails(taskId) {
         btn.addEventListener('click', () => {
             const index = parseInt(btn.dataset.subtaskIndex);
             deleteSubtask(taskId, index);
+        });
+    });
+
+    // Subtask text - click to edit
+    document.querySelectorAll('.subtask-text').forEach(textSpan => {
+        textSpan.addEventListener('click', (e) => {
+            const subtaskItem = e.target.closest('.subtask-item');
+            const checkbox = subtaskItem.querySelector('.subtask-checkbox');
+            const index = parseInt(checkbox.dataset.subtaskIndex);
+            const currentText = e.target.textContent;
+
+            // Create input element
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'subtask-edit-input';
+            input.value = currentText;
+
+            // Replace span with input
+            e.target.replaceWith(input);
+            input.focus();
+            input.select();
+
+            // Save on Enter or blur
+            const saveEdit = () => {
+                const newText = input.value.trim();
+                if (newText && newText !== currentText) {
+                    updateSubtask(taskId, index, newText);
+                } else {
+                    // Revert if empty or unchanged
+                    showTaskDetails(taskId);
+                }
+            };
+
+            // Cancel on Escape
+            const cancelEdit = () => {
+                showTaskDetails(taskId);
+            };
+
+            input.addEventListener('blur', saveEdit);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveEdit();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelEdit();
+                }
+            });
         });
     });
 
@@ -1703,6 +1770,25 @@ function deleteSubtask(taskId, index) {
     reRenderCurrentView();
 
     Logger.debug('Deleted subtask:', index, 'from task:', taskId);
+}
+
+/**
+ * Update subtask text
+ */
+function updateSubtask(taskId, index, newText) {
+    const task = taskDataManager.tasks.find(t => t.id === taskId);
+    if (!task || !task.subtasks[index]) return;
+
+    const trimmedText = newText.trim();
+    if (!trimmedText) return; // Don't allow empty subtasks
+
+    task.subtasks[index].text = trimmedText;
+
+    taskDataManager.updateTask(taskId, { subtasks: task.subtasks });
+    showTaskDetails(taskId); // Refresh detail panel
+    reRenderCurrentView();
+
+    Logger.debug('Updated subtask:', index, 'for task:', taskId);
 }
 
 /**
