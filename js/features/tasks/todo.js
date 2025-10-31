@@ -771,6 +771,11 @@ function renderTasks() {
     // Apply search filter
     tasks = filterTasksBySearch(tasks, searchQuery);
 
+    // Filter out completed tasks for all views except 'completed' view
+    if (currentView !== 'completed') {
+        tasks = tasks.filter(t => !t.completed);
+    }
+
     // Sort: incomplete first, then by creation date (newest first)
     tasks.sort((a, b) => {
         if (a.completed !== b.completed) {
