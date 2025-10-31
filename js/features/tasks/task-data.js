@@ -452,6 +452,13 @@ class TaskDataManager {
     }
 
     /**
+     * Get task by ID
+     */
+    getTaskById(taskId) {
+        return this.tasks.find(t => t.id === taskId);
+    }
+
+    /**
      * Add task
      */
     addTask(taskData) {
