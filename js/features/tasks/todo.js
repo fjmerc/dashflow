@@ -1183,6 +1183,18 @@ function createTaskElement(task) {
     const pomodoroCountHTML = task.pomodorosCompleted > 0 ?
         `<span class="pomodoro-count-badge" title="${task.pomodorosCompleted} pomodoro${task.pomodorosCompleted > 1 ? 's' : ''} completed">🍅 ${task.pomodorosCompleted}</span>` : '';
 
+    // Dependency blocker badge
+    let dependencyBadgeHTML = '';
+    if (task.blockedBy && task.blockedBy.length > 0) {
+        const blockingTasks = taskDataManager.getBlockingTasks(task.id);
+        const incompleteBlockers = blockingTasks.filter(b => !b.completed);
+
+        if (incompleteBlockers.length > 0) {
+            const blockingTaskNames = incompleteBlockers.map(b => b.displayName).join(', ');
+            dependencyBadgeHTML = `<span class="dependency-badge" title="Blocked by: ${escapeHtml(blockingTaskNames)}">⛓️ ${incompleteBlockers.length}</span>`;
+        }
+    }
+
     // My Day toggle button
     const myDayToggleHTML = `
         <button class="my-day-toggle-btn ${task.isMyDay ? 'active' : ''}"
@@ -1214,6 +1226,7 @@ function createTaskElement(task) {
                 ${dueDateHTML}
                 ${subtasksHTML}
                 ${pomodoroCountHTML}
+                ${dependencyBadgeHTML}
             </div>
         </div>
         ${pomodoroButtonHTML}
@@ -1254,6 +1267,8 @@ function toggleTaskComplete(taskId) {
     const task = taskDataManager.tasks.find(t => t.id === taskId);
     if (!task) return;
 
+    const wasIncomplete = !task.completed;
+
     const updates = {
         completed: !task.completed,
         completedAt: !task.completed ? new Date().toISOString() : null,
@@ -1267,7 +1282,43 @@ function toggleTaskComplete(taskId) {
     }
 
     taskDataManager.updateTask(taskId, updates);
+
+    // Handle dependency auto-updates when marking a task as complete
+    if (wasIncomplete) {
+        const unblockedTasks = taskDataManager.updateDependentStatuses(taskId);
+
+        // Show notification if tasks were unblocked
+        if (unblockedTasks.length > 0) {
+            const taskNames = unblockedTasks.map(t => t.text).join(', ');
+            const message = unblockedTasks.length === 1
+                ? `Task "${unblockedTasks[0].text}" is now unblocked!`
+                : `${unblockedTasks.length} tasks are now unblocked: ${taskNames}`;
+
+            showNotification(message, 'success');
+            Logger.info('Tasks unblocked:', unblockedTasks.map(t => t.text));
+        }
+    } else {
+        // Handle re-blocking when marking a task as incomplete
+        const reBlockedTasks = taskDataManager.reBlockDependentTasks(taskId);
+
+        // Show notification if tasks were re-blocked
+        if (reBlockedTasks.length > 0) {
+            const taskNames = reBlockedTasks.map(t => t.text).join(', ');
+            const message = reBlockedTasks.length === 1
+                ? `Task "${reBlockedTasks[0].text}" is now blocked again!`
+                : `${reBlockedTasks.length} tasks are now blocked again: ${taskNames}`;
+
+            showNotification(message, 'warning');
+            Logger.info('Tasks re-blocked:', reBlockedTasks.map(t => t.text));
+        }
+    }
+
     reRenderCurrentView();
+
+    // Refresh detail panel if it's currently open (to show updated dependency info)
+    if (selectedTaskId) {
+        showTaskDetails(selectedTaskId);
+    }
 
     Logger.debug('Task toggled:', taskId, updates.completed);
 }
@@ -1391,6 +1442,111 @@ function showTaskDetails(taskId) {
                 <button class="tag-add-btn" id="addTagBtn" title="Add tag">
                     <i class="fas fa-plus"></i>
                 </button>
+            </div>
+        </div>
+
+        <div class="task-detail-section">
+            <label class="task-detail-label">Dependencies</label>
+
+            <!-- Blocked By Section -->
+            <div class="dependency-subsection">
+                <div class="dependency-subsection-header">
+                    <span class="dependency-subsection-title">⛔ Blocked By:</span>
+                </div>
+                <div class="dependency-list" id="blockedByList">
+                    ${(() => {
+                        const blockingItems = taskDataManager.getBlockingTasks(task.id);
+                        if (blockingItems.length === 0) {
+                            return '<div class="dependency-empty">No blocking dependencies</div>';
+                        }
+                        return blockingItems.map(blocker => {
+                            const statusIcon = blocker.completed ? '✅' :
+                                             blocker.status === 'in-progress' ? '🔄' :
+                                             blocker.status === 'blocked' ? '🚫' : '⏳';
+                            return `
+                                <div class="dependency-item" data-dependency-id="${blocker.blockerId}">
+                                    <span class="dependency-icon">${statusIcon}</span>
+                                    <span class="dependency-text">${escapeHtml(blocker.displayName)}</span>
+                                    <button class="dependency-remove-btn" data-blocking-task-id="${blocker.blockerId}" title="Remove dependency">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            `;
+                        }).join('');
+                    })()}
+                </div>
+                <div class="dependency-add-form">
+                    <select class="dependency-select" id="addDependencySelect">
+                        <option value="">Select a task or subtask...</option>
+                        ${(() => {
+                            let options = '';
+                            taskDataManager.getAllTasks()
+                                .filter(t => t.id !== task.id && !t.completed)
+                                .forEach(t => {
+                                    // Don't show task if already a dependency
+                                    const taskAlreadyAdded = task.blockedBy && task.blockedBy.includes(t.id);
+                                    if (!taskAlreadyAdded) {
+                                        options += `<option value="${t.id}">📋 ${escapeHtml(t.text)}</option>`;
+                                    }
+
+                                    // Add subtasks (only incomplete ones)
+                                    if (t.subtasks && t.subtasks.length > 0) {
+                                        t.subtasks
+                                            .filter(st => !st.completed)
+                                            .forEach(st => {
+                                                const subtaskRef = `${t.id}:${st.id}`;
+                                                const subtaskAlreadyAdded = task.blockedBy && task.blockedBy.includes(subtaskRef);
+                                                if (!subtaskAlreadyAdded) {
+                                                    options += `<option value="${subtaskRef}">   └─ 📝 ${escapeHtml(st.text)}</option>`;
+                                                }
+                                            });
+                                    }
+                                });
+                            return options;
+                        })()}
+                    </select>
+                    <button class="dependency-add-btn" id="addDependencyBtn" title="Add dependency">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Blocks Section -->
+            <div class="dependency-subsection">
+                <div class="dependency-subsection-header">
+                    <span class="dependency-subsection-title">🔗 Blocks (${taskDataManager.getBlockedTasks(task.id).length} tasks):</span>
+                </div>
+                <div class="dependency-list">
+                    ${(() => {
+                        const blockedTasks = taskDataManager.getBlockedTasks(task.id);
+                        if (blockedTasks.length === 0) {
+                            return '<div class="dependency-empty">No tasks depend on this</div>';
+                        }
+                        return blockedTasks.map(blockedTask => {
+                            // Find which specific blocker (task or subtask) is causing this dependency
+                            const matchingBlocker = blockedTask.blockedBy.find(blockerId =>
+                                blockerId === task.id || blockerId.startsWith(`${task.id}:`)
+                            );
+
+                            let blockerDetail = '';
+                            if (matchingBlocker && matchingBlocker.includes(':')) {
+                                // It's a subtask blocker
+                                const [, subtaskId] = matchingBlocker.split(':');
+                                const subtask = task.subtasks.find(st => st.id === subtaskId);
+                                if (subtask) {
+                                    blockerDetail = ` <span class="dependency-detail" style="font-size: 11px; color: var(--text-muted);">(via: ${escapeHtml(subtask.text)})</span>`;
+                                }
+                            }
+
+                            return `
+                                <div class="dependency-item dependency-item-readonly">
+                                    <span class="dependency-icon">→</span>
+                                    <span class="dependency-text">${escapeHtml(blockedTask.text)}</span>${blockerDetail}
+                                </div>
+                            `;
+                        }).join('');
+                    })()}
+                </div>
             </div>
         </div>
 
@@ -1566,6 +1722,128 @@ function showTaskDetails(taskId) {
             transition: opacity 0.15s ease; flex-shrink: 0;
         }
         .tag-add-btn:hover { opacity: 0.9; }
+
+        /* Dependencies styles */
+        .dependency-subsection {
+            margin-bottom: 20px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        .dependency-subsection-header {
+            margin-bottom: 12px;
+        }
+        .dependency-subsection-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        .dependency-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        .dependency-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }
+        .dependency-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--primary-color);
+        }
+        .dependency-item-readonly {
+            opacity: 0.8;
+        }
+        .dependency-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .dependency-text {
+            flex: 1;
+            font-size: 14px;
+            color: var(--text-color);
+        }
+        .dependency-remove-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            opacity: 0;
+            transition: all 0.15s ease;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        .dependency-item:hover .dependency-remove-btn {
+            opacity: 0.5;
+        }
+        .dependency-remove-btn:hover {
+            opacity: 1 !important;
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+        .dependency-empty {
+            padding: 12px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-style: italic;
+        }
+        .dependency-add-form {
+            display: flex;
+            gap: 8px;
+        }
+        .dependency-select {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--background-color);
+            color: var(--text-color);
+            font-size: 14px;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        .dependency-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        .dependency-select option {
+            background: var(--background-color);
+            color: var(--text-color);
+        }
+        .dependency-add-btn {
+            padding: 8px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: opacity 0.15s ease;
+            flex-shrink: 0;
+        }
+        .dependency-add-btn:hover {
+            opacity: 0.9;
+        }
     `;
     if (!document.getElementById('detailPanelStyles')) {
         style.id = 'detailPanelStyles';
@@ -1724,6 +2002,39 @@ function showTaskDetails(taskId) {
         });
     });
 
+    // Dependency event listeners
+    // Add dependency
+    const addDependencyBtn = document.getElementById('addDependencyBtn');
+    const addDependencySelect = document.getElementById('addDependencySelect');
+
+    if (addDependencyBtn && addDependencySelect) {
+        addDependencyBtn.addEventListener('click', () => {
+            const blockingTaskId = addDependencySelect.value;
+            if (blockingTaskId) {
+                const result = taskDataManager.addDependency(taskId, blockingTaskId);
+                if (result.success) {
+                    showNotification(result.message, 'success');
+                    showTaskDetails(taskId); // Refresh to show new dependency
+                    reRenderCurrentView(); // Update task list badges
+                } else {
+                    showNotification(result.message, 'error');
+                }
+            }
+        });
+    }
+
+    // Remove dependency buttons
+    document.querySelectorAll('.dependency-remove-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const blockingTaskId = btn.dataset.blockingTaskId;
+            if (taskDataManager.removeDependency(taskId, blockingTaskId)) {
+                showNotification('Dependency removed', 'success');
+                showTaskDetails(taskId); // Refresh to show updated dependencies
+                reRenderCurrentView(); // Update task list badges
+            }
+        });
+    });
+
     // Delete button
     document.getElementById('deleteTaskBtn').addEventListener('click', () => {
         if (confirm('Are you sure you want to delete this task?')) {
@@ -1829,9 +2140,45 @@ function toggleSubtask(taskId, index) {
     const task = taskDataManager.tasks.find(t => t.id === taskId);
     if (!task || !task.subtasks[index]) return;
 
-    task.subtasks[index].completed = !task.subtasks[index].completed;
+    const subtask = task.subtasks[index];
+    const wasIncomplete = !subtask.completed;
+
+    subtask.completed = !subtask.completed;
 
     taskDataManager.updateTask(taskId, { subtasks: task.subtasks });
+
+    // Handle dependency auto-updates when marking a subtask as complete
+    if (wasIncomplete) {
+        const subtaskReference = `${taskId}:${subtask.id}`;
+        const unblockedTasks = taskDataManager.updateDependentStatuses(subtaskReference);
+
+        // Show notification if tasks were unblocked
+        if (unblockedTasks.length > 0) {
+            const taskNames = unblockedTasks.map(t => t.text).join(', ');
+            const message = unblockedTasks.length === 1
+                ? `Task "${unblockedTasks[0].text}" is now unblocked!`
+                : `${unblockedTasks.length} tasks are now unblocked: ${taskNames}`;
+
+            showNotification(message, 'success');
+            Logger.info('Tasks unblocked by subtask:', unblockedTasks.map(t => t.text));
+        }
+    } else {
+        // Handle re-blocking when marking a subtask as incomplete
+        const subtaskReference = `${taskId}:${subtask.id}`;
+        const reBlockedTasks = taskDataManager.reBlockDependentTasks(subtaskReference);
+
+        // Show notification if tasks were re-blocked
+        if (reBlockedTasks.length > 0) {
+            const taskNames = reBlockedTasks.map(t => t.text).join(', ');
+            const message = reBlockedTasks.length === 1
+                ? `Task "${reBlockedTasks[0].text}" is now blocked again!`
+                : `${reBlockedTasks.length} tasks are now blocked again: ${taskNames}`;
+
+            showNotification(message, 'warning');
+            Logger.info('Tasks re-blocked by subtask:', reBlockedTasks.map(t => t.text));
+        }
+    }
+
     showTaskDetails(taskId); // Refresh detail panel
     reRenderCurrentView();
 

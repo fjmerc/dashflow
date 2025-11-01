@@ -381,6 +381,58 @@
                 <li>Delete subtasks you no longer need</li>
             </ul>
 
+            <h3>Task Dependencies</h3>
+            <p>Create relationships between tasks to ensure prerequisite work is completed first. Dependencies help you manage complex workflows where some tasks must wait for others to finish.</p>
+
+            <h4>Adding Dependencies</h4>
+            <ul>
+                <li>Open the task detail panel for the task you want to block</li>
+                <li>Scroll to the "Blocked by" section</li>
+                <li>Select a task or subtask from the dropdown menu</li>
+                <li>Click the "Add" button to create the dependency</li>
+                <li>The task's status automatically changes to "Blocked"</li>
+            </ul>
+
+            <h4>Dependency Features</h4>
+            <ul>
+                <li><strong>Task-Level Blocking:</strong> Block a task until another entire task is complete</li>
+                <li><strong>Subtask-Level Blocking:</strong> Block a task until a specific subtask is complete (subtasks appear indented in the dropdown)</li>
+                <li><strong>Multiple Dependencies:</strong> A task can be blocked by multiple tasks and/or subtasks</li>
+                <li><strong>Dependency Badges:</strong> Task cards show a ⛓️ badge with the count of incomplete blockers</li>
+                <li><strong>Circular Prevention:</strong> The system prevents creating dependency loops (e.g., Task A blocks Task B, Task B blocks Task A)</li>
+            </ul>
+
+            <h4>Automatic Status Updates</h4>
+            <ul>
+                <li><strong>Auto-Unblock:</strong> When you complete a blocker task/subtask, all dependent tasks automatically change from "Blocked" to "Todo"</li>
+                <li><strong>Auto-Re-Block:</strong> If you uncheck a blocker task/subtask (mark it incomplete), dependent tasks automatically return to "Blocked" status</li>
+                <li><strong>Notifications:</strong> Success notifications show which tasks were unblocked or re-blocked</li>
+                <li><strong>Badge Updates:</strong> Dependency badges update in real-time as blockers are completed or uncompleted</li>
+            </ul>
+
+            <h4>Viewing Dependencies</h4>
+            <ul>
+                <li><strong>"Blocked by" Section:</strong> Shows what tasks/subtasks are blocking this task from starting, with option to remove dependencies</li>
+                <li><strong>"Blocks" Section:</strong> Shows which other tasks are waiting for this task to complete (read-only)</li>
+                <li><strong>Subtask Details:</strong> When blocked by a subtask, displays as "Task Name (via: Subtask Name)"</li>
+                <li><strong>Badge Tooltip:</strong> Hover over the ⛓️ badge to see the names of all incomplete blockers</li>
+            </ul>
+
+            <h4>Managing Dependencies</h4>
+            <ul>
+                <li><strong>Remove Dependency:</strong> Click the X button next to any blocker in the "Blocked by" section</li>
+                <li><strong>Complete Blockers:</strong> Complete blocking tasks/subtasks to unblock dependent work</li>
+                <li><strong>Work on Blocked Tasks:</strong> You can still edit and add details to blocked tasks, just can't mark them complete until blockers are done</li>
+            </ul>
+
+            <h4>Use Cases</h4>
+            <ul>
+                <li><strong>Sequential Workflows:</strong> Ensure "Review PR" happens before "Deploy to Production"</li>
+                <li><strong>Document Dependencies:</strong> Block "Write Report" until "Collect Data" subtask is complete</li>
+                <li><strong>Approval Processes:</strong> Block "Launch Feature" until "Get Stakeholder Approval" is done</li>
+                <li><strong>Complex Projects:</strong> Map out project phases where later tasks depend on earlier ones</li>
+            </ul>
+
             <h3>Tags</h3>
             <p>Use tags for flexible task categorization and filtering:</p>
             <ul>

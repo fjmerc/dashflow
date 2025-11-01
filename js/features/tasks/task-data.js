@@ -58,6 +58,9 @@ class Task {
         this.pomodorosCompleted = data.pomodorosCompleted || 0;
         this.estimatedPomodoros = data.estimatedPomodoros || null;
 
+        // Task dependencies
+        this.blockedBy = data.blockedBy || []; // Array of task IDs that must complete first
+
         // Activity tracking
         this.modifiedAt = data.modifiedAt || this.createdAt;
     }
@@ -86,6 +89,7 @@ class Task {
             subtasks: this.subtasks.map(st => st.toJSON()),
             pomodorosCompleted: this.pomodorosCompleted,
             estimatedPomodoros: this.estimatedPomodoros,
+            blockedBy: this.blockedBy,
             modifiedAt: this.modifiedAt
         };
     }
@@ -583,6 +587,331 @@ class TaskDataManager {
         return Array.from(tagMap.entries())
             .map(([tag, count]) => ({ tag, count }))
             .sort((a, b) => b.count - a.count);
+    }
+
+    /**
+     * DEPENDENCY MANAGEMENT METHODS
+     */
+
+    /**
+     * Check if a blocker reference is a subtask reference
+     * @param {string} blockerId - The blocker ID (can be "taskId" or "taskId:subtaskId")
+     * @returns {boolean} - True if it's a subtask reference
+     */
+    isSubtaskReference(blockerId) {
+        return blockerId && blockerId.includes(':');
+    }
+
+    /**
+     * Parse a blocker reference into task and subtask IDs
+     * @param {string} blockerId - The blocker ID (can be "taskId" or "taskId:subtaskId")
+     * @returns {Object} - { taskId, subtaskId } (subtaskId is null for task-only references)
+     */
+    parseBlockerReference(blockerId) {
+        if (this.isSubtaskReference(blockerId)) {
+            const [taskId, subtaskId] = blockerId.split(':');
+            return { taskId, subtaskId };
+        }
+        return { taskId: blockerId, subtaskId: null };
+    }
+
+    /**
+     * Get a subtask by task ID and subtask ID
+     * @param {string} taskId - The parent task ID
+     * @param {string} subtaskId - The subtask ID
+     * @returns {Subtask|null} - The subtask object or null if not found
+     */
+    getSubtaskById(taskId, subtaskId) {
+        const task = this.getTaskById(taskId);
+        if (!task || !task.subtasks) return null;
+        return task.subtasks.find(st => st.id === subtaskId) || null;
+    }
+
+    /**
+     * Check if a blocker (task or subtask) is completed
+     * @param {string} blockerId - The blocker ID (can be "taskId" or "taskId:subtaskId")
+     * @returns {boolean} - True if the blocker is completed
+     */
+    isBlockerCompleted(blockerId) {
+        const { taskId, subtaskId } = this.parseBlockerReference(blockerId);
+
+        if (subtaskId) {
+            // Check subtask completion
+            const subtask = this.getSubtaskById(taskId, subtaskId);
+            return subtask ? subtask.completed : false;
+        } else {
+            // Check task completion
+            const task = this.getTaskById(taskId);
+            return task ? task.completed : false;
+        }
+    }
+
+    /**
+     * Get blocker information (task and optionally subtask names)
+     * @param {string} blockerId - The blocker ID (can be "taskId" or "taskId:subtaskId")
+     * @returns {Object|null} - { task, subtask, displayName } or null if not found
+     */
+    getBlockerInfo(blockerId) {
+        const { taskId, subtaskId } = this.parseBlockerReference(blockerId);
+        const task = this.getTaskById(taskId);
+
+        if (!task) return null;
+
+        if (subtaskId) {
+            const subtask = this.getSubtaskById(taskId, subtaskId);
+            if (!subtask) return null;
+
+            return {
+                task,
+                subtask,
+                displayName: `${task.text} → ${subtask.text}`
+            };
+        } else {
+            return {
+                task,
+                subtask: null,
+                displayName: task.text
+            };
+        }
+    }
+
+    /**
+     * Validate that adding a dependency won't create a circular dependency
+     * Uses depth-first search to detect cycles
+     * @param {string} taskId - The task that will be blocked
+     * @param {string} blockerId - The blocker (can be "taskId" or "taskId:subtaskId")
+     * @returns {boolean} - True if no cycle would be created
+     */
+    validateNoCycles(taskId, blockerId) {
+        // Extract the actual task ID from the blocker reference
+        const { taskId: blockerTaskId } = this.parseBlockerReference(blockerId);
+
+        // Can't block a task by itself (or by its own subtasks)
+        if (taskId === blockerTaskId) {
+            return false;
+        }
+
+        // Check if blockerTask depends on taskId (directly or indirectly)
+        // We traverse the dependency chain at the task level
+        const visited = new Set();
+        const stack = [blockerTaskId];
+
+        while (stack.length > 0) {
+            const currentId = stack.pop();
+
+            if (visited.has(currentId)) continue;
+            visited.add(currentId);
+
+            // If we found taskId in the dependency chain, we have a cycle
+            if (currentId === taskId) {
+                return false;
+            }
+
+            // Add all tasks that currentTask is blocked by to the stack
+            const currentTask = this.getTaskById(currentId);
+            if (currentTask && currentTask.blockedBy) {
+                // Extract task IDs from blocker references (handles both tasks and subtasks)
+                const blockerTaskIds = currentTask.blockedBy.map(bid => {
+                    const { taskId: tId } = this.parseBlockerReference(bid);
+                    return tId;
+                });
+                stack.push(...blockerTaskIds);
+            }
+        }
+
+        return true; // No cycle detected
+    }
+
+    /**
+     * Get all blockers for a specific task (can be tasks or subtasks)
+     * @param {string} taskId - The task to check
+     * @returns {Array} - Array of blocker info objects: { blockerId, task, subtask, displayName, completed, status }
+     */
+    getBlockingTasks(taskId) {
+        const task = this.getTaskById(taskId);
+        if (!task || !task.blockedBy || task.blockedBy.length === 0) {
+            return [];
+        }
+
+        return task.blockedBy
+            .map(blockerId => {
+                const blockerInfo = this.getBlockerInfo(blockerId);
+                if (!blockerInfo) return null;
+
+                const { task: blockerTask, subtask, displayName } = blockerInfo;
+
+                // Determine completion status and task status
+                const completed = subtask ? subtask.completed : blockerTask.completed;
+                const status = subtask ? (subtask.completed ? 'done' : 'todo') : blockerTask.status;
+
+                return {
+                    blockerId,
+                    task: blockerTask,
+                    subtask,
+                    displayName,
+                    completed,
+                    status
+                };
+            })
+            .filter(b => b !== null); // Filter out any invalid references
+    }
+
+    /**
+     * Get all tasks that are blocked by a specific task or its subtasks
+     * @param {string} taskId - The task to check
+     * @returns {Task[]} - Array of tasks that depend on this task or its subtasks
+     */
+    getBlockedTasks(taskId) {
+        return this.tasks.filter(task =>
+            task.blockedBy && task.blockedBy.some(blockerId =>
+                blockerId === taskId || blockerId.startsWith(`${taskId}:`)
+            )
+        );
+    }
+
+    /**
+     * Add a dependency relationship (taskId will be blocked by blockerId)
+     * @param {string} taskId - The task to block
+     * @param {string} blockerId - The blocker (can be "taskId" or "taskId:subtaskId")
+     * @returns {Object} - { success: boolean, message: string }
+     */
+    addDependency(taskId, blockerId) {
+        const task = this.getTaskById(taskId);
+
+        if (!task) {
+            return { success: false, message: 'Task not found' };
+        }
+
+        // Validate that the blocker exists
+        const blockerInfo = this.getBlockerInfo(blockerId);
+        if (!blockerInfo) {
+            const isSubtask = this.isSubtaskReference(blockerId);
+            return {
+                success: false,
+                message: isSubtask ? 'Subtask not found' : 'Blocking task not found'
+            };
+        }
+
+        // Check if dependency already exists
+        if (task.blockedBy && task.blockedBy.includes(blockerId)) {
+            return { success: false, message: 'Dependency already exists' };
+        }
+
+        // Validate no circular dependencies
+        if (!this.validateNoCycles(taskId, blockerId)) {
+            return {
+                success: false,
+                message: 'Cannot add dependency: would create circular dependency'
+            };
+        }
+
+        // Add the dependency
+        if (!task.blockedBy) {
+            task.blockedBy = [];
+        }
+        task.blockedBy.push(blockerId);
+
+        // Auto-set status to blocked if the blocker is not completed
+        const blockerCompleted = this.isBlockerCompleted(blockerId);
+        if (!blockerCompleted && task.status !== TaskStatus.BLOCKED) {
+            task.status = TaskStatus.BLOCKED;
+        }
+
+        this.saveToStorage();
+        Logger.debug('TaskDataManager: Added dependency', taskId, 'blocked by', blockerId);
+
+        return {
+            success: true,
+            message: 'Dependency added',
+            autoBlocked: !blockerCompleted
+        };
+    }
+
+    /**
+     * Remove a dependency relationship
+     * @param {string} taskId - The blocked task
+     * @param {string} blockingTaskId - The task that blocks it
+     * @returns {boolean} - True if dependency was removed
+     */
+    removeDependency(taskId, blockingTaskId) {
+        const task = this.getTaskById(taskId);
+        if (!task || !task.blockedBy) {
+            return false;
+        }
+
+        const initialLength = task.blockedBy.length;
+        task.blockedBy = task.blockedBy.filter(id => id !== blockingTaskId);
+
+        if (task.blockedBy.length < initialLength) {
+            // If no more blockers and status is blocked, auto-change to todo
+            if (task.blockedBy.length === 0 && task.status === TaskStatus.BLOCKED) {
+                task.status = TaskStatus.TODO;
+                Logger.debug('TaskDataManager: Auto-unblocked task', taskId);
+            }
+
+            this.saveToStorage();
+            Logger.debug('TaskDataManager: Removed dependency', taskId, 'from', blockingTaskId);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Update statuses of tasks that were blocked by a completed blocker
+     * Called when a task or subtask is marked as complete
+     * @param {string} completedBlockerId - The blocker that was just completed (can be "taskId" or "taskId:subtaskId")
+     * @returns {Task[]} - Array of tasks that were unblocked
+     */
+    updateDependentStatuses(completedBlockerId) {
+        const unblockedTasks = [];
+        const blockedTasks = this.getBlockedTasks(completedBlockerId);
+
+        blockedTasks.forEach(task => {
+            // Check if ALL blockers in the dependency array are complete
+            const hasIncompleteBlockers = task.blockedBy.some(blockerId => {
+                return !this.isBlockerCompleted(blockerId);
+            });
+
+            // If no incomplete blockers remain and status is blocked, change to todo
+            if (!hasIncompleteBlockers && task.status === TaskStatus.BLOCKED) {
+                task.status = TaskStatus.TODO;
+                unblockedTasks.push(task);
+                Logger.debug('TaskDataManager: Auto-unblocked task', task.id, task.text);
+            }
+        });
+
+        if (unblockedTasks.length > 0) {
+            this.saveToStorage();
+        }
+
+        return unblockedTasks;
+    }
+
+    /**
+     * Re-block tasks when a blocker becomes incomplete again
+     * Called when a task or subtask is marked as incomplete after being complete
+     * @param {string} incompletedBlockerId - The blocker that was just marked incomplete (can be "taskId" or "taskId:subtaskId")
+     * @returns {Task[]} - Array of tasks that were re-blocked
+     */
+    reBlockDependentTasks(incompletedBlockerId) {
+        const reBlockedTasks = [];
+        const dependentTasks = this.getBlockedTasks(incompletedBlockerId);
+
+        dependentTasks.forEach(task => {
+            // Re-block if task is not completed and not already blocked
+            if (!task.completed && task.status !== TaskStatus.BLOCKED) {
+                task.status = TaskStatus.BLOCKED;
+                reBlockedTasks.push(task);
+                Logger.debug('TaskDataManager: Auto-re-blocked task', task.id, task.text);
+            }
+        });
+
+        if (reBlockedTasks.length > 0) {
+            this.saveToStorage();
+        }
+
+        return reBlockedTasks;
     }
 }
 

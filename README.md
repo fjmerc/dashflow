@@ -52,7 +52,8 @@ A modern, feature-rich Progressive Web App (PWA) for organizing and managing you
   - **Projects**: Create custom projects with icons and colors to organize tasks
   - **Tags**: Tag tasks for flexible categorization and filtering
   - **Subtasks**: Break down complex tasks into manageable subtasks
-  - **Task Details**: Rich task information including priority, due dates, descriptions, and notes
+  - **Task Details**: Rich task information including priority, due dates, descriptions, notes, and task dependencies
+  - **Task Dependencies**: Block tasks until prerequisites are complete, with support for both task-level and subtask-level blocking relationships
   - **Search**: Real-time task search across titles, descriptions, tags, and subtasks with keyboard shortcut (/)
   - **Kanban Board**: Visual board view with Todo, In Progress, Done, and Blocked columns
   - **Command Palette**: Quick access to tasks and actions with keyboard shortcuts (Ctrl+K)
@@ -216,6 +217,15 @@ dashboard/
      - Add multiple tags to any task
      - Click tags to filter tasks by that tag
      - View all tags in the sidebar with task counts
+   - **Task Dependencies**:
+     - Block tasks until prerequisite tasks or subtasks are completed
+     - Add dependencies from the "Blocked by" section in the task detail panel
+     - Select any task or subtask as a blocker from the dropdown
+     - Automatic status updates: Tasks auto-unblock when all blockers complete, auto-re-block if blockers are unchecked
+     - Circular dependency prevention: System prevents creating dependency loops
+     - Dependency badges: Task cards show ⛓️ badge with count of incomplete blockers
+     - "Blocks" section: View which tasks depend on the current task completing
+     - Subtask blocking: Block tasks on specific subtasks for granular control
    - **Kanban Board**:
      - Switch to board view for visual task management
      - Drag tasks between Todo, In Progress, Done, and Blocked columns
