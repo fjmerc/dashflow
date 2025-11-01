@@ -127,7 +127,7 @@ class KeyboardNavigationManager {
                     <span class="close">&times;</span>
                 </div>
                 <div class="modal-body">
-                    <input type="text" id="globalSearchInput" placeholder="Search across links and todos..." class="global-search-input">
+                    <input type="text" id="globalSearchInput" placeholder="Search across links, tasks, and notes..." class="global-search-input">
                     <div id="globalSearchResults" class="global-search-results"></div>
                 </div>
                 <div class="modal-footer">
@@ -232,6 +232,39 @@ class KeyboardNavigationManager {
             Logger.error('Error searching tasks:', e);
         }
 
+        // Search notes
+        try {
+            const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+
+            notes.forEach(note => {
+                // Search in note title, content, and tags
+                const matchesTitle = note.title && note.title.toLowerCase().includes(lowerQuery);
+                const matchesContent = note.content && note.content.toLowerCase().includes(lowerQuery);
+                const matchesTags = note.tags && note.tags.some(tag => tag.toLowerCase().includes(lowerQuery));
+
+                if (matchesTitle || matchesContent || matchesTags) {
+                    // Build subtitle with tags or content preview
+                    let subtitle = 'Note';
+                    if (note.tags && note.tags.length > 0) {
+                        subtitle += ` • ${note.tags.join(', ')}`;
+                    } else if (note.content) {
+                        // Show content preview (first 50 chars)
+                        const preview = note.content.substring(0, 50).replace(/\n/g, ' ');
+                        subtitle += ` • ${preview}${note.content.length > 50 ? '...' : ''}`;
+                    }
+
+                    results.push({
+                        type: 'note',
+                        title: note.title || 'Untitled Note',
+                        subtitle: subtitle,
+                        noteId: note.id
+                    });
+                }
+            });
+        } catch (e) {
+            Logger.error('Error searching notes:', e);
+        }
+
         // Display results
         this.displayGlobalSearchResults(results, resultsContainer);
     }
@@ -243,7 +276,7 @@ class KeyboardNavigationManager {
         }
 
         container.innerHTML = results.map(result => `
-            <div class="search-result" data-type="${result.type}" data-url="${result.url || ''}" data-task-id="${result.taskId || ''}">
+            <div class="search-result" data-type="${result.type}" data-url="${result.url || ''}" data-task-id="${result.taskId || ''}" data-note-id="${result.noteId || ''}">
                 <div class="result-title">${this.highlightMatch(result.title)}</div>
                 <div class="result-subtitle">${result.subtitle}</div>
             </div>
@@ -282,6 +315,18 @@ class KeyboardNavigationManager {
                 window.location.href = `todo.html?taskId=${taskId}`;
             } else {
                 window.location.href = 'todo.html';
+            }
+        } else if (type === 'note') {
+            // Open notes modal and load specific note
+            const noteId = resultEl.dataset.noteId;
+            if (noteId && window.openNotesModal) {
+                window.openNotesModal();
+                // Wait for modal to open, then load the note
+                setTimeout(() => {
+                    if (window.notesUIManager) {
+                        window.notesUIManager.loadNote(noteId);
+                    }
+                }, 150);
             }
         }
     }
