@@ -396,13 +396,15 @@ function interceptShowTaskDetails() {
     };
 }
 
-// Auto-initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(interceptShowTaskDetails, 200);
-    });
-} else {
-    setTimeout(interceptShowTaskDetails, 200);
+// Initialize when task app is ready
+window.addEventListener('taskAppReady', () => {
+    Logger.debug('Task Details Extensions: Task app ready event received');
+    interceptShowTaskDetails();
+});
+
+// Fallback: if already loaded
+if (document.readyState === 'complete' && window.showTaskDetails) {
+    setTimeout(interceptShowTaskDetails, 100);
 }
 
 // Export to global scope
