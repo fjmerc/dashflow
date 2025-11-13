@@ -12,9 +12,13 @@ let tagColorsManager = null;
  */
 function initUIExtensions() {
     if (!window.taskDataManager) {
-        console.error('TaskDataManager not found');
+        Logger.warn('UI Extensions: TaskDataManager not found, retrying...');
+        // Retry after a short delay
+        setTimeout(initUIExtensions, 200);
         return;
     }
+
+    Logger.debug('UI Extensions: Initializing with TaskDataManager');
 
     // Initialize managers
     analyticsManager = new AnalyticsManager(window.taskDataManager);
@@ -701,13 +705,15 @@ window.showAnalyticsDashboard = showAnalyticsDashboard;
 window.showCalendarView = showCalendarView;
 window.applyTagColors = applyTagColors;
 
-// Auto-initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        // Wait a bit for task data manager to initialize
-        setTimeout(initUIExtensions, 100);
-    });
-} else {
+// Initialize when task app is ready
+window.addEventListener('taskAppReady', () => {
+    Logger.debug('UI Extensions: Task app ready event received');
+    initUIExtensions();
+});
+
+// Fallback: if taskDataManager already exists (for hot reload scenarios)
+if (document.readyState === 'complete' && window.taskDataManager) {
+    Logger.debug('UI Extensions: Fallback initialization');
     setTimeout(initUIExtensions, 100);
 }
 

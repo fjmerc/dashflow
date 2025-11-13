@@ -593,13 +593,15 @@ window.exportIndividualProject = exportIndividualProject;
 window.initProjectEnhancements = initProjectEnhancements;
 window.showArchivedProjects = showArchivedProjects;
 
-// Auto-initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(initProjectEnhancements, 300);
-    });
-} else {
-    setTimeout(initProjectEnhancements, 300);
+// Initialize when task app is ready
+window.addEventListener('taskAppReady', () => {
+    Logger.debug('Project Enhancements: Task app ready event received');
+    initProjectEnhancements();
+});
+
+// Fallback: if already loaded
+if (document.readyState === 'complete' && window.taskDataManager) {
+    setTimeout(initProjectEnhancements, 100);
 }
 
 Logger.debug('project-enhancements.js loaded');
