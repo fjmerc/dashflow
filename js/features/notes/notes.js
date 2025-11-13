@@ -4,9 +4,37 @@
  */
 
 /**
+ * @typedef {Object} NoteData
+ * @property {string} [id] - Unique note identifier
+ * @property {string} [title] - Note title
+ * @property {string} [content] - Note content (supports markdown)
+ * @property {string[]} [tags] - Array of tag names
+ * @property {string} [createdAt] - Creation timestamp (ISO string)
+ * @property {string} [modifiedAt] - Last modification timestamp (ISO string)
+ */
+
+/**
+ * @typedef {Object} TagInfo
+ * @property {string} tag - Tag name
+ * @property {number} count - Number of notes with this tag
+ */
+
+/**
+ * @typedef {Object} NotesStats
+ * @property {number} totalNotes - Total number of notes
+ * @property {number} totalTags - Total number of unique tags
+ * @property {number} recentNotes - Notes modified in last 7 days
+ */
+
+/**
  * Note Data Model
+ * Represents a single note with title, content, and tags
  */
 class Note {
+    /**
+     * Create a new Note
+     * @param {NoteData} data - Note initialization data
+     */
     constructor(data = {}) {
         this.id = data.id || this.generateId();
         this.title = data.title || '';
@@ -16,11 +44,18 @@ class Note {
         this.modifiedAt = data.modifiedAt || this.createdAt;
     }
 
+    /**
+     * Generate a unique note ID
+     * @returns {string} Unique identifier
+     */
     generateId() {
         return 'note_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
 
-    // Convert to plain object for storage
+    /**
+     * Convert note to plain object for storage
+     * @returns {NoteData} Plain object representation
+     */
     toJSON() {
         return {
             id: this.id,
@@ -89,7 +124,8 @@ class NotesDataManager {
     }
 
     /**
-     * Get all notes (sorted by modified date, most recent first)
+     * Get all notes sorted by modified date
+     * @returns {Note[]} Array of notes (most recent first)
      */
     getAllNotes() {
         return this.notes.sort((a, b) => {
@@ -101,13 +137,21 @@ class NotesDataManager {
 
     /**
      * Get note by ID
+     * @param {string} noteId - Note identifier
+     * @returns {Note|undefined} The note or undefined if not found
      */
     getNoteById(noteId) {
         return this.notes.find(n => n.id === noteId);
     }
 
     /**
-     * Search notes by query (searches title, content, and tags)
+     * Search notes by query
+     * Searches across title, content, and tags (case-insensitive)
+     * @param {string} query - Search query
+     * @returns {Note[]} Matching notes (most recent first)
+     * @example
+     * // Search for notes containing "meeting"
+     * const results = manager.searchNotes("meeting");
      */
     searchNotes(query) {
         if (!query || !query.trim()) {
@@ -128,6 +172,8 @@ class NotesDataManager {
 
     /**
      * Get notes by tag
+     * @param {string} tag - Tag name to filter by
+     * @returns {Note[]} Notes with the specified tag (most recent first)
      */
     getNotesByTag(tag) {
         return this.notes.filter(n => n.tags.includes(tag)).sort((a, b) => {
@@ -138,7 +184,8 @@ class NotesDataManager {
     }
 
     /**
-     * Get all unique tags with counts
+     * Get all unique tags with usage counts
+     * @returns {TagInfo[]} Array of tags with counts (sorted by count descending)
      */
     getAllTags() {
         const tagMap = new Map();
@@ -157,7 +204,9 @@ class NotesDataManager {
     }
 
     /**
-     * Add note
+     * Add a new note
+     * @param {NoteData} noteData - Note data
+     * @returns {Note} The newly created note
      */
     addNote(noteData) {
         const note = new Note(noteData);
@@ -168,7 +217,10 @@ class NotesDataManager {
     }
 
     /**
-     * Update note
+     * Update an existing note
+     * @param {string} noteId - Note identifier
+     * @param {Partial<NoteData>} updates - Fields to update
+     * @returns {Note|null} Updated note or null if not found
      */
     updateNote(noteId, updates) {
         const noteIndex = this.notes.findIndex(n => n.id === noteId);
@@ -186,7 +238,9 @@ class NotesDataManager {
     }
 
     /**
-     * Delete note
+     * Delete a note
+     * @param {string} noteId - Note identifier
+     * @returns {boolean} True if note was deleted
      */
     deleteNote(noteId) {
         const initialLength = this.notes.length;
@@ -202,6 +256,7 @@ class NotesDataManager {
 
     /**
      * Get notes statistics
+     * @returns {NotesStats} Statistics about notes
      */
     getStats() {
         return {
