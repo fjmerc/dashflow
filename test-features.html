@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DashFlow Feature Test</title>
+    <script>
+        // Simple console logger
+        window.Logger = {
+            debug: (...args) => console.log('[DEBUG]', ...args),
+            info: (...args) => console.log('[INFO]', ...args),
+            warn: (...args) => console.warn('[WARN]', ...args),
+            error: (...args) => console.error('[ERROR]', ...args)
+        };
+    </script>
+</head>
+<body>
+    <h1>DashFlow Feature Test</h1>
+    <div id="output"></div>
+
+    <script src="js/features/tasks/task-data.js"></script>
+    <script src="js/features/tasks/tag-colors.js"></script>
+    <script src="js/features/tasks/analytics.js"></script>
+    <script src="js/features/tasks/calendar-view.js"></script>
+
+    <script>
+        const output = document.getElementById('output');
+        const results = [];
+
+        // Test 1: Task Data Manager
+        try {
+            const tdm = new TaskDataManager();
+            results.push('✓ TaskDataManager initialized');
+        } catch (e) {
+            results.push('✗ TaskDataManager failed: ' + e.message);
+        }
+
+        // Test 2: Comment class
+        try {
+            const comment = new Comment({ text: 'Test comment' });
+            results.push('✓ Comment class works');
+        } catch (e) {
+            results.push('✗ Comment class failed: ' + e.message);
+        }
+
+        // Test 3: Tag Colors Manager
+        try {
+            const tcm = new TagColorsManager();
+            tcm.setColor('test', '#ff0000');
+            const color = tcm.getColor('test');
+            if (color === '#ff0000') {
+                results.push('✓ TagColorsManager works');
+            } else {
+                results.push('✗ TagColorsManager color mismatch');
+            }
+        } catch (e) {
+            results.push('✗ TagColorsManager failed: ' + e.message);
+        }
+
+        // Test 4: Analytics Manager
+        try {
+            const tdm = new TaskDataManager();
+            const am = new AnalyticsManager(tdm);
+            const summary = am.generateSummary();
+            results.push('✓ AnalyticsManager works');
+        } catch (e) {
+            results.push('✗ AnalyticsManager failed: ' + e.message);
+        }
+
+        // Test 5: Recurring tasks
+        try {
+            const tdm = new TaskDataManager();
+            const task = tdm.addTask({
+                text: 'Test recurring task',
+                isRecurring: true,
+                dueDate: '2025-01-01',
+                recurrence: { type: 'weekly', interval: 1 }
+            });
+            const nextTask = tdm.createNextRecurrence(task.id);
+            if (nextTask && nextTask.dueDate === '2025-01-08') {
+                results.push('✓ Recurring tasks work');
+            } else {
+                results.push('✗ Recurring tasks calculation incorrect');
+            }
+        } catch (e) {
+            results.push('✗ Recurring tasks failed: ' + e.message);
+        }
+
+        // Test 6: Task duplication
+        try {
+            const tdm = new TaskDataManager();
+            const task = tdm.addTask({ text: 'Original task' });
+            const duplicate = tdm.duplicateTask(task.id);
+            if (duplicate && duplicate.text === 'Original task (Copy)') {
+                results.push('✓ Task duplication works');
+            } else {
+                results.push('✗ Task duplication failed');
+            }
+        } catch (e) {
+            results.push('✗ Task duplication failed: ' + e.message);
+        }
+
+        // Test 7: Comments
+        try {
+            const tdm = new TaskDataManager();
+            const task = tdm.addTask({ text: 'Task with comment' });
+            const comment = tdm.addComment(task.id, 'Test comment');
+            if (comment && task.comments.length === 1) {
+                results.push('✓ Comments work');
+            } else {
+                results.push('✗ Comments failed');
+            }
+        } catch (e) {
+            results.push('✗ Comments failed: ' + e.message);
+        }
+
+        // Test 8: Project archiving
+        try {
+            const tdm = new TaskDataManager();
+            const project = tdm.addProject({ name: 'Test Project' });
+            const archived = tdm.archiveProject(project.id);
+            const archivedProjects = tdm.getArchivedProjects();
+            if (archived && archivedProjects.length > 0) {
+                results.push('✓ Project archiving works');
+            } else {
+                results.push('✗ Project archiving failed');
+            }
+        } catch (e) {
+            results.push('✗ Project archiving failed: ' + e.message);
+        }
+
+        // Display results
+        output.innerHTML = '<ul>' + results.map(r => '<li>' + r + '</li>').join('') + '</ul>';
+
+        // Summary
+        const passed = results.filter(r => r.startsWith('✓')).length;
+        const failed = results.filter(r => r.startsWith('✗')).length;
+        output.innerHTML += `<h2>Summary: ${passed} passed, ${failed} failed</h2>`;
+    </script>
+</body>
+</html>

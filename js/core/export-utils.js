@@ -35,9 +35,12 @@ async function exportAllData(silent = false) {
         // Get notes data
         const notesData = JSON.parse(localStorage.getItem('notes') || 'null');
 
+        // Get tag colors data (version 2.2+)
+        const tagColorsData = JSON.parse(localStorage.getItem('tagColors') || 'null');
+
         // Combine data
         const exportData = {
-            version: '2.1', // Version 2.1 includes notes feature
+            version: '2.2', // Version 2.2 includes tag colors, comments, recurring tasks
             timestamp: new Date().toISOString(),
             data: {
                 bookmarks: dashboardData.data.bookmarks,
@@ -45,6 +48,8 @@ async function exportAllData(silent = false) {
                 tasks: tasksData,
                 projects: projectsData,
                 taskSettings: taskSettingsData,
+                // Tag colors (version 2.2+)
+                tagColors: tagColorsData,
                 // Notes data (version 2.1+)
                 notes: notesData,
                 // Keep legacy todos for backward compatibility
@@ -133,6 +138,13 @@ async function importAllData(file) {
                             localStorage.setItem('notes', JSON.stringify(importedData.data.notes));
                             success = true;
                             Logger.info('Imported notes data');
+                        }
+
+                        // Import tag colors data (version 2.2+)
+                        if (parseFloat(importedData.version) >= 2.2 && importedData.data.tagColors) {
+                            localStorage.setItem('tagColors', JSON.stringify(importedData.data.tagColors));
+                            success = true;
+                            Logger.info('Imported tag colors data');
                         }
 
                         // Dispatch event to notify todo.js that tasks have been updated

@@ -85,6 +85,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize TaskDataManager
     taskDataManager = new TaskDataManager();
+    // Make it globally accessible for extensions
+    window.taskDataManager = taskDataManager;
 
     // Initialize Pomodoro Timer
     pomodoroTimer = new PomodoroTimer();
@@ -117,6 +119,11 @@ document.addEventListener('DOMContentLoaded', function() {
     checkUrlForTask();
 
     Logger.debug('Task List App: Initialized');
+
+    // Dispatch event to notify extensions that app is ready
+    window.dispatchEvent(new CustomEvent('taskAppReady', {
+        detail: { taskDataManager }
+    }));
 });
 
 /**
