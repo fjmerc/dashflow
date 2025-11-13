@@ -28,9 +28,37 @@ const DEFAULT_PROJECTS = {
 };
 
 /**
+ * @typedef {Object} TaskData
+ * @property {string} [id] - Unique task identifier
+ * @property {string} [text] - Task title/text
+ * @property {string} [description] - Detailed description
+ * @property {boolean} [completed] - Completion status
+ * @property {string} [priority] - Priority level (low|medium|high)
+ * @property {string|null} [dueDate] - Due date (ISO string)
+ * @property {string} [createdAt] - Creation timestamp
+ * @property {string|null} [completedAt] - Completion timestamp
+ * @property {string} [projectId] - Parent project ID
+ * @property {string|null} [parentId] - Parent task ID (for subtasks)
+ * @property {string[]} [tags] - Array of tag names
+ * @property {string} [status] - Task status (todo|in-progress|done|blocked)
+ * @property {number} [position] - Sort position
+ * @property {boolean} [isMyDay] - Whether task is in "My Day"
+ * @property {Object[]} [subtasks] - Array of subtask objects
+ * @property {number} [pomodorosCompleted] - Completed pomodoro count
+ * @property {number|null} [estimatedPomodoros] - Estimated pomodoros needed
+ * @property {string[]} [blockedBy] - Array of blocker IDs
+ * @property {string} [modifiedAt] - Last modification timestamp
+ */
+
+/**
  * Task Data Model
+ * Represents a single task with all its properties
  */
 class Task {
+    /**
+     * Create a new Task
+     * @param {TaskData} data - Task initialization data
+     */
     constructor(data = {}) {
         this.id = data.id || this.generateId();
         this.text = data.text || '';
@@ -73,11 +101,18 @@ class Task {
         this.recurringParentId = data.recurringParentId || null;
     }
 
+    /**
+     * Generate a unique task ID
+     * @returns {string} Unique identifier
+     */
     generateId() {
         return 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
 
-    // Convert to plain object for storage
+    /**
+     * Convert task to plain object for storage
+     * @returns {TaskData} Plain object representation
+     */
     toJSON() {
         return {
             id: this.id,
@@ -133,9 +168,22 @@ class Comment {
 }
 
 /**
+ * @typedef {Object} SubtaskData
+ * @property {string} [id] - Unique subtask identifier
+ * @property {string} [text] - Subtask text
+ * @property {boolean} [completed] - Completion status
+ * @property {number} [position] - Sort position
+ */
+
+/**
  * Subtask Data Model
+ * Represents a subtask within a parent task
  */
 class Subtask {
+    /**
+     * Create a new Subtask
+     * @param {SubtaskData} data - Subtask initialization data
+     */
     constructor(data = {}) {
         this.id = data.id || this.generateId();
         this.text = data.text || '';
@@ -158,9 +206,27 @@ class Subtask {
 }
 
 /**
+ * @typedef {Object} ProjectData
+ * @property {string} [id] - Unique project identifier
+ * @property {string} [name] - Project name
+ * @property {string} [description] - Project description
+ * @property {string} [color] - Project color (hex)
+ * @property {string} [icon] - Project icon (HTML)
+ * @property {boolean} [archived] - Archive status
+ * @property {string} [createdAt] - Creation timestamp
+ * @property {number} [position] - Sort position
+ * @property {string} [defaultView] - Default view (list|board|calendar)
+ */
+
+/**
  * Project Data Model
+ * Represents a project that groups tasks
  */
 class Project {
+    /**
+     * Create a new Project
+     * @param {ProjectData} data - Project initialization data
+     */
     constructor(data = {}) {
         this.id = data.id || this.generateId();
         this.name = data.name || '';
@@ -390,6 +456,7 @@ class TaskDataManager {
 
     /**
      * Get all tasks
+     * @returns {Task[]} Array of all tasks
      */
     getAllTasks() {
         return this.tasks;
@@ -397,6 +464,8 @@ class TaskDataManager {
 
     /**
      * Get tasks by project
+     * @param {string} projectId - Project ID to filter by
+     * @returns {Task[]} Tasks in the specified project
      */
     getTasksByProject(projectId) {
         return this.tasks.filter(t => t.projectId === projectId);
@@ -494,13 +563,17 @@ class TaskDataManager {
 
     /**
      * Get task by ID
+     * @param {string} taskId - Task identifier
+     * @returns {Task|undefined} The task or undefined if not found
      */
     getTaskById(taskId) {
         return this.tasks.find(t => t.id === taskId);
     }
 
     /**
-     * Add task
+     * Add a new task
+     * @param {TaskData} taskData - Task data
+     * @returns {Task} The newly created task
      */
     addTask(taskData) {
         const task = new Task(taskData);
@@ -511,7 +584,10 @@ class TaskDataManager {
     }
 
     /**
-     * Update task
+     * Update an existing task
+     * @param {string} taskId - Task identifier
+     * @param {Partial<TaskData>} updates - Fields to update
+     * @returns {Task|null} Updated task or null if not found
      */
     updateTask(taskId, updates) {
         const taskIndex = this.tasks.findIndex(t => t.id === taskId);
@@ -529,7 +605,9 @@ class TaskDataManager {
     }
 
     /**
-     * Delete task
+     * Delete a task
+     * @param {string} taskId - Task identifier
+     * @returns {boolean} True if task was deleted
      */
     deleteTask(taskId) {
         const initialLength = this.tasks.length;
@@ -714,10 +792,17 @@ class TaskDataManager {
 
     /**
      * Validate that adding a dependency won't create a circular dependency
-     * Uses depth-first search to detect cycles
+     * Uses depth-first search (DFS) to detect cycles in the dependency graph
      * @param {string} taskId - The task that will be blocked
      * @param {string} blockerId - The blocker (can be "taskId" or "taskId:subtaskId")
-     * @returns {boolean} - True if no cycle would be created
+     * @returns {boolean} True if no cycle would be created, false if circular
+     * @example
+     * // Returns true (no cycle)
+     * manager.validateNoCycles('task2', 'task1');
+     *
+     * // Returns false (would create A -> B -> A cycle)
+     * manager.addDependency('taskA', 'taskB');
+     * manager.validateNoCycles('taskB', 'taskA');
      */
     validateNoCycles(taskId, blockerId) {
         // Extract the actual task ID from the blocker reference
@@ -810,7 +895,17 @@ class TaskDataManager {
      * Add a dependency relationship (taskId will be blocked by blockerId)
      * @param {string} taskId - The task to block
      * @param {string} blockerId - The blocker (can be "taskId" or "taskId:subtaskId")
-     * @returns {Object} - { success: boolean, message: string }
+     * @returns {{success: boolean, message: string, autoBlocked?: boolean}} Result object
+     * @example
+     * // Add simple task dependency
+     * manager.addDependency('task2', 'task1');
+     * // { success: true, message: 'Dependency added', autoBlocked: true }
+     *
+     * // Add subtask dependency
+     * manager.addDependency('task2', 'task1:subtask1');
+     *
+     * // Fails if circular
+     * // { success: false, message: 'Cannot add dependency: would create circular dependency' }
      */
     addDependency(taskId, blockerId) {
         const task = this.getTaskById(taskId);
@@ -867,8 +962,8 @@ class TaskDataManager {
     /**
      * Remove a dependency relationship
      * @param {string} taskId - The blocked task
-     * @param {string} blockingTaskId - The task that blocks it
-     * @returns {boolean} - True if dependency was removed
+     * @param {string} blockingTaskId - The blocker to remove (task ID or task:subtask ID)
+     * @returns {boolean} True if dependency was removed
      */
     removeDependency(taskId, blockingTaskId) {
         const task = this.getTaskById(taskId);
@@ -897,8 +992,9 @@ class TaskDataManager {
     /**
      * Update statuses of tasks that were blocked by a completed blocker
      * Called when a task or subtask is marked as complete
+     * Automatically unblocks tasks if all their blockers are complete
      * @param {string} completedBlockerId - The blocker that was just completed (can be "taskId" or "taskId:subtaskId")
-     * @returns {Task[]} - Array of tasks that were unblocked
+     * @returns {Task[]} Array of tasks that were unblocked
      */
     updateDependentStatuses(completedBlockerId) {
         const unblockedTasks = [];
@@ -928,8 +1024,9 @@ class TaskDataManager {
     /**
      * Re-block tasks when a blocker becomes incomplete again
      * Called when a task or subtask is marked as incomplete after being complete
+     * Automatically re-blocks dependent tasks
      * @param {string} incompletedBlockerId - The blocker that was just marked incomplete (can be "taskId" or "taskId:subtaskId")
-     * @returns {Task[]} - Array of tasks that were re-blocked
+     * @returns {Task[]} Array of tasks that were re-blocked
      */
     reBlockDependentTasks(incompletedBlockerId) {
         const reBlockedTasks = [];

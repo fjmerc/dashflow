@@ -1,9 +1,41 @@
 /**
  * Enhanced Error Handling System
- *
  * Provides comprehensive error handling with user-friendly messages
  */
 
+/**
+ * @typedef {Object} ErrorContext
+ * @property {string} [operation] - Operation that was being performed
+ * @property {string} [filename] - File where error occurred
+ * @property {number} [lineno] - Line number
+ * @property {number} [colno] - Column number
+ * @property {*} [data] - Additional context data
+ */
+
+/**
+ * @typedef {Object} UserMessage
+ * @property {string} title - Error title for display
+ * @property {string} description - User-friendly description
+ * @property {string[]} [actions] - Suggested actions
+ */
+
+/**
+ * @typedef {Object} ErrorEntry
+ * @property {string} id - Unique error identifier
+ * @property {Error} error - Original error object
+ * @property {string} type - Error type (storage|network|validation|unknown)
+ * @property {ErrorContext} context - Additional context
+ * @property {string} timestamp - Error timestamp (ISO string)
+ * @property {UserMessage} userMessage - User-friendly message
+ * @property {string} technicalMessage - Technical error message
+ * @property {string} [stack] - Error stack trace
+ * @property {string} severity - Severity level (low|medium|high|critical)
+ */
+
+/**
+ * Global Error Handler
+ * Captures and handles errors across the application
+ */
 class ErrorHandler {
     constructor() {
         this.errorQueue = [];
@@ -42,6 +74,17 @@ class ErrorHandler {
         });
     }
 
+    /**
+     * Handle an error with user-friendly messaging
+     * @param {Error} error - The error object
+     * @param {string} [type='unknown'] - Error type (storage|network|validation|javascript|promise|unknown)
+     * @param {ErrorContext} [context={}] - Additional error context
+     * @returns {string} Error entry ID
+     * @example
+     * errorHandler.handleError(new Error('Failed to save'), 'storage', {
+     *     operation: 'save_task'
+     * });
+     */
     handleError(error, type = 'unknown', context = {}) {
         // Create error entry
         const errorEntry = {
