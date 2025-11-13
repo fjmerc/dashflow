@@ -82,6 +82,9 @@ class Task {
         // Subtasks
         this.subtasks = (data.subtasks || []).map(st => new Subtask(st));
 
+        // Comments and activity log
+        this.comments = (data.comments || []).map(c => new Comment(c));
+
         // Pomodoro tracking
         this.pomodorosCompleted = data.pomodorosCompleted || 0;
         this.estimatedPomodoros = data.estimatedPomodoros || null;
@@ -91,6 +94,11 @@ class Task {
 
         // Activity tracking
         this.modifiedAt = data.modifiedAt || this.createdAt;
+
+        // Recurrence settings
+        this.recurrence = data.recurrence || null; // { type: 'daily'|'weekly'|'monthly'|'custom', interval: 1, endDate: null }
+        this.isRecurring = data.isRecurring || false;
+        this.recurringParentId = data.recurringParentId || null;
     }
 
     /**
@@ -122,10 +130,39 @@ class Task {
             position: this.position,
             isMyDay: this.isMyDay,
             subtasks: this.subtasks.map(st => st.toJSON()),
+            comments: this.comments.map(c => c.toJSON()),
             pomodorosCompleted: this.pomodorosCompleted,
             estimatedPomodoros: this.estimatedPomodoros,
             blockedBy: this.blockedBy,
-            modifiedAt: this.modifiedAt
+            modifiedAt: this.modifiedAt,
+            recurrence: this.recurrence,
+            isRecurring: this.isRecurring,
+            recurringParentId: this.recurringParentId
+        };
+    }
+}
+
+/**
+ * Comment Data Model
+ */
+class Comment {
+    constructor(data = {}) {
+        this.id = data.id || this.generateId();
+        this.text = data.text || '';
+        this.createdAt = data.createdAt || new Date().toISOString();
+        this.type = data.type || 'user'; // 'user' or 'system' (for activity log)
+    }
+
+    generateId() {
+        return 'comment_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    toJSON() {
+        return {
+            id: this.id,
+            text: this.text,
+            createdAt: this.createdAt,
+            type: this.type
         };
     }
 }
@@ -1010,11 +1047,181 @@ class TaskDataManager {
 
         return reBlockedTasks;
     }
+
+    /**
+     * Add a comment to a task
+     * @param {string} taskId - The task ID
+     * @param {string} text - Comment text
+     * @param {string} type - Comment type ('user' or 'system')
+     * @returns {Comment|null} - The created comment or null
+     */
+    addComment(taskId, text, type = 'user') {
+        const task = this.getTaskById(taskId);
+        if (!task) return null;
+
+        const comment = new Comment({ text, type });
+        task.comments.push(comment);
+        task.modifiedAt = new Date().toISOString();
+        this.saveToStorage();
+        Logger.debug('TaskDataManager: Added comment to task', taskId);
+        return comment;
+    }
+
+    /**
+     * Delete a comment from a task
+     * @param {string} taskId - The task ID
+     * @param {string} commentId - The comment ID
+     * @returns {boolean} - True if comment was deleted
+     */
+    deleteComment(taskId, commentId) {
+        const task = this.getTaskById(taskId);
+        if (!task) return false;
+
+        const initialLength = task.comments.length;
+        task.comments = task.comments.filter(c => c.id !== commentId);
+
+        if (task.comments.length < initialLength) {
+            task.modifiedAt = new Date().toISOString();
+            this.saveToStorage();
+            Logger.debug('TaskDataManager: Deleted comment from task', taskId);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Duplicate a task
+     * @param {string} taskId - The task ID to duplicate
+     * @returns {Task|null} - The duplicated task or null
+     */
+    duplicateTask(taskId) {
+        const task = this.getTaskById(taskId);
+        if (!task) return null;
+
+        // Create a copy of the task data
+        const taskData = {
+            ...task.toJSON(),
+            id: null, // Will generate new ID
+            text: task.text + ' (Copy)',
+            completed: false,
+            completedAt: null,
+            createdAt: null, // Will use current time
+            modifiedAt: null,
+            isMyDay: false,
+            comments: [], // Don't copy comments
+            subtasks: task.subtasks.map(st => ({
+                ...st.toJSON(),
+                id: null, // Will generate new IDs
+                completed: false
+            }))
+        };
+
+        const duplicatedTask = this.addTask(taskData);
+        Logger.debug('TaskDataManager: Duplicated task', taskId);
+        return duplicatedTask;
+    }
+
+    /**
+     * Archive a project (instead of deleting)
+     * @param {string} projectId - The project ID
+     * @returns {boolean} - True if archived
+     */
+    archiveProject(projectId) {
+        if (projectId === DEFAULT_PROJECTS.INBOX) {
+            Logger.warn('TaskDataManager: Cannot archive Inbox project');
+            return false;
+        }
+
+        return this.updateProject(projectId, { archived: true }) !== null;
+    }
+
+    /**
+     * Unarchive a project
+     * @param {string} projectId - The project ID
+     * @returns {boolean} - True if unarchived
+     */
+    unarchiveProject(projectId) {
+        return this.updateProject(projectId, { archived: false }) !== null;
+    }
+
+    /**
+     * Get archived projects
+     * @returns {Project[]} - Array of archived projects
+     */
+    getArchivedProjects() {
+        return this.projects.filter(p => p.archived).sort((a, b) => a.position - b.position);
+    }
+
+    /**
+     * Create next instance of a recurring task
+     * @param {string} taskId - The recurring task ID
+     * @returns {Task|null} - The new task instance or null
+     */
+    createNextRecurrence(taskId) {
+        const task = this.getTaskById(taskId);
+        if (!task || !task.isRecurring || !task.recurrence) return null;
+
+        const { type, interval, endDate } = task.recurrence;
+
+        // Calculate next due date
+        let nextDueDate = null;
+        if (task.dueDate) {
+            const currentDue = new Date(task.dueDate);
+            const nextDue = new Date(currentDue);
+
+            switch (type) {
+                case 'daily':
+                    nextDue.setDate(currentDue.getDate() + interval);
+                    break;
+                case 'weekly':
+                    nextDue.setDate(currentDue.getDate() + (7 * interval));
+                    break;
+                case 'monthly':
+                    nextDue.setMonth(currentDue.getMonth() + interval);
+                    break;
+                case 'yearly':
+                    nextDue.setFullYear(currentDue.getFullYear() + interval);
+                    break;
+            }
+
+            // Check if we've passed the end date
+            if (endDate && nextDue > new Date(endDate)) {
+                Logger.debug('TaskDataManager: Recurring task has reached end date', taskId);
+                return null;
+            }
+
+            nextDueDate = nextDue.toISOString().split('T')[0];
+        }
+
+        // Create new task instance
+        const newTaskData = {
+            ...task.toJSON(),
+            id: null, // Generate new ID
+            dueDate: nextDueDate,
+            completed: false,
+            completedAt: null,
+            createdAt: null, // Use current time
+            modifiedAt: null,
+            isMyDay: false,
+            comments: [],
+            subtasks: task.subtasks.map(st => ({
+                ...st.toJSON(),
+                id: null,
+                completed: false
+            })),
+            recurringParentId: task.recurringParentId || task.id
+        };
+
+        const newTask = this.addTask(newTaskData);
+        Logger.debug('TaskDataManager: Created next recurrence for task', taskId);
+        return newTask;
+    }
 }
 
 // Export to global scope
 window.TaskDataManager = TaskDataManager;
 window.Task = Task;
+window.Comment = Comment;
 window.Subtask = Subtask;
 window.Project = Project;
 window.TaskStatus = TaskStatus;
