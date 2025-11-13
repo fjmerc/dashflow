@@ -1,0 +1,27 @@
+{
+  "name": "dashflow",
+  "version": "1.0.0",
+  "description": "A modern Progressive Web App for personal productivity - bookmarks, tasks, notes, and time tracking",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage"
+  },
+  "keywords": [
+    "productivity",
+    "pwa",
+    "task-management",
+    "bookmarks",
+    "notes"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@vitest/ui": "^2.0.0",
+    "@vitest/coverage-v8": "^2.0.0",
+    "happy-dom": "^15.0.0",
+    "vitest": "^2.0.0"
+  }
+}
