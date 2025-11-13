@@ -189,25 +189,33 @@ function toggleArchiveProject(projectId) {
 }
 
 /**
- * Add "Show Archived" button to sidebar
+ * Add "Show Archived" link to sidebar projects section
  */
 function addArchivedProjectsButton() {
-    const projectsSection = document.querySelector('.sidebar-projects-header') || document.querySelector('.sidebar-section');
+    const projectsSection = document.querySelector('#projectsList')?.parentElement;
     if (!projectsSection) {
         setTimeout(addArchivedProjectsButton, 500);
         return;
     }
 
     // Check if button already exists
-    if (document.getElementById('showArchivedBtn')) return;
+    if (document.getElementById('showArchivedLink')) return;
 
-    const btn = document.createElement('button');
-    btn.id = 'showArchivedBtn';
-    btn.className = 'show-archived-btn';
-    btn.innerHTML = '<i class="fas fa-archive"></i> Archived Projects';
-    btn.onclick = showArchivedProjects;
+    // Add as a sidebar item (matching existing design)
+    const addProjectBtn = projectsSection.querySelector('.sidebar-add-btn');
+    if (!addProjectBtn) return;
 
-    projectsSection.appendChild(btn);
+    const link = document.createElement('div');
+    link.id = 'showArchivedLink';
+    link.className = 'sidebar-item archived-link';
+    link.innerHTML = `
+        <div class="sidebar-item-icon">📦</div>
+        <div class="sidebar-item-text">Archived Projects</div>
+    `;
+    link.onclick = showArchivedProjects;
+
+    // Insert before the "New Project" button
+    addProjectBtn.parentNode.insertBefore(link, addProjectBtn);
 }
 
 /**
@@ -256,6 +264,18 @@ function showArchivedProjects() {
 
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     addProjectEnhancementsStyles();
+
+    // Add backdrop click to close
+    setTimeout(() => {
+        const modal = document.querySelector('.archived-projects-modal');
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeArchivedProjects();
+                }
+            });
+        }
+    }, 0);
 }
 
 /**
@@ -431,23 +451,12 @@ function addProjectEnhancementsStyles() {
             width: 16px;
             text-align: center;
         }
-        .show-archived-btn {
-            width: 100%;
-            padding: 8px 12px;
-            background: var(--background-hover);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-color);
-            cursor: pointer;
+        .sidebar-item.archived-link {
+            opacity: 0.7;
             font-size: 13px;
-            margin-top: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
         }
-        .show-archived-btn:hover {
-            background: var(--border-color);
+        .sidebar-item.archived-link:hover {
+            opacity: 1;
         }
         .archived-projects-modal {
             position: fixed;
@@ -460,6 +469,21 @@ function addProjectEnhancementsStyles() {
             align-items: center;
             justify-content: center;
             z-index: 10000;
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
         .archived-projects-content {
             background: var(--background-color);
@@ -469,6 +493,8 @@ function addProjectEnhancementsStyles() {
             width: 90%;
             max-height: 80vh;
             overflow-y: auto;
+            animation: slideUp 0.3s ease-out;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
         .archived-projects-header {
             display: flex;

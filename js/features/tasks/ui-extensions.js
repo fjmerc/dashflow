@@ -30,11 +30,8 @@ function initUIExtensions() {
     // Add keyboard shortcuts button
     addKeyboardShortcutsButton();
 
-    // Add analytics button to sidebar
+    // Add analytics and calendar to sidebar
     addAnalyticsButton();
-
-    // Add calendar view button
-    addCalendarViewButton();
 
     // Setup global keyboard shortcuts
     setupGlobalKeyboardShortcuts();
@@ -113,40 +110,50 @@ function addQuickAddStyles() {
         .quick-add-container {
             display: flex;
             gap: 8px;
-            margin-bottom: 16px;
-            padding: 12px;
+            margin-bottom: 12px;
+            padding: 8px;
+            background: var(--background-hover);
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .quick-add-container:focus-within {
             background: var(--background-color);
-            border-radius: 8px;
-            border: 2px solid var(--primary-color);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-color);
         }
         .quick-add-input {
             flex: 1;
-            padding: 10px 14px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            background: var(--background-hover);
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            background: transparent;
             color: var(--text-color);
             font-size: 14px;
             font-family: inherit;
         }
         .quick-add-input:focus {
             outline: none;
-            border-color: var(--primary-color);
-            background: var(--background-color);
+        }
+        .quick-add-input::placeholder {
+            color: var(--text-muted);
+            opacity: 0.6;
         }
         .quick-add-btn {
-            padding: 10px 16px;
-            background: var(--primary-color);
+            padding: 8px 12px;
+            background: transparent;
             border: none;
-            border-radius: 6px;
-            color: white;
+            border-radius: 4px;
+            color: var(--text-muted);
             cursor: pointer;
-            font-size: 16px;
-            transition: opacity 0.2s;
+            font-size: 14px;
+            transition: all 0.2s;
         }
         .quick-add-btn:hover {
-            opacity: 0.9;
+            background: var(--primary-color);
+            color: white;
+        }
+        .quick-add-container:focus-within .quick-add-btn {
+            color: var(--primary-color);
         }
     `;
     document.head.appendChild(style);
@@ -156,17 +163,30 @@ function addQuickAddStyles() {
  * Add keyboard shortcuts help button
  */
 function addKeyboardShortcutsButton() {
-    const header = document.querySelector('.app-header') || document.querySelector('header');
-    if (!header) return;
+    const headerButtons = document.querySelector('.header-buttons') || document.querySelector('.app-header');
+    if (!headerButtons) {
+        setTimeout(addKeyboardShortcutsButton, 500);
+        return;
+    }
+
+    // Check if already added
+    if (document.getElementById('keyboardShortcutsBtn')) return;
 
     const btn = document.createElement('button');
-    btn.className = 'header-action-btn';
+    btn.className = 'header-btn';
     btn.id = 'keyboardShortcutsBtn';
     btn.innerHTML = '<i class="fas fa-keyboard"></i>';
     btn.title = 'Keyboard Shortcuts (?)';
+    btn.setAttribute('aria-label', 'Keyboard Shortcuts');
     btn.onclick = showKeyboardShortcutsHelp;
 
-    header.appendChild(btn);
+    // Insert before help button if it exists
+    const helpBtn = document.getElementById('todoHelpBtn');
+    if (helpBtn) {
+        headerButtons.insertBefore(btn, helpBtn);
+    } else {
+        headerButtons.appendChild(btn);
+    }
 }
 
 /**
@@ -209,6 +229,18 @@ function showKeyboardShortcutsHelp() {
 
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     addKeyboardShortcutsStyles();
+
+    // Add backdrop click to close
+    setTimeout(() => {
+        const modal = document.querySelector('.keyboard-shortcuts-modal');
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeKeyboardShortcuts();
+                }
+            });
+        }
+    }, 0);
 }
 
 /**
@@ -239,6 +271,25 @@ function addKeyboardShortcutsStyles() {
             align-items: center;
             justify-content: center;
             z-index: 10000;
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
         .keyboard-shortcuts-content {
             background: var(--background-color);
@@ -248,6 +299,8 @@ function addKeyboardShortcutsStyles() {
             width: 90%;
             max-height: 80vh;
             overflow-y: auto;
+            animation: slideUp 0.3s ease-out;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
         .keyboard-shortcuts-header {
             display: flex;
@@ -294,18 +347,52 @@ function addKeyboardShortcutsStyles() {
 }
 
 /**
- * Add analytics button
+ * Add analytics and calendar buttons to sidebar as a new section
  */
 function addAnalyticsButton() {
-    const sidebar = document.querySelector('.sidebar-views') || document.querySelector('.sidebar');
-    if (!sidebar) return;
+    const sidebarContent = document.querySelector('.sidebar-content');
+    if (!sidebarContent) {
+        setTimeout(addAnalyticsButton, 500);
+        return;
+    }
 
-    const btn = document.createElement('button');
-    btn.className = 'sidebar-view-item';
-    btn.innerHTML = '<i class="fas fa-chart-line"></i> Analytics';
-    btn.onclick = showAnalyticsDashboard;
+    // Check if already added
+    if (document.getElementById('insightsSection')) return;
 
-    sidebar.appendChild(btn);
+    // Find the tags section to insert before it
+    const tagsSection = Array.from(document.querySelectorAll('.sidebar-section'))
+        .find(s => s.textContent.includes('Tags'));
+
+    const insightsHTML = `
+        <div class="sidebar-section" id="insightsSection">
+            <div class="sidebar-section-header">
+                <div class="sidebar-section-title">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Insights</span>
+                </div>
+            </div>
+            <div>
+                <div class="sidebar-item" id="calendarViewBtn">
+                    <div class="sidebar-item-icon">📅</div>
+                    <div class="sidebar-item-text">Calendar</div>
+                </div>
+                <div class="sidebar-item" id="analyticsViewBtn">
+                    <div class="sidebar-item-icon">📊</div>
+                    <div class="sidebar-item-text">Analytics</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    if (tagsSection) {
+        tagsSection.insertAdjacentHTML('beforebegin', insightsHTML);
+    } else {
+        sidebarContent.insertAdjacentHTML('beforeend', insightsHTML);
+    }
+
+    // Attach event listeners
+    document.getElementById('calendarViewBtn')?.addEventListener('click', showCalendarView);
+    document.getElementById('analyticsViewBtn')?.addEventListener('click', showAnalyticsDashboard);
 }
 
 /**
@@ -413,6 +500,18 @@ function showAnalyticsDashboard() {
 
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     addAnalyticsStyles();
+
+    // Add backdrop click to close
+    setTimeout(() => {
+        const modal = document.querySelector('.analytics-modal');
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeAnalytics();
+                }
+            });
+        }
+    }, 0);
 }
 
 /**
@@ -445,6 +544,7 @@ function addAnalyticsStyles() {
             z-index: 10000;
             overflow-y: auto;
             padding: 20px;
+            animation: fadeIn 0.2s ease-out;
         }
         .analytics-content {
             background: var(--background-color);
@@ -454,6 +554,8 @@ function addAnalyticsStyles() {
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
+            animation: slideUp 0.3s ease-out;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
         .analytics-header {
             display: flex;
@@ -469,6 +571,27 @@ function addAnalyticsStyles() {
             display: flex;
             align-items: center;
             gap: 12px;
+        }
+        .analytics-header .close-btn,
+        .keyboard-shortcuts-header .close-btn,
+        .archived-projects-header .close-btn {
+            background: var(--background-hover);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-color);
+            transition: all 0.2s;
+        }
+        .analytics-header .close-btn:hover,
+        .keyboard-shortcuts-header .close-btn:hover,
+        .archived-projects-header .close-btn:hover {
+            background: var(--border-color);
+            color: var(--text-color);
         }
         .analytics-grid {
             display: grid;
@@ -585,21 +708,6 @@ function addAnalyticsStyles() {
 }
 
 /**
- * Add calendar view button
- */
-function addCalendarViewButton() {
-    const sidebar = document.querySelector('.sidebar-views') || document.querySelector('.sidebar');
-    if (!sidebar) return;
-
-    const btn = document.createElement('button');
-    btn.className = 'sidebar-view-item';
-    btn.innerHTML = '<i class="fas fa-calendar"></i> Calendar';
-    btn.onclick = showCalendarView;
-
-    sidebar.appendChild(btn);
-}
-
-/**
  * Show calendar view
  */
 function showCalendarView() {
@@ -613,10 +721,14 @@ function showCalendarView() {
 
     // Create calendar container
     mainContent.innerHTML = `
-        <div class="calendar-view-header">
-            <h1><i class="fas fa-calendar"></i> Calendar View</h1>
-            <button class="btn-secondary" onclick="exitCalendarView()">
-                <i class="fas fa-arrow-left"></i> Back to Tasks
+        <div class="view-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1 style="margin: 0; font-size: 24px; display: flex; align-items: center; gap: 12px;">
+                <i class="fas fa-calendar" style="color: var(--primary-color);"></i>
+                Calendar View
+            </h1>
+            <button class="btn" style="background: var(--background-hover); color: var(--text-color); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px;" onclick="exitCalendarView()">
+                <i class="fas fa-arrow-left"></i>
+                Back to Tasks
             </button>
         </div>
         <div id="calendarViewContainer"></div>
@@ -690,12 +802,24 @@ function applyTagColors() {
 
     const tagChips = document.querySelectorAll('.tag-chip');
     tagChips.forEach(chip => {
-        const tag = chip.dataset.tag || chip.textContent.trim();
+        const tag = chip.dataset.tag || chip.textContent.trim().replace(/×$/, '').trim();
         const color = tagColorsManager.ensureColor(tag);
-        chip.style.backgroundColor = color;
-        chip.style.color = 'white';
-        chip.style.borderColor = color;
+
+        // Apply color with subtle opacity for better integration
+        chip.style.backgroundColor = hexToRgba(color, 0.15);
+        chip.style.color = color;
+        chip.style.borderColor = hexToRgba(color, 0.3);
     });
+}
+
+/**
+ * Convert hex color to rgba with opacity
+ */
+function hexToRgba(hex, alpha) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 // Export functions to global scope
