@@ -1,7 +1,7 @@
 {
-  "name": "Personal Dashboard",
-  "short_name": "Dashboard",
-  "description": "Personal dashboard for organizing and managing your favorite links and tasks",
+  "name": "DashFlow",
+  "short_name": "DashFlow",
+  "description": "Your personal productivity hub for managing links, tasks, and notes with kanban boards and offline support",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

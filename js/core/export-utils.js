@@ -61,7 +61,7 @@ async function exportAllData(silent = false) {
 
         // Generate filename with timestamp
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        downloadAnchorNode.setAttribute("download", `dashboard_complete_backup_${timestamp}.json`);
+        downloadAnchorNode.setAttribute("download", `dashflow_backup_${timestamp}.json`);
 
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
@@ -71,7 +71,7 @@ async function exportAllData(silent = false) {
         localStorage.setItem('lastExportTimestamp', new Date().getTime().toString());
 
         if (!silent) {
-            alert('Complete export (dashboard and todos) completed successfully!');
+            alert('Complete export (DashFlow backup) completed successfully!');
         }
 
         return true;
