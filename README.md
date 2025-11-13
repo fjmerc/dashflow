@@ -1,6 +1,6 @@
-# Personal Dashboard
+# DashFlow
 
-A modern, feature-rich Progressive Web App (PWA) for organizing and managing your favorite links with a clean, customizable interface.
+A modern, feature-rich Progressive Web App (PWA) for managing links, tasks, and notes with a clean, customizable interface and powerful productivity features.
 
 ## Features
 
@@ -100,7 +100,7 @@ A modern, feature-rich Progressive Web App (PWA) for organizing and managing you
 ## Project Structure
 
 ```
-dashboard/
+dashflow/
 ├── index.html                               # Main dashboard page
 ├── todo.html                                # Enterprise task management page
 ├── help.html                                # Help documentation

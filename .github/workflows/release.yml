@@ -1,0 +1,165 @@
+name: Release DashFlow
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Validate PWA Files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check required files
+        run: |
+          echo "Checking for required PWA files..."
+          test -f index.html || (echo "Missing index.html" && exit 1)
+          test -f manifest.json || (echo "Missing manifest.json" && exit 1)
+          test -f js/sw.js || (echo "Missing service worker" && exit 1)
+          test -f styles.css || (echo "Missing styles.css" && exit 1)
+          echo "All required files present ✓"
+
+      - name: Validate manifest.json
+        run: |
+          echo "Validating manifest.json..."
+          jq empty manifest.json || (echo "Invalid JSON in manifest.json" && exit 1)
+          echo "manifest.json is valid ✓"
+
+      - name: Check for sensitive data
+        run: |
+          echo "Checking for sensitive data patterns..."
+          if grep -r -E "(password|api[_-]?key|secret|token)" --include="*.js" --include="*.html" --exclude-dir=node_modules .; then
+            echo "⚠️  Warning: Found potential sensitive data patterns"
+            echo "Please review the matches above"
+          else
+            echo "No sensitive data patterns found ✓"
+          fi
+
+  build-release-artifact:
+    name: Create Release Archive
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Create release archive
+        run: |
+          # Create a clean directory for the release
+          mkdir -p dashflow-${{ steps.version.outputs.VERSION }}
+
+          # Copy all necessary files
+          cp -r index.html todo.html help.html manifest.json styles.css favicon.ico dashflow-${{ steps.version.outputs.VERSION }}/
+          cp -r js assets dashflow-${{ steps.version.outputs.VERSION }}/
+          cp -r docs dashflow-${{ steps.version.outputs.VERSION }}/
+          cp README.md dashflow-${{ steps.version.outputs.VERSION }}/
+
+          # Create ZIP archive
+          zip -r dashflow-${{ steps.version.outputs.VERSION }}.zip dashflow-${{ steps.version.outputs.VERSION }}
+
+          echo "Archive created: dashflow-${{ steps.version.outputs.VERSION }}.zip"
+          ls -lh dashflow-${{ steps.version.outputs.VERSION }}.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashflow-release
+          path: dashflow-${{ steps.version.outputs.VERSION }}.zip
+          retention-days: 90
+
+  create-github-release:
+    name: Create GitHub Release
+    needs: build-release-artifact
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dashflow-release
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
+          files: dashflow-${{ steps.version.outputs.VERSION }}.zip
+          body: |
+            ## 📦 DashFlow ${{ steps.version.outputs.VERSION }}
+
+            A modern Progressive Web App for managing links, tasks, and notes.
+
+            ## 🚀 Installation
+
+            ### Option 1: Self-Hosted (Recommended)
+
+            1. Download the release archive below
+            2. Extract the ZIP file
+            3. Serve the files using any HTTP server:
+
+            ```bash
+            # Using Python
+            cd dashflow-${{ steps.version.outputs.VERSION }}
+            python3 -m http.server 8000
+
+            # Using Node.js
+            npx http-server -p 8000
+
+            # Using PHP
+            php -S localhost:8000
+            ```
+
+            4. Open `http://localhost:8000` in your browser
+            5. (Optional) Install as PWA from browser menu
+
+            ### Option 2: GitHub Pages
+
+            1. Fork this repository
+            2. Enable GitHub Pages in Settings
+            3. Select branch: `main`, folder: `/` (root)
+            4. Visit `https://yourusername.github.io/dashflow`
+
+            ## ✨ Features
+
+            - 🔗 **Link Management** - Organize bookmarks with sections and favorites
+            - ✅ **Task Management** - Enterprise-grade tasks with projects, tags, and dependencies
+            - 📝 **Quick Notes** - Fast note-taking with search and tags
+            - ⏱️  **Pomodoro Timer** - Integrated focus timer
+            - 📊 **Kanban Board** - Visual task management
+            - 🌙 **Dark Mode** - Theme customization
+            - 📴 **Offline Support** - Works without internet via service worker
+            - 💾 **Export/Import** - Full data backup and restore
+
+            ## 📋 Requirements
+
+            - Modern web browser (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)
+            - HTTP server for local hosting (PWA features require HTTP/HTTPS)
+
+            ## 📖 Documentation
+
+            - [README.md](README.md) - Full feature documentation
+            - [docs/VERSION_STRATEGY.md](docs/VERSION_STRATEGY.md) - Version management guide
+            - [CLAUDE.md](CLAUDE.md) - Development guidelines
+
+            ## 🔒 Privacy
+
+            All data is stored locally in your browser's localStorage. No data is sent to external servers.
+
+            ---
+
+            **Full Changelog**: See release notes above
