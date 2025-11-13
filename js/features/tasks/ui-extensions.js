@@ -604,36 +604,54 @@ function addAnalyticsStyles() {
             padding: 20px;
             border-radius: 8px;
             border: 1px solid var(--border-color);
+            transition: all 0.2s;
+        }
+        .analytics-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
         .analytics-card-title {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-muted);
-            font-weight: 600;
-            margin-bottom: 8px;
+            font-weight: 700;
+            margin-bottom: 12px;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
         }
         .analytics-card-value {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--primary-color);
-            margin-bottom: 4px;
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--text-color);
+            margin-bottom: 6px;
+            line-height: 1;
         }
         .analytics-card-detail {
-            font-size: 14px;
-            color: var(--text-muted);
+            font-size: 13px;
+            color: var(--text-color);
+            opacity: 0.7;
+            font-weight: 500;
         }
         .analytics-section {
-            margin-bottom: 24px;
+            margin-bottom: 28px;
+            background: var(--background-hover);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
         }
         .analytics-section h3 {
-            font-size: 18px;
+            font-size: 16px;
             margin-bottom: 16px;
             color: var(--text-color);
+            font-weight: 700;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border-color);
         }
         .analytics-bars {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 14px;
         }
         .analytics-bar {
             display: flex;
@@ -642,48 +660,61 @@ function addAnalyticsStyles() {
         }
         .bar-label {
             min-width: 80px;
-            font-size: 14px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color);
         }
         .bar-fill {
-            height: 24px;
-            border-radius: 4px;
-            min-width: 2px;
-            transition: width 0.3s;
+            height: 28px;
+            border-radius: 6px;
+            min-width: 4px;
+            transition: width 0.4s ease-out;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         .bar-value {
-            font-weight: 600;
+            font-weight: 700;
             font-size: 14px;
             min-width: 40px;
             text-align: right;
+            color: var(--text-color);
         }
         .analytics-list {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
         }
         .analytics-list-item {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 12px;
-            background: var(--background-hover);
+            padding: 14px;
+            background: var(--background-color);
             border-radius: 6px;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s;
+        }
+        .analytics-list-item:hover {
+            border-color: var(--primary-color);
+            transform: translateX(4px);
         }
         .list-item-icon {
-            font-size: 18px;
+            font-size: 20px;
         }
         .list-item-name {
             flex: 1;
             font-size: 14px;
+            font-weight: 600;
+            color: var(--text-color);
         }
         .list-item-progress {
-            font-weight: 600;
-            font-size: 14px;
+            font-weight: 700;
+            font-size: 15px;
             color: var(--primary-color);
         }
         .list-item-count {
             font-size: 13px;
-            color: var(--text-muted);
+            color: var(--text-color);
+            opacity: 0.7;
         }
         .analytics-insights {
             display: flex;
@@ -694,14 +725,27 @@ function addAnalyticsStyles() {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 12px;
-            background: var(--background-hover);
+            padding: 14px;
+            background: var(--background-color);
             border-radius: 6px;
+            border: 1px solid var(--border-color);
             font-size: 14px;
+            color: var(--text-color);
+            transition: all 0.2s;
+        }
+        .insight-item:hover {
+            border-color: var(--primary-color);
+            transform: translateX(4px);
         }
         .insight-item i {
             color: var(--primary-color);
-            font-size: 18px;
+            font-size: 20px;
+            min-width: 20px;
+            text-align: center;
+        }
+        .insight-item strong {
+            color: var(--text-color);
+            font-weight: 700;
         }
     `;
     document.head.appendChild(style);
@@ -721,18 +765,41 @@ function showCalendarView() {
 
     // Create calendar container
     mainContent.innerHTML = `
-        <div class="view-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h1 style="margin: 0; font-size: 24px; display: flex; align-items: center; gap: 12px;">
+        <div class="view-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid var(--border-color);">
+            <h1 style="margin: 0; font-size: 24px; display: flex; align-items: center; gap: 12px; color: var(--text-color); font-weight: 700;">
                 <i class="fas fa-calendar" style="color: var(--primary-color);"></i>
                 Calendar View
             </h1>
-            <button class="btn" style="background: var(--background-hover); color: var(--text-color); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px;" onclick="exitCalendarView()">
+            <button id="exitCalendarBtn" class="calendar-back-btn" style="background: var(--primary-color); color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; transition: all 0.2s;">
                 <i class="fas fa-arrow-left"></i>
                 Back to Tasks
             </button>
         </div>
         <div id="calendarViewContainer"></div>
     `;
+
+    // Add styles for calendar view
+    if (!document.getElementById('calendar-view-button-styles')) {
+        const style = document.createElement('style');
+        style.id = 'calendar-view-button-styles';
+        style.textContent = `
+            .calendar-back-btn:hover {
+                opacity: 0.9;
+                transform: translateX(-4px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+            .calendar-back-btn:active {
+                transform: translateX(-2px);
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Add event listener to back button
+    const backBtn = document.getElementById('exitCalendarBtn');
+    if (backBtn) {
+        backBtn.addEventListener('click', window.exitCalendarView);
+    }
 
     const container = document.getElementById('calendarViewContainer');
     const calendarView = new CalendarView(window.taskDataManager, container);
