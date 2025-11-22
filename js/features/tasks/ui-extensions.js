@@ -765,15 +765,17 @@ function showCalendarView() {
 
     // Create calendar container
     mainContent.innerHTML = `
-        <div class="view-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid var(--border-color);">
-            <h1 style="margin: 0; font-size: 24px; display: flex; align-items: center; gap: 12px; color: var(--text-color); font-weight: 700;">
-                <i class="fas fa-calendar" style="color: var(--primary-color);"></i>
-                Calendar View
-            </h1>
-            <button id="exitCalendarBtn" class="calendar-back-btn" style="background: var(--primary-color); color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; transition: all 0.2s;">
-                <i class="fas fa-arrow-left"></i>
-                Back to Tasks
-            </button>
+        <div class="calendar-view-header">
+            <div class="calendar-view-title">
+                <i class="fas fa-calendar"></i>
+                <h1>Calendar View</h1>
+            </div>
+            <div class="calendar-view-controls">
+                <button id="exitCalendarBtn" class="calendar-back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Tasks
+                </button>
+            </div>
         </div>
         <div id="calendarViewContainer"></div>
     `;
@@ -783,6 +785,48 @@ function showCalendarView() {
         const style = document.createElement('style');
         style.id = 'calendar-view-button-styles';
         style.textContent = `
+            .calendar-view-header {
+                margin-bottom: 24px;
+            }
+            .calendar-view-title {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+            .calendar-view-title i {
+                font-size: 28px;
+                color: var(--primary-color);
+            }
+            .calendar-view-title h1 {
+                margin: 0;
+                font-size: 28px;
+                font-weight: 700;
+                color: var(--text-color);
+            }
+            .calendar-view-controls {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+                padding-bottom: 16px;
+                border-bottom: 2px solid var(--border-color);
+                justify-content: flex-start;
+            }
+            .calendar-back-btn {
+                background: var(--primary-color);
+                color: white;
+                border: none;
+                padding: 10px 18px;
+                border-radius: 6px;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: 600;
+                font-size: 14px;
+                transition: all 0.2s;
+                width: auto;
+            }
             .calendar-back-btn:hover {
                 opacity: 0.9;
                 transform: translateX(-4px);

@@ -308,6 +308,9 @@ function addSortingOptions() {
         return;
     }
 
+    // Don't add sorting to calendar view (it has its own navigation)
+    if (document.querySelector('.calendar-view-header')) return;
+
     // Check if already added
     if (document.getElementById('taskSortSelect')) return;
 

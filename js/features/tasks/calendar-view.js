@@ -32,7 +32,8 @@ class CalendarView {
         ];
 
         let calendarHTML = `
-            <div class="calendar-view">
+            <div class="calendar-layout">
+                <div class="calendar-view">
                 <div class="calendar-header">
                     <button class="calendar-nav-btn" id="calendarPrevMonth">
                         <i class="fas fa-chevron-left"></i>
@@ -67,28 +68,58 @@ class CalendarView {
 
         // Current month days
         const today = new Date();
+        const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
         for (let date = 1; date <= lastDate; date++) {
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+            const currentDate = new Date(year, month, date);
+            const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 6 = Saturday
+
             const isToday = today.getDate() === date &&
                            today.getMonth() === month &&
                            today.getFullYear() === year;
+            const isPast = currentDate < todayMidnight && !isToday;
+            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
             const isSelected = this.selectedDate && this.selectedDate === dateStr;
 
             // Get tasks for this date
             const tasksOnDate = this.getTasksForDate(dateStr);
             const completedCount = tasksOnDate.filter(t => t.completed).length;
             const totalCount = tasksOnDate.length;
+            const hasIncompleteTasks = tasksOnDate.some(t => !t.completed);
+            const hasOverdue = isPast && hasIncompleteTasks;
+
+            // Count tasks by priority (incomplete only)
+            const incompleteTasks = tasksOnDate.filter(t => !t.completed);
+            const priorityCounts = {
+                high: incompleteTasks.filter(t => t.priority === 'high').length,
+                medium: incompleteTasks.filter(t => t.priority === 'medium').length,
+                low: incompleteTasks.filter(t => t.priority === 'low').length
+            };
 
             let dayClass = 'calendar-day';
             if (isToday) dayClass += ' today';
+            if (isPast) dayClass += ' past-day';
+            if (isWeekend) dayClass += ' weekend';
             if (isSelected) dayClass += ' selected';
             if (totalCount > 0) dayClass += ' has-tasks';
+            if (hasOverdue) dayClass += ' has-overdue';
+
+            // Build priority dots HTML
+            let priorityDotsHTML = '';
+            if (priorityCounts.high > 0) priorityDotsHTML += '<span class="priority-dot high" title="High priority tasks"></span>';
+            if (priorityCounts.medium > 0) priorityDotsHTML += '<span class="priority-dot medium" title="Medium priority tasks"></span>';
+            if (priorityCounts.low > 0) priorityDotsHTML += '<span class="priority-dot low" title="Low priority tasks"></span>';
+
+            // Build tooltip data
+            const taskTitles = tasksOnDate.map(t => `${t.completed ? '✓' : '○'} ${this.escapeHtml(t.text)}`).join('\\n');
 
             calendarHTML += `
-                <div class="${dayClass}" data-date="${dateStr}">
+                <div class="${dayClass}" data-date="${dateStr}" data-tasks="${this.escapeHtml(taskTitles)}" title="${totalCount > 0 ? taskTitles : ''}">
                     <div class="calendar-day-number">${date}</div>
                     ${totalCount > 0 ? `
                         <div class="calendar-day-indicator">
+                            <div class="priority-dots">${priorityDotsHTML}</div>
                             <span class="task-count">${completedCount}/${totalCount}</span>
                         </div>
                     ` : ''}
@@ -112,8 +143,9 @@ class CalendarView {
         calendarHTML += `
                 </div>
             </div>
-            <div class="calendar-tasks-panel" id="calendarTasksPanel">
-                <p class="calendar-no-selection">Select a date to view tasks</p>
+                <div class="calendar-tasks-panel" id="calendarTasksPanel">
+                    <p class="calendar-no-selection">Select a date to view tasks</p>
+                </div>
             </div>
         `;
 
@@ -262,34 +294,41 @@ class CalendarView {
         const style = document.createElement('style');
         style.id = 'calendar-view-styles';
         style.textContent = `
+            .calendar-layout {
+                display: flex;
+                gap: 20px;
+                height: calc(100vh - 180px);
+                align-items: flex-start;
+            }
             .calendar-view {
+                flex: 0 0 65%;
                 background: var(--background-color);
                 border-radius: 8px;
-                padding: 20px;
-                margin-bottom: 20px;
+                padding: 16px;
             }
             .calendar-header {
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
-                margin-bottom: 20px;
-                gap: 12px;
+                justify-content: center;
+                margin-bottom: 12px;
+                gap: 8px;
             }
             .calendar-title {
-                font-size: 20px;
+                font-size: 18px;
                 font-weight: 600;
                 margin: 0;
-                flex: 1;
+                min-width: 180px;
                 text-align: center;
             }
             .calendar-nav-btn {
                 background: var(--background-hover);
                 border: 1px solid var(--border-color);
-                border-radius: 6px;
-                padding: 8px 12px;
+                border-radius: 4px;
+                padding: 6px 10px;
                 cursor: pointer;
                 color: var(--text-color);
-                font-size: 14px;
+                font-size: 12px;
+                min-width: 32px;
             }
             .calendar-nav-btn:hover {
                 background: var(--border-color);
@@ -297,11 +336,11 @@ class CalendarView {
             .calendar-today-btn {
                 background: var(--primary-color);
                 border: none;
-                border-radius: 6px;
-                padding: 8px 16px;
+                border-radius: 4px;
+                padding: 6px 12px;
                 cursor: pointer;
                 color: white;
-                font-size: 14px;
+                font-size: 12px;
                 font-weight: 500;
             }
             .calendar-today-btn:hover {
@@ -310,33 +349,47 @@ class CalendarView {
             .calendar-weekdays {
                 display: grid;
                 grid-template-columns: repeat(7, 1fr);
-                gap: 4px;
-                margin-bottom: 8px;
+                gap: 3px;
+                margin-bottom: 6px;
             }
             .calendar-weekday {
                 text-align: center;
-                font-size: 12px;
+                font-size: 11px;
                 font-weight: 600;
                 color: var(--text-muted);
-                padding: 8px;
+                padding: 4px;
             }
             .calendar-days {
                 display: grid;
                 grid-template-columns: repeat(7, 1fr);
-                gap: 4px;
+                gap: 3px;
             }
             .calendar-day {
                 aspect-ratio: 1;
                 border: 1px solid var(--border-color);
-                border-radius: 6px;
-                padding: 8px;
+                border-radius: 4px;
+                padding: 6px;
                 cursor: pointer;
                 transition: all 0.2s;
                 position: relative;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
             }
             .calendar-day:hover {
                 background: var(--background-hover);
                 border-color: var(--primary-color);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                transform: translateY(-1px);
+            }
+            .calendar-day.weekend {
+                background: rgba(59, 130, 246, 0.03);
+            }
+            .calendar-day.past-day {
+                opacity: 0.5;
+            }
+            .calendar-day.past-day:hover {
+                opacity: 0.7;
             }
             .calendar-day.other-month {
                 opacity: 0.3;
@@ -351,25 +404,67 @@ class CalendarView {
                 background: var(--primary-color);
                 color: white;
             }
+            .calendar-day.has-tasks {
+                border-color: var(--primary-color);
+                border-width: 2px;
+            }
+            .calendar-day.has-overdue {
+                border-color: #ef4444;
+                border-width: 2px;
+                background: rgba(239, 68, 68, 0.05);
+            }
             .calendar-day.has-tasks .calendar-day-number {
                 font-weight: 600;
             }
             .calendar-day-number {
-                font-size: 14px;
-                margin-bottom: 4px;
+                font-size: 13px;
+                line-height: 1.2;
+                flex-shrink: 0;
             }
             .calendar-day-indicator {
-                font-size: 10px;
+                font-size: 9px;
                 color: var(--text-muted);
+                margin-top: auto;
+                line-height: 1.2;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
             }
             .calendar-day.selected .calendar-day-indicator {
                 color: rgba(255, 255, 255, 0.9);
             }
+            .priority-dots {
+                display: flex;
+                gap: 2px;
+                justify-content: center;
+                margin-bottom: 2px;
+            }
+            .priority-dot {
+                width: 5px;
+                height: 5px;
+                border-radius: 50%;
+                display: inline-block;
+            }
+            .priority-dot.high {
+                background: #ef4444;
+            }
+            .priority-dot.medium {
+                background: #f59e0b;
+            }
+            .priority-dot.low {
+                background: #10b981;
+            }
             .calendar-tasks-panel {
+                flex: 1;
                 background: var(--background-color);
                 border-radius: 8px;
                 padding: 20px;
                 min-height: 200px;
+                max-height: calc(100vh - 180px);
+                overflow-y: auto;
+                position: sticky;
+                top: 0;
             }
             .calendar-no-selection {
                 text-align: center;
@@ -377,21 +472,20 @@ class CalendarView {
                 padding: 40px 20px;
             }
             .calendar-tasks-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
                 margin-bottom: 16px;
                 padding-bottom: 12px;
                 border-bottom: 1px solid var(--border-color);
             }
             .calendar-tasks-header h3 {
-                margin: 0;
-                font-size: 18px;
+                margin: 0 0 6px 0;
+                font-size: 16px;
                 font-weight: 600;
+                line-height: 1.4;
             }
             .calendar-tasks-count {
-                font-size: 14px;
+                font-size: 13px;
                 color: var(--text-muted);
+                display: block;
             }
             .calendar-tasks-list {
                 display: flex;
