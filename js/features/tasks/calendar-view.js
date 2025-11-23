@@ -468,8 +468,10 @@ class CalendarView {
             }
             .calendar-no-selection {
                 text-align: center;
-                color: var(--text-muted);
+                color: var(--text-color);
+                opacity: 0.6;
                 padding: 40px 20px;
+                font-size: 14px;
             }
             .calendar-tasks-header {
                 margin-bottom: 16px;

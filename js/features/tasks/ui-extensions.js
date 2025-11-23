@@ -562,36 +562,52 @@ function addAnalyticsStyles() {
             justify-content: space-between;
             align-items: center;
             margin-bottom: 24px;
-            padding-bottom: 16px;
-            border-bottom: 2px solid var(--border-color);
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
         }
         .analytics-header h2 {
             margin: 0;
-            font-size: 24px;
+            font-size: 26px;
             display: flex;
             align-items: center;
             gap: 12px;
+            color: var(--text-color);
+            font-weight: 700;
+            opacity: 1;
+        }
+        .analytics-header h2 i {
+            color: var(--primary-color);
+            opacity: 1;
         }
         .analytics-header .close-btn,
         .keyboard-shortcuts-header .close-btn,
         .archived-projects-header .close-btn {
-            background: var(--background-hover);
+            background: rgba(128, 128, 128, 0.15);
             border: 1px solid var(--border-color);
             border-radius: 6px;
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            min-height: 36px;
+            flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             color: var(--text-color);
+            font-size: 16px;
             transition: all 0.2s;
+            opacity: 0.9;
         }
         .analytics-header .close-btn:hover,
         .keyboard-shortcuts-header .close-btn:hover,
         .archived-projects-header .close-btn:hover {
-            background: var(--border-color);
-            color: var(--text-color);
+            background: var(--primary-color);
+            color: white;
+            opacity: 1;
+            transform: scale(1.05);
         }
         .analytics-grid {
             display: grid;
@@ -600,7 +616,7 @@ function addAnalyticsStyles() {
             margin-bottom: 24px;
         }
         .analytics-card {
-            background: var(--background-hover);
+            background: var(--card-bg);
             padding: 20px;
             border-radius: 8px;
             border: 1px solid var(--border-color);
@@ -609,16 +625,16 @@ function addAnalyticsStyles() {
         .analytics-card:hover {
             border-color: var(--primary-color);
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
         .analytics-card-title {
-            font-size: 11px;
-            color: var(--text-muted);
-            font-weight: 700;
+            font-size: 12px;
+            color: var(--text-color);
+            font-weight: 600;
             margin-bottom: 12px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            opacity: 0.8;
+            opacity: 0.9;
         }
         .analytics-card-value {
             font-size: 36px;
@@ -626,27 +642,29 @@ function addAnalyticsStyles() {
             color: var(--text-color);
             margin-bottom: 6px;
             line-height: 1;
+            opacity: 1;
         }
         .analytics-card-detail {
             font-size: 13px;
             color: var(--text-color);
-            opacity: 0.7;
+            opacity: 0.85;
             font-weight: 500;
         }
         .analytics-section {
             margin-bottom: 28px;
-            background: var(--background-hover);
+            background: var(--card-bg);
             padding: 20px;
             border-radius: 8px;
             border: 1px solid var(--border-color);
         }
         .analytics-section h3 {
-            font-size: 16px;
+            font-size: 17px;
             margin-bottom: 16px;
             color: var(--text-color);
             font-weight: 700;
             padding-bottom: 12px;
             border-bottom: 2px solid var(--border-color);
+            opacity: 1;
         }
         .analytics-bars {
             display: flex;
@@ -691,11 +709,10 @@ function addAnalyticsStyles() {
             background: var(--background-color);
             border-radius: 6px;
             border: 1px solid var(--border-color);
-            transition: all 0.2s;
+            transition: border-color 0.2s;
         }
         .analytics-list-item:hover {
             border-color: var(--primary-color);
-            transform: translateX(4px);
         }
         .list-item-icon {
             font-size: 20px;
@@ -731,11 +748,10 @@ function addAnalyticsStyles() {
             border: 1px solid var(--border-color);
             font-size: 14px;
             color: var(--text-color);
-            transition: all 0.2s;
+            transition: border-color 0.2s;
         }
         .insight-item:hover {
             border-color: var(--primary-color);
-            transform: translateX(4px);
         }
         .insight-item i {
             color: var(--primary-color);

@@ -15,7 +15,7 @@ function enhanceProjectContextMenus() {
  * Observe project items and enhance them
  */
 function observeProjectItems() {
-    const projectList = document.querySelector('.sidebar-projects') || document.querySelector('.projects-list');
+    const projectList = document.querySelector('#projectsList') || document.querySelector('.sidebar-projects') || document.querySelector('.projects-list');
     if (!projectList) {
         // Retry after a short delay
         setTimeout(observeProjectItems, 500);
@@ -425,33 +425,39 @@ function addProjectEnhancementsStyles() {
     style.textContent = `
         .project-context-menu {
             position: fixed;
-            background: var(--background-color);
-            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
             z-index: 10000;
-            min-width: 200px;
-            padding: 4px;
+            min-width: 220px;
+            padding: 6px;
         }
         .context-menu-item {
             width: 100%;
-            padding: 10px 14px;
+            padding: 12px 16px;
             background: none;
             border: none;
             text-align: left;
             cursor: pointer;
             color: var(--text-color);
             font-size: 14px;
-            border-radius: 4px;
+            font-weight: 500;
+            border-radius: 6px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            transition: all 0.2s;
+            opacity: 1;
         }
         .context-menu-item:hover {
-            background: var(--background-hover);
+            background: var(--primary-color);
+            color: white;
+            transform: translateX(2px);
         }
         .context-menu-item i {
-            width: 16px;
+            width: 18px;
+            font-size: 15px;
             text-align: center;
         }
         .sidebar-item.archived-link {
@@ -503,16 +509,52 @@ function addProjectEnhancementsStyles() {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 24px;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
         }
         .archived-projects-header h2 {
             margin: 0;
-            font-size: 24px;
+            font-size: 26px;
             display: flex;
             align-items: center;
             gap: 12px;
+            color: var(--text-color);
+            font-weight: 700;
+            opacity: 1;
+        }
+        .archived-projects-header h2 i {
+            color: var(--primary-color);
+            opacity: 1;
+        }
+        .archived-projects-header .close-btn {
+            background: rgba(128, 128, 128, 0.15);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            min-height: 36px;
+            max-width: 36px;
+            max-height: 36px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-color);
+            font-size: 16px;
+            transition: all 0.2s;
+            opacity: 0.9;
+            padding: 0;
+        }
+        .archived-projects-header .close-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            opacity: 1;
+            transform: scale(1.05);
         }
         .archived-projects-list {
             display: flex;
@@ -521,16 +563,18 @@ function addProjectEnhancementsStyles() {
         }
         .no-archived {
             text-align: center;
-            color: var(--text-muted);
+            color: var(--text-color);
+            opacity: 0.6;
             padding: 40px 20px;
             font-style: italic;
+            font-size: 14px;
         }
         .archived-project-item {
             display: flex;
             align-items: center;
             gap: 12px;
             padding: 16px;
-            background: var(--background-hover);
+            background: var(--card-bg);
             border-radius: 8px;
             border: 1px solid var(--border-color);
         }
@@ -546,10 +590,13 @@ function addProjectEnhancementsStyles() {
         .project-name {
             font-size: 16px;
             font-weight: 600;
+            color: var(--text-color);
+            opacity: 1;
         }
         .project-meta {
             font-size: 13px;
-            color: var(--text-muted);
+            color: var(--text-color);
+            opacity: 0.7;
         }
         .project-actions {
             display: flex;

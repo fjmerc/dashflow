@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dashboard-v61';
+const CACHE_NAME = 'dashboard-v72';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -8,6 +8,10 @@ const ASSETS_TO_CACHE = [
   '/js/features/dashboard/script.js',
   '/js/features/tasks/todo.js',
   '/js/features/tasks/task-data.js',
+  '/js/features/tasks/ui-extensions.js',
+  '/js/features/tasks/calendar-view.js',
+  '/js/features/tasks/project-enhancements.js',
+  '/js/features/tasks/task-details-extensions.js',
   '/js/features/notes/notes.js',
   '/js/features/notes/notes-ui.js',
   '/js/features/retirement/retirement-timer.js',
