@@ -185,17 +185,6 @@
     <script src="js/features/notes/notes-ui.js"></script>
     <script src="js/features/dashboard/script.js"></script>
     <script src="js/features/retirement/retirement-timer.js"></script>
-    <script>
-        // Register service worker for offline functionality
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/js/sw.js')
-                .then(registration => {
-                    console.log('ServiceWorker registration successful');
-                })
-                .catch(err => {
-                    console.error('ServiceWorker registration failed:', err);
-                });
-        }
-    </script>
+    <script src="js/core/sw-register.js"></script>
 </body>
 </html>
