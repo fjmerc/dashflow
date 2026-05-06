@@ -46,7 +46,29 @@ class ErrorHandler {
     init() {
         this.setupGlobalErrorHandling();
         this.setupUnhandledPromiseRejection();
+        this.setupDelegatedClickHandlers();
         Logger.debug('Error handler initialized');
+    }
+
+    setupDelegatedClickHandlers() {
+        document.addEventListener('click', (e) => {
+            const target = e.target.closest('[data-error-action]');
+            if (!target) return;
+            const action = target.dataset.errorAction;
+            if (action === 'show-details') {
+                const id = target.dataset.errorId;
+                if (id) this.showErrorDetails(id);
+            } else if (action === 'copy-details') {
+                const id = target.dataset.errorId;
+                if (id) this.copyErrorDetails(id);
+            } else if (action === 'close-toast') {
+                const toast = target.closest('.error-toast');
+                if (toast) toast.remove();
+            } else if (action === 'close-modal') {
+                const modal = target.closest('.modal');
+                if (modal) modal.remove();
+            }
+        });
     }
 
     setupGlobalErrorHandling() {
@@ -264,7 +286,8 @@ class ErrorHandler {
         const { userMessage, technicalMessage, id } = errorEntry;
 
         if (typeof showModal === 'function') {
-            const detailsButton = `<button onclick="window.errorHandler.showErrorDetails('${id}')" style="margin-top: 10px; padding: 5px 10px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer;">Show Details</button>`;
+            const safeId = String(id).replace(/[^A-Za-z0-9_:-]/g, '');
+            const detailsButton = `<button data-error-action="show-details" data-error-id="${safeId}" style="margin-top: 10px; padding: 5px 10px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer;">Show Details</button>`;
 
             showModal(
                 userMessage.title,
@@ -296,7 +319,7 @@ class ErrorHandler {
                     <div class="error-toast-title">${userMessage.title}</div>
                     <div class="error-toast-description">${userMessage.description}</div>
                 </div>
-                <button class="error-toast-close" onclick="this.parentElement.parentElement.remove()">×</button>
+                <button class="error-toast-close" data-error-action="close-toast">×</button>
             </div>
         `;
 
@@ -356,14 +379,17 @@ ${JSON.stringify(errorEntry.context, null, 2)}
                     <span class="close">&times;</span>
                 </div>
                 <div class="modal-body">
-                    <pre class="error-details-text">${details}</pre>
+                    <pre class="error-details-text"></pre>
                 </div>
                 <div class="modal-footer">
-                    <button onclick="window.errorHandler.copyErrorDetails('${errorId}')" class="modal-btn">Copy Details</button>
-                    <button onclick="this.closest('.modal').remove()" class="modal-btn primary">Close</button>
+                    <button data-error-action="copy-details" data-error-id="${String(errorId).replace(/[^A-Za-z0-9_:-]/g, '')}" class="modal-btn">Copy Details</button>
+                    <button data-error-action="close-modal" class="modal-btn primary">Close</button>
                 </div>
             </div>
         `;
+        // Populate <pre> via textContent — defense-in-depth against engine-emitted error
+        // messages or stack traces that happen to contain HTML-looking strings.
+        modal.querySelector('.error-details-text').textContent = details;
 
         modal.querySelector('.close').addEventListener('click', () => {
             document.body.removeChild(modal);

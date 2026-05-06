@@ -11,6 +11,12 @@ class KeyboardNavigationManager {
         this.init();
     }
 
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text == null ? '' : String(text);
+        return div.innerHTML;
+    }
+
     init() {
         // Register keyboard shortcuts
         this.registerShortcuts();
@@ -276,9 +282,9 @@ class KeyboardNavigationManager {
         }
 
         container.innerHTML = results.map(result => `
-            <div class="search-result" data-type="${result.type}" data-url="${result.url || ''}" data-task-id="${result.taskId || ''}" data-note-id="${result.noteId || ''}">
-                <div class="result-title">${this.highlightMatch(result.title)}</div>
-                <div class="result-subtitle">${result.subtitle}</div>
+            <div class="search-result" data-type="${this.escapeHtml(result.type)}" data-url="${this.escapeHtml(result.url || '')}" data-task-id="${this.escapeHtml(result.taskId || '')}" data-note-id="${this.escapeHtml(result.noteId || '')}">
+                <div class="result-title">${this.escapeHtml(result.title)}</div>
+                <div class="result-subtitle">${this.escapeHtml(result.subtitle)}</div>
             </div>
         `).join('');
 
@@ -293,11 +299,6 @@ class KeyboardNavigationManager {
                 }
             });
         });
-    }
-
-    highlightMatch(text) {
-        // Simple highlight implementation - could be enhanced
-        return text; // For now, return as-is
     }
 
     handleSearchResultClick(resultEl) {
@@ -458,20 +459,21 @@ class KeyboardNavigationManager {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="modal-btn primary" onclick="this.closest('.modal').remove()">Got it!</button>
+                    <button class="modal-btn primary" data-action="close">Got it!</button>
                 </div>
             </div>
         `;
 
-        // Add close functionality
+        // Close on backdrop, .close button, or "Got it!" button
+        const closeModal = () => {
+            if (document.body.contains(helpModal)) document.body.removeChild(helpModal);
+        };
         const closeBtn = helpModal.querySelector('.close');
-        closeBtn.addEventListener('click', () => {
-            document.body.removeChild(helpModal);
-        });
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
 
         helpModal.addEventListener('click', (e) => {
-            if (e.target === helpModal) {
-                document.body.removeChild(helpModal);
+            if (e.target === helpModal || e.target.closest('[data-action="close"]')) {
+                closeModal();
             }
         });
 

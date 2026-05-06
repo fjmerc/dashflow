@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dashboard-v72';
+const CACHE_NAME = 'dashboard-v81';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -12,6 +12,9 @@ const ASSETS_TO_CACHE = [
   '/js/features/tasks/calendar-view.js',
   '/js/features/tasks/project-enhancements.js',
   '/js/features/tasks/task-details-extensions.js',
+  '/js/features/tasks/pomodoro.js',
+  '/js/features/tasks/analytics.js',
+  '/js/features/tasks/tag-colors.js',
   '/js/features/notes/notes.js',
   '/js/features/notes/notes-ui.js',
   '/js/features/retirement/retirement-timer.js',
@@ -23,6 +26,7 @@ const ASSETS_TO_CACHE = [
   '/js/core/error-handler.js',
   '/js/core/modal-manager.js',
   '/js/core/export-utils.js',
+  '/js/core/sw-register.js',
   '/manifest.json',
   '/assets/icons/icon-192.png',
   '/assets/icons/icon-512.png',

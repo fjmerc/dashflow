@@ -62,17 +62,18 @@ function showProjectContextMenu(x, y, projectId) {
     const existing = document.querySelector('.project-context-menu');
     if (existing) existing.remove();
 
+    const safeProjectId = escapeHtml(projectId);
     const menuHTML = `
         <div class="project-context-menu" style="left: ${x}px; top: ${y}px;">
-            <button class="context-menu-item" data-action="export" data-project-id="${projectId}">
+            <button class="context-menu-item" data-action="export" data-project-id="${safeProjectId}">
                 <i class="fas fa-download"></i> Export Project
             </button>
             ${projectId !== 'inbox' ? `
-                <button class="context-menu-item" data-action="archive" data-project-id="${projectId}">
+                <button class="context-menu-item" data-action="archive" data-project-id="${safeProjectId}">
                     <i class="fas fa-archive"></i> ${project.archived ? 'Unarchive' : 'Archive'} Project
                 </button>
             ` : ''}
-            <button class="context-menu-item" data-action="edit" data-project-id="${projectId}">
+            <button class="context-menu-item" data-action="edit" data-project-id="${safeProjectId}">
                 <i class="fas fa-edit"></i> Edit Project
             </button>
         </div>
@@ -229,25 +230,26 @@ function showArchivedProjects() {
             <div class="archived-projects-content">
                 <div class="archived-projects-header">
                     <h2><i class="fas fa-archive"></i> Archived Projects</h2>
-                    <button class="close-btn" onclick="closeArchivedProjects()">
+                    <button class="close-btn" data-action="close">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
                 <div class="archived-projects-list">
                     ${archivedProjects.length === 0 ? '<p class="no-archived">No archived projects</p>' : archivedProjects.map(project => {
                         const taskCount = window.taskDataManager.getTasksByProject(project.id).length;
+                        const safeId = escapeHtml(project.id);
                         return `
-                            <div class="archived-project-item" data-project-id="${project.id}">
-                                <span class="project-icon" style="color: ${project.color}">${project.icon}</span>
+                            <div class="archived-project-item" data-project-id="${safeId}">
+                                <span class="project-icon" style="color: ${escapeHtml(project.color)}">${project.icon}</span>
                                 <div class="project-info">
-                                    <span class="project-name">${project.name}</span>
+                                    <span class="project-name">${escapeHtml(project.name)}</span>
                                     <span class="project-meta">${taskCount} tasks</span>
                                 </div>
                                 <div class="project-actions">
-                                    <button class="btn-small btn-primary" onclick="unarchiveProject('${project.id}')">
+                                    <button class="btn-small btn-primary" data-action="unarchive" data-project-id="${safeId}">
                                         <i class="fas fa-box-open"></i> Unarchive
                                     </button>
-                                    <button class="btn-small" onclick="exportIndividualProject('${project.id}')">
+                                    <button class="btn-small" data-action="export" data-project-id="${safeId}">
                                         <i class="fas fa-download"></i> Export
                                     </button>
                                 </div>
@@ -265,16 +267,23 @@ function showArchivedProjects() {
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     addProjectEnhancementsStyles();
 
-    // Add backdrop click to close
+    // Click delegation: backdrop, close button, unarchive, export
     setTimeout(() => {
         const modal = document.querySelector('.archived-projects-modal');
-        if (modal) {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    closeArchivedProjects();
-                }
-            });
-        }
+        if (!modal) return;
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeArchivedProjects();
+                return;
+            }
+            const actionBtn = e.target.closest('[data-action]');
+            if (!actionBtn) return;
+            const action = actionBtn.dataset.action;
+            const projectId = actionBtn.dataset.projectId;
+            if (action === 'close') closeArchivedProjects();
+            else if (action === 'unarchive' && projectId) unarchiveProject(projectId);
+            else if (action === 'export' && projectId) exportIndividualProject(projectId);
+        });
     }, 0);
 }
 

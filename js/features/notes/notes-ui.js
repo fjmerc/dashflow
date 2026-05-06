@@ -343,7 +343,7 @@ class NotesUIManager {
             const formattedDate = this.formatDate(note.modifiedAt);
 
             return `
-                <div class="note-item ${isActive ? 'active' : ''}" data-note-id="${note.id}">
+                <div class="note-item ${isActive ? 'active' : ''}" data-note-id="${this.escapeHtml(note.id)}">
                     <div class="note-item-title">${this.escapeHtml(note.title || 'Untitled Note')}</div>
                     <div class="note-item-preview">${this.escapeHtml(preview)}</div>
                     <div class="note-item-meta">

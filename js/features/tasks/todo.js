@@ -193,11 +193,15 @@ function restoreSavedLayout() {
  */
 function changeUsername() {
     const newUsername = prompt('Enter your name:', username);
-    if (newUsername && newUsername.trim()) {
-        username = newUsername.trim();
-        localStorage.setItem('username', username);
-        updateTitle();
+    if (newUsername === null) return;
+    const result = window.validateAndSanitize.nameInput(newUsername, { label: 'Name' });
+    if (!result.valid) {
+        if (result.error) alert(result.error);
+        return;
     }
+    username = result.value;
+    localStorage.setItem('username', username);
+    updateTitle();
 }
 
 /**
@@ -501,7 +505,7 @@ function renderSidebar() {
 
         projectItem.innerHTML = `
             <div class="sidebar-item-icon">${project.icon}</div>
-            <div class="sidebar-item-text">${project.name}</div>
+            <div class="sidebar-item-text">${escapeHtml(project.name)}</div>
             <span class="sidebar-item-count">${projectTasks.length}</span>
         `;
 
@@ -676,7 +680,7 @@ function updateViewHeader() {
         case 'project':
             const project = taskDataManager.getProjectById(currentProjectId);
             if (project) {
-                title = project.icon + ' ' + project.name;
+                title = project.icon + ' ' + escapeHtml(project.name);
                 subtitle = project.description || 'Project tasks';
 
                 // Add edit and delete buttons for non-Inbox projects
@@ -684,11 +688,11 @@ function updateViewHeader() {
                     const headerActions = document.createElement('div');
                     headerActions.className = 'view-header-actions';
                     headerActions.innerHTML = `
-                        <button class="header-action-btn edit-project" data-project-id="${project.id}" title="Edit Project">
+                        <button class="header-action-btn edit-project" data-project-id="${escapeHtml(project.id)}" title="Edit Project">
                             <i class="fas fa-pencil"></i>
                             Edit
                         </button>
-                        <button class="header-action-btn delete-project" data-project-id="${project.id}" title="Delete Project">
+                        <button class="header-action-btn delete-project" data-project-id="${escapeHtml(project.id)}" title="Delete Project">
                             <i class="fas fa-trash"></i>
                             Delete
                         </button>
@@ -1086,7 +1090,7 @@ function createKanbanCard(task) {
     const project = taskDataManager.getProjectById(task.projectId);
     const projectHTML = project ? `
         <div class="kanban-card-project">
-            ${project.icon} ${project.name}
+            ${project.icon} ${escapeHtml(project.name)}
         </div>
     ` : '';
 
@@ -1378,8 +1382,8 @@ function showTaskDetails(taskId) {
             <label class="task-detail-label">Project</label>
             <select class="task-detail-select" id="detailTaskProject">
                 ${taskDataManager.getAllProjects().map(p => `
-                    <option value="${p.id}" ${p.id === task.projectId ? 'selected' : ''}>
-                        ${p.icon} ${p.name}
+                    <option value="${escapeHtml(p.id)}" ${p.id === task.projectId ? 'selected' : ''}>
+                        ${p.icon} ${escapeHtml(p.name)}
                     </option>
                 `).join('')}
             </select>
@@ -1422,7 +1426,7 @@ function showTaskDetails(taskId) {
         <div class="task-detail-section">
             <label class="task-detail-label">Subtasks</label>
             <div class="subtasks-list" id="subtasksList">
-                ${task.subtasks.map((subtask, index) => `<div class="subtask-item" data-subtask-id="${subtask.id}"><input type="checkbox" class="subtask-checkbox" ${subtask.completed ? 'checked' : ''} data-subtask-index="${index}"><span class="subtask-text ${subtask.completed ? 'completed' : ''}">${escapeHtml(subtask.text)}</span><button class="subtask-delete-btn" data-subtask-index="${index}" title="Delete subtask"><i class="fas fa-times"></i></button></div>`).join('')}
+                ${task.subtasks.map((subtask, index) => `<div class="subtask-item" data-subtask-id="${escapeHtml(subtask.id)}"><input type="checkbox" class="subtask-checkbox" ${subtask.completed ? 'checked' : ''} data-subtask-index="${index}"><span class="subtask-text ${subtask.completed ? 'completed' : ''}">${escapeHtml(subtask.text)}</span><button class="subtask-delete-btn" data-subtask-index="${index}" title="Delete subtask"><i class="fas fa-times"></i></button></div>`).join('')}
             </div>
             <div class="subtask-add-form">
                 <input type="text" class="subtask-input" id="subtaskInput" placeholder="Add a subtask..." />
@@ -1493,7 +1497,7 @@ function showTaskDetails(taskId) {
                                     // Don't show task if already a dependency
                                     const taskAlreadyAdded = task.blockedBy && task.blockedBy.includes(t.id);
                                     if (!taskAlreadyAdded) {
-                                        options += `<option value="${t.id}">📋 ${escapeHtml(t.text)}</option>`;
+                                        options += `<option value="${escapeHtml(t.id)}">📋 ${escapeHtml(t.text)}</option>`;
                                     }
 
                                     // Add subtasks (only incomplete ones)
@@ -1504,7 +1508,7 @@ function showTaskDetails(taskId) {
                                                 const subtaskRef = `${t.id}:${st.id}`;
                                                 const subtaskAlreadyAdded = task.blockedBy && task.blockedBy.includes(subtaskRef);
                                                 if (!subtaskAlreadyAdded) {
-                                                    options += `<option value="${subtaskRef}">   └─ 📝 ${escapeHtml(st.text)}</option>`;
+                                                    options += `<option value="${escapeHtml(subtaskRef)}">   └─ 📝 ${escapeHtml(st.text)}</option>`;
                                                 }
                                             });
                                     }
@@ -2431,6 +2435,10 @@ function showAddProjectModal() {
             alert('Please enter a project name');
             return;
         }
+        if (name.length > 50) {
+            alert('Project name must be 50 characters or fewer');
+            return;
+        }
 
         const projectData = {
             name,
@@ -2541,7 +2549,7 @@ function showEditProjectModal(projectId) {
                     <div id="editColorSelector" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px;">
                         <!-- Colors will be added here -->
                     </div>
-                    <input type="hidden" id="editSelectedColor" value="${project.color}">
+                    <input type="hidden" id="editSelectedColor" value="${escapeHtml(project.color)}">
                 </div>
             </div>
             <div class="modal-footer">
@@ -2640,6 +2648,10 @@ function showEditProjectModal(projectId) {
 
         if (!name) {
             alert('Please enter a project name');
+            return;
+        }
+        if (name.length > 50) {
+            alert('Project name must be 50 characters or fewer');
             return;
         }
 
