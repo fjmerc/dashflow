@@ -119,6 +119,30 @@ class InputValidator {
         return { valid: true, sanitized };
     }
 
+    // Lightweight name input validator used by prompt()-driven flows.
+    // Returns { valid, value, error } — value is the trimmed raw input (NOT sanitized).
+    // Callers store value as-is and rely on textContent at render time for XSS safety.
+    validateNameInput(value, options = {}) {
+        const { label = 'Name', maxLength = 50 } = options;
+        if (typeof value !== 'string') {
+            return { valid: false, error: `${label} is required` };
+        }
+        const trimmed = value.trim();
+        if (!trimmed) {
+            return { valid: false, error: `${label} is required` };
+        }
+        if (trimmed.length > maxLength) {
+            return { valid: false, error: `${label} must be ${maxLength} characters or fewer` };
+        }
+        if (!/^[A-Za-z0-9\s\-_]+$/.test(trimmed)) {
+            return {
+                valid: false,
+                error: `${label} can only contain letters, numbers, spaces, hyphens and underscores`
+            };
+        }
+        return { valid: true, value: trimmed };
+    }
+
     // Section name validation
     validateSectionName(name) {
         return this.validateText(name, {
@@ -438,5 +462,6 @@ window.validateAndSanitize = {
     linkName: (name) => window.inputValidator.validateLinkName(name),
     todoText: (text) => window.inputValidator.validateTodoText(text),
     username: (username) => window.inputValidator.validateUsername(username),
-    json: (jsonString) => window.inputValidator.validateJsonImport(jsonString)
+    json: (jsonString) => window.inputValidator.validateJsonImport(jsonString),
+    nameInput: (value, options) => window.inputValidator.validateNameInput(value, options)
 };

@@ -37,20 +37,22 @@ function addCommentsSection(taskId) {
                 <i class="fas fa-comments"></i> Comments & Activity
             </label>
             <div class="comments-list" id="commentsList">
-                ${task.comments.length === 0 ? '<p class="comments-empty">No comments yet</p>' : task.comments.map(comment => `
-                    <div class="comment-item ${comment.type === 'system' ? 'system-comment' : ''}" data-comment-id="${comment.id}">
+                ${task.comments.length === 0 ? '<p class="comments-empty">No comments yet</p>' : task.comments.map(comment => {
+                    const safeCommentId = escapeHtml(comment.id);
+                    return `
+                    <div class="comment-item ${comment.type === 'system' ? 'system-comment' : ''}" data-comment-id="${safeCommentId}">
                         <div class="comment-header">
                             <span class="comment-icon">${comment.type === 'system' ? '🤖' : '💬'}</span>
                             <span class="comment-time">${new Date(comment.createdAt).toLocaleString()}</span>
                             ${comment.type === 'user' ? `
-                                <button class="comment-delete-btn" data-comment-id="${comment.id}" title="Delete comment">
+                                <button class="comment-delete-btn" data-comment-id="${safeCommentId}" title="Delete comment">
                                     <i class="fas fa-times"></i>
                                 </button>
                             ` : ''}
                         </div>
                         <div class="comment-text">${escapeHtml(comment.text)}</div>
                     </div>
-                `).join('')}
+                `;}).join('')}
             </div>
             <div class="comment-add-form">
                 <textarea
@@ -145,7 +147,7 @@ function addRecurringTaskSection(taskId) {
                 <div class="task-detail-section">
                     <label class="task-detail-label">End Date (optional)</label>
                     <input type="date" class="task-detail-input" id="recurrenceEndDate"
-                        value="${task.recurrence?.endDate || ''}">
+                        value="${escapeHtml(task.recurrence?.endDate || '')}">
                 </div>
             </div>
         </div>

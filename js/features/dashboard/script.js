@@ -56,10 +56,10 @@ const validateUrl = (url) => {
 const initializeState = () => {
     try {
         links = JSON.parse(localStorage.getItem('links')) || {};
-        // Validate and sanitize existing data
+        // Drop any link with an unsafe URL; names are stored raw and escaped at render time.
         for (const section in links) {
             links[section] = links[section].map(link => ({
-                name: sanitizeInput(link.name),
+                name: typeof link.name === 'string' ? link.name : '',
                 url: validateUrl(link.url) ? link.url : '#',
                 favorite: !!link.favorite
             }));
@@ -70,7 +70,7 @@ const initializeState = () => {
     }
 
     try {
-        username = sanitizeInput(localStorage.getItem('username')) || 'User';
+        username = localStorage.getItem('username') || 'User';
     } catch (e) {
         Logger.error('Error getting username from localStorage:', e);
         username = 'User';
@@ -94,11 +94,15 @@ function updateTitle() {
 
 function changeUsername() {
     const newUsername = prompt('Enter your name:', username);
-    if (newUsername && newUsername.trim()) {
-        username = newUsername.trim();
-        localStorage.setItem('username', username);
-        updateTitle();
+    if (newUsername === null) return;
+    const result = window.validateAndSanitize.nameInput(newUsername, { label: 'Name' });
+    if (!result.valid) {
+        if (result.error) alert(result.error);
+        return;
     }
+    username = result.value;
+    localStorage.setItem('username', username);
+    updateTitle();
 }
 
 // Debounced save state function for better performance
@@ -129,16 +133,22 @@ function saveState() {
 }
 
 function updateSectionDropdown() {
-    existingSections.innerHTML = '<option value="">Select section</option>';
+    existingSections.replaceChildren();
 
-    // Get section names and sort them alphabetically
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Select section';
+    existingSections.appendChild(placeholder);
+
     const sortedSections = Object.keys(links).sort((a, b) =>
         a.toLowerCase().localeCompare(b.toLowerCase())
     );
 
-    // Add sorted sections to dropdown
     sortedSections.forEach(section => {
-        existingSections.innerHTML += `<option value="${section}">${section}</option>`;
+        const opt = document.createElement('option');
+        opt.value = section;
+        opt.textContent = section;
+        existingSections.appendChild(opt);
     });
 }
 
@@ -164,7 +174,7 @@ function renderLinks(filter = '') {
         sectionElement.dataset.section = section;
         sectionElement.innerHTML = `
             <div class="section-header">
-                <h2 class="section-title">${section}</h2>
+                <h2 class="section-title"></h2>
                 <div class="section-actions">
                     <button class="section-btn edit-section-btn" title="Edit Section">
                         <i class="fas fa-edit"></i>
@@ -175,6 +185,7 @@ function renderLinks(filter = '') {
                 </div>
             </div>
         `;
+        sectionElement.querySelector('.section-title').textContent = section;
 
         const linkListElement = document.createElement('div');
         linkListElement.className = 'link-list';
@@ -260,8 +271,8 @@ function createLinkElement(link, section, index, isFavorite = false) {
     linkElement.dataset.section = section;
     linkElement.dataset.index = index;
     linkElement.innerHTML = `
-        <a href="${link.url}" target="_blank">
-            <i class="fas fa-link"></i> ${link.name}
+        <a target="_blank">
+            <i class="fas fa-link"></i> <span class="link-name"></span>
         </a>
         <div class="btn-container">
             <button class="btn favorite-btn ${link.favorite ? 'favorited' : ''}" title="${link.favorite ? 'Remove from favorites' : 'Add to favorites'}">
@@ -275,29 +286,29 @@ function createLinkElement(link, section, index, isFavorite = false) {
             </button>
         </div>
     `;
+    linkElement.querySelector('a').href = link.url;
+    linkElement.querySelector('.link-name').textContent = link.name;
     return linkElement;
 }
 
 function addSection(event) {
     event.preventDefault();
     try {
-        const newSectionName = document.getElementById('newSectionName').value.trim();
-
-        // Input validation
-        if (!newSectionName.match(/^[A-Za-z0-9\s\-_]+$/)) {
-            alert('Section name can only contain letters, numbers, spaces, hyphens and underscores');
+        const raw = document.getElementById('newSectionName').value;
+        const result = window.validateAndSanitize.nameInput(raw, { label: 'Section name' });
+        if (!result.valid) {
+            if (result.error) alert(result.error);
             return;
         }
-
-        if (newSectionName && !links[newSectionName]) {
-            links[newSectionName] = [];
-            saveState();
-            updateSectionDropdown();
-            renderLinks();
-            addSectionForm.reset();
-        } else {
-            alert('Section already exists or invalid name');
+        if (links[result.value]) {
+            alert('Section already exists');
+            return;
         }
+        links[result.value] = [];
+        saveState();
+        updateSectionDropdown();
+        renderLinks();
+        addSectionForm.reset();
     } catch (e) {
         Logger.error('Error adding section:', e);
         alert('Failed to add section. Please try again.');
@@ -307,15 +318,15 @@ function addSection(event) {
 function addLink(event) {
     event.preventDefault();
     try {
-        const name = sanitizeInput(document.getElementById('linkName').value.trim());
-        let url = document.getElementById('linkUrl').value.trim();
-        const section = existingSections.value;
-
-        // Input validation
-        if (!name.match(/^[A-Za-z0-9\s\-_]+$/)) {
-            alert('Link name can only contain letters, numbers, spaces, hyphens and underscores');
+        const rawName = document.getElementById('linkName').value;
+        const nameResult = window.validateAndSanitize.nameInput(rawName, { label: 'Link name' });
+        if (!nameResult.valid) {
+            if (nameResult.error) alert(nameResult.error);
             return;
         }
+        const name = nameResult.value;
+        let url = document.getElementById('linkUrl').value.trim();
+        const section = existingSections.value;
 
         if (!section) {
             alert('Please select a section');
@@ -353,17 +364,40 @@ function addLink(event) {
 }
 
 function editLink(section, index) {
-    const link = links[section][index];
-    const newName = prompt('Enter new name:', link.name);
-    let newUrl = prompt('Enter new URL:', link.url);
+    try {
+        const link = links[section][index];
+        const rawName = prompt('Enter new name:', link.name);
+        if (rawName === null) return;
+        const rawUrl = prompt('Enter new URL:', link.url);
+        if (rawUrl === null) return;
 
-    if (newName && newUrl) {
-        if (!newUrl.startsWith('http://') && !newUrl.startsWith('https://')) {
-            newUrl = 'https://' + newUrl;
+        const nameResult = window.validateAndSanitize.nameInput(rawName, { label: 'Link name' });
+        if (!nameResult.valid) {
+            if (nameResult.error) alert(nameResult.error);
+            return;
         }
-        links[section][index] = { ...link, name: newName, url: newUrl };
+        const name = nameResult.value;
+
+        let url = rawUrl.trim();
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            url = 'https://' + url;
+        }
+        if (!validateUrl(url)) {
+            alert('Please enter a valid URL');
+            return;
+        }
+
+        if (url !== link.url && links[section].some((l, i) => i !== index && l.url === url)) {
+            alert('This URL already exists in the section');
+            return;
+        }
+
+        links[section][index] = { ...link, name, url };
         saveState();
         renderLinks();
+    } catch (e) {
+        Logger.error('Error editing link:', e);
+        alert('Failed to edit link. Please try again.');
     }
 }
 
@@ -417,13 +451,27 @@ function deleteSection(section) {
 }
 
 function editSection(section) {
-    const newName = prompt('Enter new section name:', section);
-    if (newName && newName !== section) {
-        links[newName] = links[section];
+    try {
+        const newName = prompt('Enter new section name:', section);
+        if (newName === null) return;
+        const result = window.validateAndSanitize.nameInput(newName, { label: 'Section name' });
+        if (!result.valid) {
+            if (result.error) alert(result.error);
+            return;
+        }
+        if (result.value === section) return;
+        if (links[result.value]) {
+            alert('Section already exists');
+            return;
+        }
+        links[result.value] = links[section];
         delete links[section];
         saveState();
         renderLinks();
         updateSectionDropdown();
+    } catch (e) {
+        Logger.error('Error editing section:', e);
+        alert('Failed to rename section. Please try again.');
     }
 }
 

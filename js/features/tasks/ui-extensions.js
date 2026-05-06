@@ -208,7 +208,7 @@ function showKeyboardShortcutsHelp() {
             <div class="keyboard-shortcuts-content">
                 <div class="keyboard-shortcuts-header">
                     <h2>Keyboard Shortcuts</h2>
-                    <button class="close-btn" onclick="closeKeyboardShortcuts()">
+                    <button class="close-btn" data-action="close">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -230,12 +230,12 @@ function showKeyboardShortcutsHelp() {
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     addKeyboardShortcutsStyles();
 
-    // Add backdrop click to close
+    // Click delegation: backdrop OR data-action="close" button
     setTimeout(() => {
         const modal = document.querySelector('.keyboard-shortcuts-modal');
         if (modal) {
             modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
+                if (e.target === modal || e.target.closest('[data-action="close"]')) {
                     closeKeyboardShortcuts();
                 }
             });
@@ -408,7 +408,7 @@ function showAnalyticsDashboard() {
             <div class="analytics-content">
                 <div class="analytics-header">
                     <h2><i class="fas fa-chart-line"></i> Analytics Dashboard</h2>
-                    <button class="close-btn" onclick="closeAnalytics()">
+                    <button class="close-btn" data-action="close">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -465,8 +465,8 @@ function showAnalyticsDashboard() {
                     <div class="analytics-list">
                         ${summary.projects.slice(0, 5).map(p => `
                             <div class="analytics-list-item">
-                                <span class="list-item-icon" style="color: ${p.project.color}">${p.project.icon}</span>
-                                <span class="list-item-name">${p.project.name}</span>
+                                <span class="list-item-icon" style="color: ${escapeHtml(p.project.color)}">${p.project.icon}</span>
+                                <span class="list-item-name">${escapeHtml(p.project.name)}</span>
                                 <span class="list-item-progress">${p.rate}%</span>
                                 <span class="list-item-count">(${p.completed}/${p.total})</span>
                             </div>
@@ -501,12 +501,12 @@ function showAnalyticsDashboard() {
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     addAnalyticsStyles();
 
-    // Add backdrop click to close
+    // Click delegation: backdrop OR data-action="close" button
     setTimeout(() => {
         const modal = document.querySelector('.analytics-modal');
         if (modal) {
             modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
+                if (e.target === modal || e.target.closest('[data-action="close"]')) {
                     closeAnalytics();
                 }
             });

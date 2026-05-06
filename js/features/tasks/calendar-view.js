@@ -208,12 +208,12 @@ class CalendarView {
                              task.status === 'blocked' ? '🚫' : '📝';
 
             tasksHTML += `
-                <div class="calendar-task-item ${task.completed ? 'completed' : ''}" data-task-id="${task.id}">
+                <div class="calendar-task-item ${task.completed ? 'completed' : ''}" data-task-id="${this.escapeHtml(task.id)}">
                     <div class="calendar-task-status">${statusIcon}</div>
                     <div class="calendar-task-content">
                         <div class="calendar-task-title">${this.escapeHtml(task.text)}</div>
                         <div class="calendar-task-meta">
-                            ${project ? `<span class="calendar-task-project" style="color: ${project.color}">${project.icon} ${project.name}</span>` : ''}
+                            ${project ? `<span class="calendar-task-project" style="color: ${this.escapeHtml(project.color)}">${project.icon} ${this.escapeHtml(project.name)}</span>` : ''}
                             ${task.priority === 'high' ? '<span class="calendar-task-priority high">High Priority</span>' : ''}
                         </div>
                     </div>
