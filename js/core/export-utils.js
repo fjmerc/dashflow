@@ -1,5 +1,287 @@
 // Utility functions for exporting dashboard data
 
+// =====================================================================
+// Import sanitizers — defense against malicious backup files.
+// Imported data flows directly into localStorage and from there into
+// innerHTML / data-* attributes across the codebase. These helpers guarantee
+// that no string can break out of an attribute boundary or carry script
+// payload, regardless of what the backup file contained.
+// =====================================================================
+
+const SAFE_ID_PATTERN = /^[A-Za-z0-9_-]+$/;        // matches task_../note_../subtask_../uuid styles (NO `:` — that's reserved as the task:subtask separator in blockedBy)
+const SAFE_TAG_PATTERN = /^[A-Za-z0-9_\- ]+$/;     // tags allow space; rendered into chips
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}/;     // partial — accepts "YYYY-MM-DD" or full ISO
+
+function safeString(value, maxLength, defaultValue = '') {
+    if (typeof value !== 'string') return defaultValue;
+    return value.length > maxLength ? value.slice(0, maxLength) : value;
+}
+
+function safeId(value, maxLength = 100) {
+    if (typeof value !== 'string' || value.length === 0 || value.length > maxLength) return null;
+    return SAFE_ID_PATTERN.test(value) ? value : null;
+}
+
+function safeTags(value) {
+    if (!Array.isArray(value)) return [];
+    return value
+        .filter(t => typeof t === 'string' && t.length > 0 && t.length <= 50 && SAFE_TAG_PATTERN.test(t))
+        .slice(0, 50); // cap total tag count too
+}
+
+function safeIsoDate(value) {
+    if (typeof value !== 'string' || !ISO_DATE_PATTERN.test(value) || value.length > 40) return null;
+    return value;
+}
+
+function safeBlockedBy(value) {
+    if (!Array.isArray(value)) return [];
+    return value.filter(ref => {
+        if (typeof ref !== 'string') return false;
+        // Format: "taskId" or "taskId:subtaskId" — both halves must be safe IDs
+        const parts = ref.split(':');
+        if (parts.length === 0 || parts.length > 2) return false;
+        return parts.every(p => safeId(p) !== null);
+    }).slice(0, 100);
+}
+
+// =====================================================================
+// SANITIZER ARCHITECTURE NOTE
+// All sanitizers below construct output objects EXPLICITLY (no `{...t}`
+// spread). This guarantees that any unknown attacker-controlled field in
+// the input is dropped — only the enumerated allowlist of fields survives.
+// When a new field is added to a Task/Note/etc. model, the corresponding
+// sanitizer MUST be updated to allow it through; otherwise it's stripped
+// at import time. This is intentional: it forces sanitizer maintenance to
+// keep pace with the data model.
+// =====================================================================
+
+// Sanitize an imported projects array.
+function sanitizeImportedProjects(projects) {
+    if (!Array.isArray(projects)) return [];
+    const ICON_PATTERN = /^<i class="fas fa-[a-z0-9-]+"><\/i>$/;
+    const COLOR_PATTERN = /^#[0-9a-fA-F]{3,8}$/;
+    const VALID_VIEW = new Set(['list', 'board', 'calendar']);
+    const DEFAULT_ICON = '<i class="fas fa-folder"></i>';
+    const DEFAULT_COLOR = '#6366f1';
+    return projects.map(p => {
+        if (!p || typeof p !== 'object') return null;
+        const id = safeId(p.id);
+        if (id === null) {
+            if (typeof Logger !== 'undefined') Logger.warn('Import: dropped project with invalid id');
+            return null;
+        }
+        const rawName = typeof p.name === 'string' ? p.name.trim().slice(0, 50) : '';
+        const name = rawName || 'Untitled';
+        let icon = DEFAULT_ICON;
+        if (typeof p.icon === 'string' && ICON_PATTERN.test(p.icon)) {
+            icon = p.icon;
+        } else if (typeof Logger !== 'undefined') {
+            Logger.warn('Import: replaced invalid project icon for', name);
+        }
+        let color = DEFAULT_COLOR;
+        if (typeof p.color === 'string' && COLOR_PATTERN.test(p.color)) {
+            color = p.color;
+        } else if (typeof Logger !== 'undefined') {
+            Logger.warn('Import: replaced invalid project color for', name);
+        }
+        return {
+            id,
+            name,
+            description: safeString(p.description, 500),
+            color,
+            icon,
+            archived: !!p.archived,
+            createdAt: safeIsoDate(p.createdAt) || new Date().toISOString(),
+            position: typeof p.position === 'number' ? p.position : 0,
+            defaultView: VALID_VIEW.has(p.defaultView) ? p.defaultView : 'list'
+        };
+    }).filter(Boolean);
+}
+
+// Sanitize an imported subtasks array (called from sanitizeImportedTasks).
+function sanitizeImportedSubtasks(subtasks) {
+    if (!Array.isArray(subtasks)) return [];
+    return subtasks.map(st => {
+        if (!st || typeof st !== 'object') return null;
+        const id = safeId(st.id);
+        if (id === null) return null;
+        return {
+            id,
+            text: safeString(st.text, 200),
+            completed: !!st.completed,
+            position: typeof st.position === 'number' ? st.position : 0
+        };
+    }).filter(Boolean);
+}
+
+// Sanitize an imported comments array (called from sanitizeImportedTasks).
+function sanitizeImportedComments(comments) {
+    if (!Array.isArray(comments)) return [];
+    const VALID_TYPE = new Set(['user', 'system']);
+    return comments.map(c => {
+        if (!c || typeof c !== 'object') return null;
+        const id = safeId(c.id);
+        if (id === null) return null;
+        return {
+            id,
+            text: safeString(c.text, 1000),
+            createdAt: safeIsoDate(c.createdAt) || new Date().toISOString(),
+            type: VALID_TYPE.has(c.type) ? c.type : 'user'
+        };
+    }).filter(Boolean);
+}
+
+// Sanitize an imported recurrence object.
+function sanitizeImportedRecurrence(rec) {
+    if (!rec || typeof rec !== 'object') return null;
+    const VALID_TYPE = new Set(['daily', 'weekly', 'monthly', 'yearly']);
+    if (!VALID_TYPE.has(rec.type)) return null;
+    let interval = 1;
+    if (typeof rec.interval === 'number' && rec.interval >= 1 && rec.interval <= 365) {
+        interval = Math.floor(rec.interval);
+    }
+    return {
+        type: rec.type,
+        interval,
+        endDate: safeIsoDate(rec.endDate)
+    };
+}
+
+// Sanitize an imported tasks array.
+function sanitizeImportedTasks(tasks) {
+    if (!Array.isArray(tasks)) return [];
+    const VALID_PRIORITY = new Set(['low', 'medium', 'high']);
+    const VALID_STATUS = new Set(['todo', 'in-progress', 'done', 'blocked']);
+    return tasks.map(t => {
+        if (!t || typeof t !== 'object') return null;
+        const id = safeId(t.id);
+        if (id === null) {
+            if (typeof Logger !== 'undefined') Logger.warn('Import: dropped task with invalid id');
+            return null;
+        }
+        const completed = !!t.completed;
+        const createdAt = safeIsoDate(t.createdAt) || new Date().toISOString();
+        return {
+            id,
+            text: safeString(t.text, 200),
+            description: safeString(t.description, 1000),
+            completed,
+            priority: VALID_PRIORITY.has(t.priority) ? t.priority : 'medium',
+            dueDate: safeIsoDate(t.dueDate),
+            createdAt,
+            completedAt: safeIsoDate(t.completedAt),
+            projectId: safeId(t.projectId) || 'inbox',
+            parentId: safeId(t.parentId),
+            tags: safeTags(t.tags),
+            status: VALID_STATUS.has(t.status) ? t.status : (completed ? 'done' : 'todo'),
+            position: typeof t.position === 'number' ? t.position : 0,
+            isMyDay: !!t.isMyDay,
+            subtasks: sanitizeImportedSubtasks(t.subtasks),
+            comments: sanitizeImportedComments(t.comments),
+            blockedBy: safeBlockedBy(t.blockedBy),
+            modifiedAt: safeIsoDate(t.modifiedAt) || createdAt,
+            pomodorosCompleted: typeof t.pomodorosCompleted === 'number' ? t.pomodorosCompleted : 0,
+            estimatedPomodoros: typeof t.estimatedPomodoros === 'number' ? t.estimatedPomodoros : null,
+            recurrence: sanitizeImportedRecurrence(t.recurrence),
+            isRecurring: !!t.isRecurring,
+            recurringParentId: safeId(t.recurringParentId)
+        };
+    }).filter(Boolean);
+}
+
+// Sanitize legacy todos array (v1.x format — flat objects with text + completed).
+function sanitizeImportedTodos(todos) {
+    if (!Array.isArray(todos)) return [];
+    return todos.map(t => {
+        if (!t || typeof t !== 'object') return null;
+        return {
+            text: safeString(t.text, 200),
+            completed: !!t.completed
+        };
+    }).filter(Boolean);
+}
+
+// Sanitize an imported notes array.
+function sanitizeImportedNotes(notes) {
+    if (!Array.isArray(notes)) return [];
+    return notes.map(n => {
+        if (!n || typeof n !== 'object') return null;
+        const id = safeId(n.id);
+        if (id === null) {
+            if (typeof Logger !== 'undefined') Logger.warn('Import: dropped note with invalid id');
+            return null;
+        }
+        const createdAt = safeIsoDate(n.createdAt) || new Date().toISOString();
+        return {
+            id,
+            title: safeString(n.title, 200),
+            content: safeString(n.content, 100000),
+            tags: safeTags(n.tags),
+            createdAt,
+            modifiedAt: safeIsoDate(n.modifiedAt) || createdAt
+        };
+    }).filter(Boolean);
+}
+
+// Sanitize an imported bookmarks object (links): { sectionName: [link, link, ...] }.
+function sanitizeImportedBookmarks(bookmarks) {
+    if (!bookmarks || typeof bookmarks !== 'object') return {};
+    const SECTION_PATTERN = /^[A-Za-z0-9\s\-_]+$/;
+    const URL_PATTERN = /^https?:\/\//;
+    const out = {};
+    for (const [section, links] of Object.entries(bookmarks)) {
+        if (typeof section !== 'string' || section.length > 50 || !SECTION_PATTERN.test(section)) {
+            if (typeof Logger !== 'undefined') Logger.warn('Import: dropped invalid bookmark section', section);
+            continue;
+        }
+        if (!Array.isArray(links)) continue;
+        out[section] = links.map(link => {
+            if (!link || typeof link !== 'object') return null;
+            const url = typeof link.url === 'string' && URL_PATTERN.test(link.url) ? link.url : '#';
+            return {
+                name: safeString(link.name, 100),
+                url,
+                favorite: !!link.favorite
+            };
+        }).filter(Boolean);
+    }
+    return out;
+}
+
+// Sanitize taskSettings — whitelist known keys only.
+function sanitizeImportedTaskSettings(settings) {
+    if (!settings || typeof settings !== 'object') return null;
+    const VALID_VIEW = new Set(['my-day', 'inbox', 'all', 'important', 'upcoming', 'completed', 'project', 'tag']);
+    const out = {};
+    if (typeof settings.dataVersion === 'string' && settings.dataVersion.length <= 20) {
+        out.dataVersion = settings.dataVersion;
+    }
+    out.currentView = VALID_VIEW.has(settings.currentView) ? settings.currentView : 'my-day';
+    out.currentProjectId = safeId(settings.currentProjectId);
+    out.currentTag = (typeof settings.currentTag === 'string' && settings.currentTag.length <= 50 && SAFE_TAG_PATTERN.test(settings.currentTag))
+        ? settings.currentTag : null;
+    out.sidebarCollapsed = !!settings.sidebarCollapsed;
+    return out;
+}
+
+// Sanitize tagColors — { tag: hexColor }, both validated.
+function sanitizeImportedTagColors(tagColors) {
+    if (!tagColors || typeof tagColors !== 'object') return {};
+    const COLOR_PATTERN = /^#[0-9a-fA-F]{3,8}$/;
+    const out = {};
+    let count = 0;
+    for (const [tag, color] of Object.entries(tagColors)) {
+        if (count >= 200) break;
+        if (typeof tag !== 'string' || tag.length === 0 || tag.length > 50) continue;
+        if (!SAFE_TAG_PATTERN.test(tag)) continue;
+        if (typeof color !== 'string' || !COLOR_PATTERN.test(color)) continue;
+        out[tag] = color;
+        count++;
+    }
+    return out;
+}
+
 /**
  * Export all application data (dashboard and todos) in a single file
  * @param {boolean} silent - Whether to show a success message
@@ -111,58 +393,68 @@ async function importAllData(file) {
                 if (importedData.version && parseFloat(importedData.version) >= 1.1 && importedData.data) {
                     // Import bookmarks
                     if (importedData.data.bookmarks) {
-                        localStorage.setItem('links', JSON.stringify(importedData.data.bookmarks));
+                        const safeBookmarks = sanitizeImportedBookmarks(importedData.data.bookmarks);
+                        localStorage.setItem('links', JSON.stringify(safeBookmarks));
                         success = true;
                     }
 
                     // Import task management data (version 2.0+)
                     if (parseFloat(importedData.version) >= 2.0) {
                         // Import new task management system data
+                        let safeTasks;
                         if (importedData.data.tasks) {
-                            localStorage.setItem('tasks', JSON.stringify(importedData.data.tasks));
+                            safeTasks = sanitizeImportedTasks(importedData.data.tasks);
+                            localStorage.setItem('tasks', JSON.stringify(safeTasks));
                             success = true;
                         }
 
                         if (importedData.data.projects) {
-                            localStorage.setItem('projects', JSON.stringify(importedData.data.projects));
+                            const safeProjects = sanitizeImportedProjects(importedData.data.projects);
+                            localStorage.setItem('projects', JSON.stringify(safeProjects));
                             success = true;
                         }
 
                         if (importedData.data.taskSettings) {
-                            localStorage.setItem('taskSettings', JSON.stringify(importedData.data.taskSettings));
-                            success = true;
+                            const safeSettings = sanitizeImportedTaskSettings(importedData.data.taskSettings);
+                            if (safeSettings) {
+                                localStorage.setItem('taskSettings', JSON.stringify(safeSettings));
+                                success = true;
+                            }
                         }
 
                         // Import notes data (version 2.1+)
                         if (parseFloat(importedData.version) >= 2.1 && importedData.data.notes) {
-                            localStorage.setItem('notes', JSON.stringify(importedData.data.notes));
+                            const safeNotes = sanitizeImportedNotes(importedData.data.notes);
+                            localStorage.setItem('notes', JSON.stringify(safeNotes));
                             success = true;
                             Logger.info('Imported notes data');
                         }
 
                         // Import tag colors data (version 2.2+)
                         if (parseFloat(importedData.version) >= 2.2 && importedData.data.tagColors) {
-                            localStorage.setItem('tagColors', JSON.stringify(importedData.data.tagColors));
+                            const safeTagColors = sanitizeImportedTagColors(importedData.data.tagColors);
+                            localStorage.setItem('tagColors', JSON.stringify(safeTagColors));
                             success = true;
                             Logger.info('Imported tag colors data');
                         }
 
                         // Dispatch event to notify todo.js that tasks have been updated
-                        if (importedData.data.tasks) {
+                        if (safeTasks) {
                             window.dispatchEvent(new CustomEvent('tasksUpdated', {
-                                detail: { source: 'importAllData', count: importedData.data.tasks.length }
+                                detail: { source: 'importAllData', count: safeTasks.length }
                             }));
                         }
                     }
                     // Import legacy todos (version 1.x)
                     else if (importedData.data.todos && Array.isArray(importedData.data.todos)) {
-                        localStorage.setItem('todos', JSON.stringify(importedData.data.todos));
+                        const safeTodos = sanitizeImportedTodos(importedData.data.todos);
+                        localStorage.setItem('todos', JSON.stringify(safeTodos));
                         success = true;
 
                         // Dispatch event to notify todo.js that todos have been updated
                         // task-data.js will migrate this to the new format on next load
                         window.dispatchEvent(new CustomEvent('todosUpdated', {
-                            detail: { source: 'importAllData', count: importedData.data.todos.length }
+                            detail: { source: 'importAllData', count: safeTodos.length }
                         }));
                     }
 
@@ -170,16 +462,21 @@ async function importAllData(file) {
                     if (importedData.data.settings) {
                         const settings = importedData.data.settings;
 
-                        // Update username
-                        if (settings.username) {
-                            localStorage.setItem('username', settings.username);
+                        // Update username (validate to match the constraints applied at change-username time)
+                        if (typeof settings.username === 'string') {
+                            const trimmed = settings.username.trim();
+                            if (trimmed && trimmed.length <= 50 && /^[A-Za-z0-9\s\-_]+$/.test(trimmed)) {
+                                localStorage.setItem('username', trimmed);
+                            } else if (typeof Logger !== 'undefined') {
+                                Logger.warn('Import: skipped invalid username');
+                            }
                         }
 
                         // Update theme settings
-                        if (settings.theme) {
+                        if (settings.theme === 'light' || settings.theme === 'dark') {
                             localStorage.setItem('theme', settings.theme);
                         }
-                        if (settings.primaryColor) {
+                        if (typeof settings.primaryColor === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(settings.primaryColor)) {
                             localStorage.setItem('primaryColor', settings.primaryColor);
                         }
                     }
@@ -192,19 +489,23 @@ async function importAllData(file) {
                 // Handle legacy format (version 1.0)
                 else if (importedData.data && importedData.data.bookmarks) {
                     // This is a dashboard-only backup
-                    localStorage.setItem('links', JSON.stringify(importedData.data.bookmarks));
+                    const safeBookmarks = sanitizeImportedBookmarks(importedData.data.bookmarks);
+                    localStorage.setItem('links', JSON.stringify(safeBookmarks));
 
-                    // Import settings if available
+                    // Import settings if available (same validation as the modern path above)
                     if (importedData.data.settings) {
                         const settings = importedData.data.settings;
 
-                        if (settings.username) {
-                            localStorage.setItem('username', settings.username);
+                        if (typeof settings.username === 'string') {
+                            const trimmed = settings.username.trim();
+                            if (trimmed && trimmed.length <= 50 && /^[A-Za-z0-9\s\-_]+$/.test(trimmed)) {
+                                localStorage.setItem('username', trimmed);
+                            }
                         }
-                        if (settings.theme) {
+                        if (settings.theme === 'light' || settings.theme === 'dark') {
                             localStorage.setItem('theme', settings.theme);
                         }
-                        if (settings.primaryColor) {
+                        if (typeof settings.primaryColor === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(settings.primaryColor)) {
                             localStorage.setItem('primaryColor', settings.primaryColor);
                         }
                     }
@@ -214,11 +515,12 @@ async function importAllData(file) {
                 // Handle todo-only format (array)
                 else if (Array.isArray(importedData)) {
                     // This is a todo-only backup
-                    localStorage.setItem('todos', JSON.stringify(importedData));
+                    const safeTodos = sanitizeImportedTodos(importedData);
+                    localStorage.setItem('todos', JSON.stringify(safeTodos));
 
                     // Dispatch event to notify todo.js that todos have been updated
                     window.dispatchEvent(new CustomEvent('todosUpdated', {
-                        detail: { source: 'importAllData', count: importedData.length }
+                        detail: { source: 'importAllData', count: safeTodos.length }
                     }));
 
                     success = true;
