@@ -397,9 +397,14 @@ function addCommentsStyles() {
  * Escape HTML to prevent XSS
  */
 function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    // Quote escaping is required: output is interpolated into HTML attribute values
+    if (text == null) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 /**
@@ -425,11 +430,6 @@ window.addEventListener('taskAppReady', () => {
     Logger.debug('Task Details Extensions: Task app ready event received');
     interceptShowTaskDetails();
 });
-
-// Fallback: if already loaded
-if (document.readyState === 'complete' && window.showTaskDetails) {
-    setTimeout(interceptShowTaskDetails, 100);
-}
 
 // Export to global scope
 window.enhanceTaskDetailsPanel = enhanceTaskDetailsPanel;

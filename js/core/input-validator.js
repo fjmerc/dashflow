@@ -23,7 +23,10 @@ class InputValidator {
         temp.textContent = str;
 
         // Additional cleaning for common XSS patterns
+        // Quotes must be escaped because callers interpolate output into HTML attributes
         let clean = temp.innerHTML
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;')
             .replace(/javascript:/gi, 'javascript-blocked:')
             .replace(/data:/gi, 'data-blocked:')
             .replace(/vbscript:/gi, 'vbscript-blocked:')

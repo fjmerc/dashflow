@@ -31,10 +31,10 @@ const sanitizeInput = (str) => {
         return window.validateAndSanitize.html(str);
     }
 
-    // Fallback sanitization
+    // Fallback sanitization (quotes escaped for attribute contexts)
     const div = document.createElement('div');
     div.textContent = str;
-    return div.innerHTML;
+    return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 };
 
 const validateUrl = (url) => {

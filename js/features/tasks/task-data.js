@@ -484,7 +484,6 @@ class TaskDataManager {
     getMyDayTasks() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const todayStr = today.toISOString().split('T')[0];
 
         return this.tasks.filter(t => {
             if (t.completed) return false;
@@ -497,9 +496,11 @@ class TaskDataManager {
                 const dueDate = new Date(t.dueDate);
                 if (dueDate < today) return true;
 
-                // Due today
-                const dueDateStr = dueDate.toISOString().split('T')[0];
-                if (dueDateStr === todayStr) return true;
+                // Due today — compare local calendar dates, not UTC ISO strings,
+                // which shift a day for timezones east of UTC
+                const dueDay = new Date(dueDate);
+                dueDay.setHours(0, 0, 0, 0);
+                if (dueDay.getTime() === today.getTime()) return true;
             }
 
             return false;

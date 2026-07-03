@@ -306,17 +306,7 @@ class PomodoroTimer {
      * Load settings from localStorage
      */
     loadSettings() {
-        const saved = localStorage.getItem('pomodoroSettings');
-        if (saved) {
-            try {
-                return JSON.parse(saved);
-            } catch (e) {
-                console.error('Failed to load pomodoro settings:', e);
-            }
-        }
-
-        // Return default settings
-        return {
+        const defaults = {
             workDuration: 25,
             shortBreak: 5,
             longBreak: 15,
@@ -324,6 +314,21 @@ class PomodoroTimer {
             soundEnabled: false,
             autoStart: false
         };
+
+        const saved = localStorage.getItem('pomodoroSettings');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                // Merge over defaults so missing fields never yield NaN durations
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    return { ...defaults, ...parsed };
+                }
+            } catch (e) {
+                console.error('Failed to load pomodoro settings:', e);
+            }
+        }
+
+        return defaults;
     }
 
     /**
