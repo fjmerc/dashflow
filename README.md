@@ -48,6 +48,7 @@ A modern, feature-rich Progressive Web App (PWA) for managing links, tasks, and 
   - Clear storage option
 
 - **Enterprise Task Management System**
+  - **Natural-Language Quick Add**: Type `Renew passport friday !high #errands @personal` in the quick-add bar or command palette to create a fully-parsed task with due date, priority, tags, and project — with live preview chips showing recognized tokens
   - **Smart Views**: My Day, Inbox, All Tasks, Important, Upcoming, and Completed task views
   - **Projects**: Create custom projects with icons and colors to organize tasks
   - **Tags**: Tag tasks for flexible categorization and filtering
