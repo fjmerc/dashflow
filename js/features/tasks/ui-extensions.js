@@ -962,10 +962,4 @@ window.addEventListener('taskAppReady', () => {
     initUIExtensions();
 });
 
-// Fallback: if taskDataManager already exists (for hot reload scenarios)
-if (document.readyState === 'complete' && window.taskDataManager) {
-    Logger.debug('UI Extensions: Fallback initialization');
-    setTimeout(initUIExtensions, 100);
-}
-
 Logger.debug('ui-extensions.js loaded');

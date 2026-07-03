@@ -684,9 +684,4 @@ window.addEventListener('taskAppReady', () => {
     initProjectEnhancements();
 });
 
-// Fallback: if already loaded
-if (document.readyState === 'complete' && window.taskDataManager) {
-    setTimeout(initProjectEnhancements, 100);
-}
-
 Logger.debug('project-enhancements.js loaded');
