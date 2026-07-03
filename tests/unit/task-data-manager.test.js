@@ -265,6 +265,29 @@ describe('TaskDataManager - CRUD Operations', () => {
       expect(deleted).toBe(false);
       expect(manager.getProjectById(DEFAULT_PROJECTS.INBOX)).toBeDefined();
     });
+
+    it('should find a project by name', () => {
+      const project = manager.addProject({ name: 'Work' });
+      expect(manager.getProjectByName('Work')).toBe(project);
+    });
+
+    it('should find a project by name case-insensitively and trimmed', () => {
+      const project = manager.addProject({ name: 'Work' });
+      expect(manager.getProjectByName('wORk')).toBe(project);
+      expect(manager.getProjectByName('  work  ')).toBe(project);
+    });
+
+    it('should not find archived projects by name', () => {
+      const project = manager.addProject({ name: 'Old Stuff' });
+      manager.updateProject(project.id, { archived: true });
+      expect(manager.getProjectByName('Old Stuff')).toBeNull();
+    });
+
+    it('should return null for unknown or empty names', () => {
+      expect(manager.getProjectByName('Nonexistent')).toBeNull();
+      expect(manager.getProjectByName('')).toBeNull();
+      expect(manager.getProjectByName(null)).toBeNull();
+    });
   });
 });
 

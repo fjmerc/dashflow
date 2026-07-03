@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dashboard-v84';
+const CACHE_NAME = 'dashboard-v85';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -13,6 +13,7 @@ const ASSETS_TO_CACHE = [
   '/js/features/tasks/project-enhancements.js',
   '/js/features/tasks/task-details-extensions.js',
   '/js/features/tasks/pomodoro.js',
+  '/js/features/tasks/quick-add-parser.js',
   '/js/features/tasks/analytics.js',
   '/js/features/tasks/tag-colors.js',
   '/js/features/notes/notes.js',

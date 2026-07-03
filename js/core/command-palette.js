@@ -12,12 +12,18 @@
  * Pages contribute commands with:
  *   window.commandPalette.registerCommandProvider(() => [command, ...])
  * where command = { id, name, description, icon, category, keywords, action }
+ *
+ * Query-aware commands (built from the current query, e.g. "Create task: ...")
+ * are contributed with:
+ *   window.commandPalette.registerQueryCommandProvider((query) => command | null)
+ * They only appear for general searches (not >, # or empty queries).
  */
 
 class CommandPalette {
     constructor() {
         this.isOpen = false;
         this.commandProviders = [];
+        this.queryCommandProviders = [];
         this.sections = [];
         this.flatResults = [];
         this.selectedIndex = 0;
@@ -31,6 +37,12 @@ class CommandPalette {
     registerCommandProvider(provider) {
         if (typeof provider === 'function') {
             this.commandProviders.push(provider);
+        }
+    }
+
+    registerQueryCommandProvider(provider) {
+        if (typeof provider === 'function') {
+            this.queryCommandProviders.push(provider);
         }
     }
 
@@ -146,6 +158,19 @@ class CommandPalette {
         return commands;
     }
 
+    getQueryCommands(query) {
+        const commands = [];
+        for (const provider of this.queryCommandProviders) {
+            try {
+                const command = provider(query);
+                if (command) commands.push(command);
+            } catch (error) {
+                Logger.error('Query command provider failed:', error);
+            }
+        }
+        return commands;
+    }
+
     scoreCommands(query) {
         const commands = this.getCommands();
         if (!query) {
@@ -178,7 +203,10 @@ class CommandPalette {
             sections.push({ label: 'Commands', items: this.scoreCommands('') });
         } else {
             const content = OmniSearch.search(query);
-            sections.push({ label: 'Commands', items: this.scoreCommands(query).slice(0, 6) });
+            sections.push({
+                label: 'Commands',
+                items: [...this.getQueryCommands(query), ...this.scoreCommands(query).slice(0, 6)]
+            });
             sections.push({ label: 'Tasks', items: content.tasks });
             sections.push({ label: 'Links', items: content.links });
             sections.push({ label: 'Notes', items: content.notes });

@@ -17,6 +17,7 @@ const doneColumn = document.getElementById('doneColumn');
 const blockedColumn = document.getElementById('blockedColumn');
 const quickAddForm = document.getElementById('quickAddForm');
 const quickAddInput = document.getElementById('quickAddInput');
+const quickAddPreview = document.getElementById('quickAddPreview');
 const emptyState = document.getElementById('emptyState');
 const viewTitle = document.getElementById('viewTitle');
 const viewSubtitle = document.getElementById('viewSubtitle');
@@ -181,6 +182,7 @@ function changeUsername() {
 function setupEventListeners() {
     // Quick add form
     quickAddForm.addEventListener('submit', handleQuickAdd);
+    quickAddInput.addEventListener('input', (e) => renderQuickAddPreview(e.target.value));
 
     // Sidebar view items
     smartViewsList.addEventListener('click', handleViewClick);
@@ -2206,6 +2208,72 @@ function removeTag(taskId, tag) {
 }
 
 /**
+ * Create a task from natural-language quick-add text
+ * (e.g. "Renew passport friday !high #errands @personal")
+ * @param {string} rawText - Raw input to parse
+ * @returns {Object} The parse result
+ */
+function createTaskFromQuickAddText(rawText) {
+    const parsed = QuickAddParser.parse(rawText, {
+        projects: taskDataManager.getAllProjects()
+    });
+
+    // Explicit @project wins; otherwise fall back to the current context
+    let projectId = parsed.projectId || currentProjectId || DEFAULT_PROJECTS.INBOX;
+    if (!parsed.projectId && currentView === 'inbox') {
+        projectId = DEFAULT_PROJECTS.INBOX;
+    }
+
+    const taskData = {
+        text: parsed.text,
+        projectId,
+        isMyDay: currentView === 'my-day'
+    };
+    if (parsed.dueDate) taskData.dueDate = parsed.dueDate;
+    if (parsed.priority) taskData.priority = parsed.priority;
+    if (parsed.tags.length > 0) taskData.tags = parsed.tags;
+
+    taskDataManager.addTask(taskData);
+    reRenderCurrentView();
+
+    Logger.debug('Task added via quick add:', parsed.text);
+    return parsed;
+}
+
+/**
+ * Render preview chips for tokens recognized in the quick-add input
+ * @param {string} value - Current input value
+ */
+function renderQuickAddPreview(value) {
+    if (!quickAddPreview) return;
+
+    quickAddPreview.textContent = '';
+
+    const trimmed = (value || '').trim();
+    if (!trimmed) {
+        quickAddPreview.hidden = true;
+        return;
+    }
+
+    const parsed = QuickAddParser.parse(trimmed, {
+        projects: taskDataManager.getAllProjects()
+    });
+
+    if (parsed.tokens.length === 0) {
+        quickAddPreview.hidden = true;
+        return;
+    }
+
+    parsed.tokens.forEach(token => {
+        const chip = document.createElement('span');
+        chip.className = `quick-add-chip quick-add-chip-${token.type}`;
+        chip.textContent = token.label;
+        quickAddPreview.appendChild(chip);
+    });
+    quickAddPreview.hidden = false;
+}
+
+/**
  * Handle quick add
  */
 function handleQuickAdd(e) {
@@ -2214,28 +2282,10 @@ function handleQuickAdd(e) {
     const text = quickAddInput.value.trim();
     if (!text) return;
 
-    // Determine project ID
-    let projectId = currentProjectId || DEFAULT_PROJECTS.INBOX;
-    if (currentView === 'inbox') {
-        projectId = DEFAULT_PROJECTS.INBOX;
-    }
+    createTaskFromQuickAddText(text);
 
-    // Create task
-    const taskData = {
-        text,
-        projectId,
-        isMyDay: currentView === 'my-day'
-    };
-
-    taskDataManager.addTask(taskData);
-
-    // Clear input
     quickAddInput.value = '';
-
-    // Re-render
-    reRenderCurrentView();
-
-    Logger.debug('Task added via quick add:', text);
+    renderQuickAddPreview('');
 }
 
 /**
@@ -2950,6 +3000,20 @@ function getCommands() {
 // (UI lives in js/core/command-palette.js)
 if (window.commandPalette) {
     window.commandPalette.registerCommandProvider(getCommands);
+    window.commandPalette.registerQueryCommandProvider((query) => {
+        const parsed = QuickAddParser.parse(query, {
+            projects: taskDataManager.getAllProjects()
+        });
+        if (!parsed.text) return null;
+        return {
+            id: 'quick-add-create',
+            name: `Create task: ${parsed.text}`,
+            description: parsed.tokens.map(t => t.label).join(' · ') || 'Press Enter to create',
+            icon: '➕',
+            category: 'action',
+            action: () => createTaskFromQuickAddText(query)
+        };
+    });
 } else {
     Logger.warn('Command palette unavailable; task commands not registered');
 }

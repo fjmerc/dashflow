@@ -563,6 +563,17 @@ class TaskDataManager {
     }
 
     /**
+     * Get a non-archived project by name (case-insensitive, trimmed)
+     * @param {string} name - Project name
+     * @returns {Project|null} The project or null if not found
+     */
+    getProjectByName(name) {
+        if (!name) return null;
+        const needle = String(name).trim().toLowerCase();
+        return this.projects.find(p => !p.archived && p.name.trim().toLowerCase() === needle) || null;
+    }
+
+    /**
      * Get task by ID
      * @param {string} taskId - Task identifier
      * @returns {Task|undefined} The task or undefined if not found

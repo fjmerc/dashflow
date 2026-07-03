@@ -2406,6 +2406,37 @@ form select {
     color: var(--text-muted);
 }
 
+/* Quick add token preview chips */
+.quick-add-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 8px;
+}
+
+.quick-add-preview[hidden] {
+    display: none;
+}
+
+.quick-add-chip {
+    display: inline-flex;
+    align-items: center;
+    font-size: 12px;
+    padding: 2px 10px;
+    border-radius: 12px;
+    background: var(--background-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.quick-add-chip-date {
+    border-color: var(--primary-color);
+}
+
+.quick-add-chip-priority {
+    border-color: var(--danger-color, var(--primary-color));
+}
+
 /* Task Content Area */
 .task-content {
     flex: 1;
