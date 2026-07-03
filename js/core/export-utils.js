@@ -265,6 +265,38 @@ function sanitizeImportedTaskSettings(settings) {
     return out;
 }
 
+// Sanitize pomodoroSettings — whitelist known fields with sane ranges.
+function sanitizeImportedPomodoroSettings(settings) {
+    if (!settings || typeof settings !== 'object') return null;
+    const num = (v, min, max, dflt) =>
+        (typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max) ? Math.round(v) : dflt;
+    return {
+        workDuration: num(settings.workDuration, 1, 180, 25),
+        shortBreak: num(settings.shortBreak, 1, 60, 5),
+        longBreak: num(settings.longBreak, 1, 120, 15),
+        pomodorosUntilLongBreak: num(settings.pomodorosUntilLongBreak, 1, 12, 4),
+        soundEnabled: !!settings.soundEnabled,
+        autoStart: !!settings.autoStart
+    };
+}
+
+// Sanitize autoBackupSettings — whitelist known fields.
+function sanitizeImportedAutoBackupSettings(settings) {
+    if (!settings || typeof settings !== 'object') return null;
+    const FREQ = new Set(['hourly', 'daily', 'weekly', 'monthly']);
+    return {
+        enabled: !!settings.enabled,
+        frequency: FREQ.has(settings.frequency) ? settings.frequency : 'daily',
+        lastBackup: (typeof settings.lastBackup === 'number' && Number.isFinite(settings.lastBackup))
+            ? settings.lastBackup : null,
+        maxBackups: (typeof settings.maxBackups === 'number' && settings.maxBackups >= 1 && settings.maxBackups <= 100)
+            ? Math.round(settings.maxBackups) : 10,
+        backupLocation: safeString(settings.backupLocation, 30) || 'downloads',
+        reminderEnabled: settings.reminderEnabled !== false,
+        reminderFrequency: FREQ.has(settings.reminderFrequency) ? settings.reminderFrequency : 'weekly'
+    };
+}
+
 // Sanitize tagColors — { tag: hexColor }, both validated.
 function sanitizeImportedTagColors(tagColors) {
     if (!tagColors || typeof tagColors !== 'object') return {};
@@ -320,9 +352,16 @@ async function exportAllData(silent = false) {
         // Get tag colors data (version 2.2+)
         const tagColorsData = JSON.parse(localStorage.getItem('tagColors') || 'null');
 
+        // Get preference data (version 2.3+). taskLayout is a raw string, not JSON.
+        // pomodoroState is deliberately NOT exported: it is a live-session snapshot
+        // with a 30-minute expiry that would always be stale on import.
+        const taskLayoutData = localStorage.getItem('taskLayout');
+        const pomodoroSettingsData = JSON.parse(localStorage.getItem('pomodoroSettings') || 'null');
+        const autoBackupSettingsData = JSON.parse(localStorage.getItem('autoBackupSettings') || 'null');
+
         // Combine data
         const exportData = {
-            version: '2.2', // Version 2.2 includes tag colors, comments, recurring tasks
+            version: '2.3', // Version 2.3 adds taskLayout, pomodoroSettings, autoBackupSettings
             timestamp: new Date().toISOString(),
             data: {
                 bookmarks: dashboardData.data.bookmarks,
@@ -337,7 +376,11 @@ async function exportAllData(silent = false) {
                 // Keep legacy todos for backward compatibility
                 todos: todoData,
                 settings: dashboardData.data.settings,
-                retirementTimer: retirementTimerData
+                retirementTimer: retirementTimerData,
+                // Preferences (version 2.3+)
+                taskLayout: taskLayoutData,
+                pomodoroSettings: pomodoroSettingsData,
+                autoBackupSettings: autoBackupSettingsData
             }
         };
 
@@ -436,6 +479,21 @@ async function importAllData(file) {
                             localStorage.setItem('tagColors', JSON.stringify(safeTagColors));
                             success = true;
                             Logger.info('Imported tag colors data');
+                        }
+
+                        // Import preferences (version 2.3+)
+                        if (parseFloat(importedData.version) >= 2.3) {
+                            if (importedData.data.taskLayout === 'list' || importedData.data.taskLayout === 'board') {
+                                localStorage.setItem('taskLayout', importedData.data.taskLayout);
+                            }
+                            const safePomodoro = sanitizeImportedPomodoroSettings(importedData.data.pomodoroSettings);
+                            if (safePomodoro) {
+                                localStorage.setItem('pomodoroSettings', JSON.stringify(safePomodoro));
+                            }
+                            const safeAutoBackup = sanitizeImportedAutoBackupSettings(importedData.data.autoBackupSettings);
+                            if (safeAutoBackup) {
+                                localStorage.setItem('autoBackupSettings', JSON.stringify(safeAutoBackup));
+                            }
                         }
 
                         // Dispatch event to notify todo.js that tasks have been updated
