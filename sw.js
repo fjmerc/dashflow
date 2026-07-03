@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dashboard-v83';
+const CACHE_NAME = 'dashboard-v84';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -22,6 +22,8 @@ const ASSETS_TO_CACHE = [
   '/js/core/theme.js',
   '/js/core/logger.js',
   '/js/core/keyboard-nav.js',
+  '/js/core/omnisearch.js',
+  '/js/core/command-palette.js',
   '/js/core/input-validator.js',
   '/js/core/error-handler.js',
   '/js/core/modal-manager.js',

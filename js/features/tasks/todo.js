@@ -54,11 +54,6 @@ const importTodosBtn = document.getElementById('importTodosBtn');
 const exportAllBtn = document.getElementById('exportAllBtn');
 const importInput = document.getElementById('importInput');
 
-// Command Palette elements
-const commandPalette = document.getElementById('commandPalette');
-const commandPaletteInput = document.getElementById('commandPaletteInput');
-const commandPaletteResults = document.getElementById('commandPaletteResults');
-
 // Search elements
 const taskSearchInput = document.getElementById('taskSearchInput');
 const taskSearchClear = document.getElementById('taskSearchClear');
@@ -73,11 +68,6 @@ let selectedTaskId = null;
 let currentLayout = localStorage.getItem('taskLayout') || 'list'; // 'list' or 'board'
 let username = localStorage.getItem('username') || 'User';
 let searchQuery = '';
-
-// Command Palette state
-let commandPaletteOpen = false;
-let selectedCommandIndex = 0;
-let filteredCommands = [];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
@@ -142,30 +132,11 @@ function checkUrlForTask() {
     const taskId = urlParams.get('taskId');
 
     if (taskId) {
-        // Find and open the task
-        const task = taskDataManager.getTaskById(taskId);
-        if (task) {
-            Logger.debug('Opening task from URL:', taskId);
+        Logger.debug('Opening task from URL:', taskId);
+        window.openTaskFromSearch(taskId);
 
-            // Navigate to the appropriate view first
-            if (task.projectId) {
-                currentView = 'project';
-                currentProjectId = task.projectId;
-            } else {
-                currentView = 'inbox';
-            }
-
-            // Re-render with the new view
-            activateSmartView(currentView, currentProjectId);
-
-            // Open the task detail panel after a short delay to allow rendering
-            setTimeout(() => {
-                openTaskDetail(taskId);
-            }, 100);
-
-            // Clean up URL without reloading page
-            window.history.replaceState({}, '', 'todo.html');
-        }
+        // Clean up URL without reloading page
+        window.history.replaceState({}, '', 'todo.html');
     }
 }
 
@@ -377,40 +348,6 @@ function setupEventListeners() {
             return;
         }
 
-        // Ctrl+K or Cmd+K to open command palette
-        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-            e.preventDefault();
-            if (!commandPaletteOpen) {
-                openCommandPalette();
-            }
-        }
-
-        // Command palette is open
-        if (commandPaletteOpen) {
-            if (e.key === 'Escape') {
-                e.preventDefault();
-                closeCommandPalette();
-            } else if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                navigateCommands('down');
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                navigateCommands('up');
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                executeSelectedCommand();
-            }
-        }
-    });
-
-    // Command palette input - filter on typing
-    commandPaletteInput.addEventListener('input', (e) => {
-        filterCommands(e.target.value);
-    });
-
-    // Command palette backdrop click - close
-    commandPalette.querySelector('.command-palette-backdrop').addEventListener('click', () => {
-        closeCommandPalette();
     });
 
     // View switcher - Toggle between list and board
@@ -2873,7 +2810,6 @@ function getCommands() {
             category: 'action',
             keywords: ['new', 'create', 'add', 'task', 'todo'],
             action: () => {
-                closeCommandPalette();
                 quickAddInput.focus();
             }
         },
@@ -2885,7 +2821,6 @@ function getCommands() {
             category: 'action',
             keywords: ['search', 'find', 'filter', 'query', 'lookup'],
             action: () => {
-                closeCommandPalette();
                 taskSearchInput.focus();
                 taskSearchInput.select();
             }
@@ -2898,7 +2833,6 @@ function getCommands() {
             category: 'action',
             keywords: ['new', 'create', 'add', 'project', 'folder'],
             action: () => {
-                closeCommandPalette();
                 showAddProjectModal();
             }
         },
@@ -2912,7 +2846,6 @@ function getCommands() {
             category: 'view',
             keywords: ['list', 'view', 'switch', 'layout'],
             action: () => {
-                closeCommandPalette();
                 currentLayout = 'list';
                 switchViewLayout('list');
                 document.querySelectorAll('.view-switcher-btn').forEach(b => {
@@ -2928,7 +2861,6 @@ function getCommands() {
             category: 'view',
             keywords: ['board', 'kanban', 'view', 'switch', 'layout'],
             action: () => {
-                closeCommandPalette();
                 currentLayout = 'board';
                 switchViewLayout('board');
                 document.querySelectorAll('.view-switcher-btn').forEach(b => {
@@ -2946,7 +2878,6 @@ function getCommands() {
             category: 'settings',
             keywords: ['dark', 'light', 'theme', 'mode', 'toggle'],
             action: () => {
-                closeCommandPalette();
                 themeManager.toggleDarkMode();
             }
         },
@@ -2958,7 +2889,6 @@ function getCommands() {
             category: 'settings',
             keywords: ['color', 'theme', 'palette', 'change'],
             action: () => {
-                closeCommandPalette();
                 themeManager.openColorPicker();
             }
         },
@@ -2970,7 +2900,6 @@ function getCommands() {
             category: 'settings',
             keywords: ['username', 'name', 'change', 'profile'],
             action: () => {
-                closeCommandPalette();
                 changeUsername();
             }
         },
@@ -2982,7 +2911,6 @@ function getCommands() {
             category: 'settings',
             keywords: ['export', 'backup', 'download', 'save'],
             action: () => {
-                closeCommandPalette();
                 exportAllData();
             }
         },
@@ -2994,7 +2922,6 @@ function getCommands() {
             category: 'settings',
             keywords: ['import', 'restore', 'upload', 'load'],
             action: () => {
-                closeCommandPalette();
                 importInput.click();
             }
         }
@@ -3019,152 +2946,36 @@ function getCommands() {
     return commands;
 }
 
-/**
- * Open command palette
- */
-function openCommandPalette() {
-    commandPaletteOpen = true;
-    commandPalette.classList.remove('hidden');
-    commandPaletteInput.value = '';
-    commandPaletteInput.focus();
-    selectedCommandIndex = 0;
-
-    // Show all commands initially
-    filterCommands('');
-
-    Logger.debug('Command palette opened');
+// Register this page's commands with the shared command palette
+// (UI lives in js/core/command-palette.js)
+if (window.commandPalette) {
+    window.commandPalette.registerCommandProvider(getCommands);
+} else {
+    Logger.warn('Command palette unavailable; task commands not registered');
 }
 
 /**
- * Close command palette
+ * Open a task from a palette/search result: navigate to its view
+ * and show the detail panel. Used by js/core/omnisearch.js.
  */
-function closeCommandPalette() {
-    commandPaletteOpen = false;
-    commandPalette.classList.add('hidden');
-    commandPaletteInput.value = '';
-    filteredCommands = [];
+window.openTaskFromSearch = function(taskId) {
+    const task = taskDataManager.getTaskById(taskId);
+    if (!task) return;
 
-    Logger.debug('Command palette closed');
-}
-
-/**
- * Filter commands based on search query
- */
-function filterCommands(query) {
-    const allCommands = getCommands();
-
-    if (!query.trim()) {
-        filteredCommands = allCommands;
+    if (task.projectId) {
+        currentView = 'project';
+        currentProjectId = task.projectId;
     } else {
-        const searchTerms = query.toLowerCase().split(' ').filter(t => t);
-
-        filteredCommands = allCommands.filter(cmd => {
-            const searchText = [
-                cmd.name,
-                cmd.description,
-                ...cmd.keywords
-            ].join(' ').toLowerCase();
-
-            return searchTerms.every(term => searchText.includes(term));
-        });
+        currentView = 'inbox';
     }
 
-    selectedCommandIndex = 0;
-    renderCommandResults();
-}
+    activateSmartView(currentView, currentProjectId);
 
-/**
- * Render command results
- */
-function renderCommandResults() {
-    commandPaletteResults.innerHTML = '';
-
-    if (filteredCommands.length === 0) {
-        commandPaletteResults.innerHTML = `
-            <div class="command-palette-empty">
-                <div class="command-palette-empty-icon">🔍</div>
-                <div class="command-palette-empty-text">No commands found</div>
-            </div>
-        `;
-        return;
-    }
-
-    filteredCommands.forEach((cmd, index) => {
-        const resultEl = document.createElement('div');
-        resultEl.className = `command-result ${index === selectedCommandIndex ? 'selected' : ''}`;
-        resultEl.dataset.commandId = cmd.id;
-        resultEl.dataset.index = index;
-
-        resultEl.innerHTML = `
-            <div class="command-result-icon">${cmd.icon}</div>
-            <div class="command-result-content">
-                <div class="command-result-name">${escapeHtml(cmd.name)}</div>
-                <div class="command-result-description">${escapeHtml(cmd.description)}</div>
-            </div>
-            <div class="command-result-category">${cmd.category}</div>
-        `;
-
-        // Click handler
-        resultEl.addEventListener('click', () => {
-            executeCommand(cmd);
-        });
-
-        commandPaletteResults.appendChild(resultEl);
-    });
-}
-
-/**
- * Execute a command
- */
-function executeCommand(command) {
-    Logger.debug('Executing command:', command.id);
-
-    // Close palette first to avoid any UI conflicts
-    closeCommandPalette();
-
-    try {
-        command.action();
-    } catch (error) {
-        Logger.error('Command execution failed:', error);
-        if (window.errorHandler) {
-            window.errorHandler.handleError(error, 'command_palette', {
-                commandId: command.id
-            });
-        }
-    }
-}
-
-/**
- * Navigate command selection
- */
-function navigateCommands(direction) {
-    if (filteredCommands.length === 0) return;
-
-    if (direction === 'down') {
-        selectedCommandIndex = (selectedCommandIndex + 1) % filteredCommands.length;
-    } else if (direction === 'up') {
-        selectedCommandIndex = selectedCommandIndex === 0
-            ? filteredCommands.length - 1
-            : selectedCommandIndex - 1;
-    }
-
-    renderCommandResults();
-
-    // Scroll selected item into view
-    const selectedEl = commandPaletteResults.querySelector('.command-result.selected');
-    if (selectedEl) {
-        selectedEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    }
-}
-
-/**
- * Execute selected command
- */
-function executeSelectedCommand() {
-    if (filteredCommands.length > 0 && selectedCommandIndex < filteredCommands.length) {
-        executeCommand(filteredCommands[selectedCommandIndex]);
-    }
-}
+    // Open the detail panel after a short delay to allow rendering
+    setTimeout(() => {
+        showTaskDetails(taskId);
+    }, 100);
+};
 
 /**
  * Drag and Drop Handlers for Task Recategorization

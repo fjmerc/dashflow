@@ -885,6 +885,126 @@ helpBtn.addEventListener('click', () => {
     window.location.href = 'help.html';
 });
 
+// Register dashboard commands with the shared command palette
+// (UI lives in js/core/command-palette.js)
+function getDashboardCommands() {
+    return [
+        {
+            id: 'new-section',
+            name: 'New Section',
+            description: 'Add a new link section',
+            icon: '📂',
+            category: 'action',
+            keywords: ['new', 'create', 'add', 'section', 'category'],
+            action: () => {
+                const input = document.getElementById('newSectionName');
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
+            }
+        },
+        {
+            id: 'new-link',
+            name: 'New Link',
+            description: 'Add a new bookmark',
+            icon: '🔗',
+            category: 'action',
+            keywords: ['new', 'create', 'add', 'link', 'bookmark', 'url'],
+            action: () => {
+                const sectionSelect = document.getElementById('existingSections');
+                const nameInput = document.getElementById('linkName');
+                if (sectionSelect && !sectionSelect.value) {
+                    sectionSelect.focus();
+                } else if (nameInput) {
+                    nameInput.focus();
+                    nameInput.select();
+                }
+            }
+        },
+        {
+            id: 'undo',
+            name: 'Undo',
+            description: 'Undo last link change',
+            icon: '↩️',
+            category: 'action',
+            keywords: ['undo', 'revert', 'back'],
+            action: () => undoBtn.click()
+        },
+        {
+            id: 'go-to-tasks',
+            name: 'Go to Tasks',
+            description: 'Open the task management page',
+            icon: '📋',
+            category: 'navigation',
+            keywords: ['tasks', 'todo', 'navigate', 'goto'],
+            action: () => { window.location.href = 'todo.html'; }
+        },
+        {
+            id: 'open-notes',
+            name: 'Open Quick Notes',
+            description: 'Open the notes panel',
+            icon: '📝',
+            category: 'navigation',
+            keywords: ['notes', 'quick', 'open', 'write'],
+            action: () => {
+                if (window.openNotesModal) window.openNotesModal();
+            }
+        },
+        {
+            id: 'open-help',
+            name: 'Open Help',
+            description: 'View the user guide',
+            icon: '❓',
+            category: 'navigation',
+            keywords: ['help', 'guide', 'docs', 'documentation'],
+            action: () => { window.location.href = 'help.html'; }
+        },
+        {
+            id: 'toggle-dark-mode',
+            name: 'Toggle Dark Mode',
+            description: 'Switch between light and dark theme',
+            icon: '🌙',
+            category: 'settings',
+            keywords: ['dark', 'light', 'theme', 'mode', 'toggle'],
+            action: () => themeManager.toggleDarkMode()
+        },
+        {
+            id: 'change-username',
+            name: 'Change Username',
+            description: 'Update your display name',
+            icon: '👤',
+            category: 'settings',
+            keywords: ['username', 'name', 'change', 'profile'],
+            action: () => changeUsername()
+        },
+        {
+            id: 'export-data',
+            name: 'Export All Data',
+            description: 'Download backup of all data',
+            icon: '💾',
+            category: 'settings',
+            keywords: ['export', 'backup', 'download', 'save'],
+            action: () => exportAllData(false)
+        },
+        {
+            id: 'import-data',
+            name: 'Import Data',
+            description: 'Import backup file',
+            icon: '📂',
+            category: 'settings',
+            keywords: ['import', 'restore', 'upload', 'load'],
+            action: () => importBtn.click()
+        }
+    ];
+}
+
+if (window.commandPalette) {
+    window.commandPalette.registerCommandProvider(getDashboardCommands);
+} else {
+    Logger.warn('Command palette unavailable; dashboard commands not registered');
+}
+
 // Initialize modal state when page loads
 document.addEventListener('DOMContentLoaded', () => {
     // Make sure modal is hidden initially by forcing display: none
