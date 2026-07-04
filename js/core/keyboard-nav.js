@@ -7,7 +7,6 @@
 class KeyboardNavigationManager {
     constructor() {
         this.shortcuts = new Map();
-        this.globalSearchVisible = false;
         this.init();
     }
 
@@ -29,10 +28,8 @@ class KeyboardNavigationManager {
 
     registerShortcuts() {
         // Navigation shortcuts
-        this.shortcuts.set('ctrl+k', () => this.openCommandPalette());
-        this.shortcuts.set('cmd+k', () => this.openCommandPalette()); // Mac
-        this.shortcuts.set('ctrl+f', () => this.toggleGlobalSearch());
-        this.shortcuts.set('cmd+f', () => this.toggleGlobalSearch()); // Mac
+        // Note: Ctrl+K / Ctrl+F (command palette) are handled by
+        // js/core/command-palette.js so they work even while typing.
         this.shortcuts.set('ctrl+/', () => this.showKeyboardHelp());
         this.shortcuts.set('cmd+/', () => this.showKeyboardHelp()); // Mac
 
@@ -108,243 +105,6 @@ class KeyboardNavigationManager {
         }
     }
 
-    toggleGlobalSearch() {
-        // Always show global search modal for consistent cross-page search
-        this.showGlobalSearchModal();
-    }
-
-    showGlobalSearchModal() {
-        // Create and show global search modal
-        const modal = this.createGlobalSearchModal();
-        document.body.appendChild(modal);
-
-        const searchInput = modal.querySelector('#globalSearchInput');
-        setTimeout(() => searchInput.focus(), 100);
-    }
-
-    createGlobalSearchModal() {
-        const modal = document.createElement('div');
-        modal.className = 'modal global-search-modal';
-        modal.style.display = 'block';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Global Search</h3>
-                    <span class="close">&times;</span>
-                </div>
-                <div class="modal-body">
-                    <input type="text" id="globalSearchInput" placeholder="Search across links, tasks, and notes..." class="global-search-input">
-                    <div id="globalSearchResults" class="global-search-results"></div>
-                </div>
-                <div class="modal-footer">
-                    <small>Press Escape to close • Use ↑↓ arrow keys to navigate results</small>
-                </div>
-            </div>
-        `;
-
-        // Add event listeners
-        const closeBtn = modal.querySelector('.close');
-        const searchInput = modal.querySelector('#globalSearchInput');
-
-        closeBtn.addEventListener('click', () => {
-            document.body.removeChild(modal);
-        });
-
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                document.body.removeChild(modal);
-            }
-        });
-
-        // Global search functionality (simplified for now)
-        searchInput.addEventListener('input', (e) => {
-            this.performGlobalSearch(e.target.value, modal.querySelector('#globalSearchResults'));
-        });
-
-        // Handle escape key
-        searchInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                document.body.removeChild(modal);
-            }
-        });
-
-        return modal;
-    }
-
-    performGlobalSearch(query, resultsContainer) {
-        if (!query.trim()) {
-            resultsContainer.innerHTML = '';
-            return;
-        }
-
-        const results = [];
-        const lowerQuery = query.toLowerCase();
-
-        // Search links
-        try {
-            const links = JSON.parse(localStorage.getItem('links') || '{}');
-            for (const [section, sectionLinks] of Object.entries(links)) {
-                sectionLinks.forEach(link => {
-                    if (link.name.toLowerCase().includes(lowerQuery) ||
-                        link.url.toLowerCase().includes(lowerQuery) ||
-                        section.toLowerCase().includes(lowerQuery)) {
-                        results.push({
-                            type: 'link',
-                            title: link.name,
-                            subtitle: `${section} • ${link.url}`,
-                            url: link.url,
-                            section: section
-                        });
-                    }
-                });
-            }
-        } catch (e) {
-            Logger.error('Error searching links:', e);
-        }
-
-        // Search tasks
-        try {
-            const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-            const projects = JSON.parse(localStorage.getItem('projects') || '[]');
-
-            tasks.forEach(task => {
-                // Search in task text, description, tags, and subtasks
-                const matchesText = task.text.toLowerCase().includes(lowerQuery);
-                const matchesDescription = task.description && task.description.toLowerCase().includes(lowerQuery);
-                const matchesTags = task.tags && task.tags.some(tag => tag.toLowerCase().includes(lowerQuery));
-                const matchesSubtasks = task.subtasks && task.subtasks.some(subtask =>
-                    subtask.text.toLowerCase().includes(lowerQuery)
-                );
-
-                if (matchesText || matchesDescription || matchesTags || matchesSubtasks) {
-                    // Get project name
-                    const project = projects.find(p => p.id === task.projectId);
-                    const projectName = project ? project.name : 'Inbox';
-
-                    // Build subtitle with relevant info
-                    const statusInfo = task.completed ? 'Completed' : task.status || 'todo';
-                    const priorityInfo = task.priority ? `${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} priority` : '';
-                    const parts = [projectName, statusInfo, priorityInfo].filter(p => p);
-
-                    results.push({
-                        type: 'task',
-                        title: task.text,
-                        subtitle: `Task • ${parts.join(' • ')}`,
-                        taskId: task.id
-                    });
-                }
-            });
-        } catch (e) {
-            Logger.error('Error searching tasks:', e);
-        }
-
-        // Search notes
-        try {
-            const notes = JSON.parse(localStorage.getItem('notes') || '[]');
-
-            notes.forEach(note => {
-                // Search in note title, content, and tags
-                const matchesTitle = note.title && note.title.toLowerCase().includes(lowerQuery);
-                const matchesContent = note.content && note.content.toLowerCase().includes(lowerQuery);
-                const matchesTags = note.tags && note.tags.some(tag => tag.toLowerCase().includes(lowerQuery));
-
-                if (matchesTitle || matchesContent || matchesTags) {
-                    // Build subtitle with tags or content preview
-                    let subtitle = 'Note';
-                    if (note.tags && note.tags.length > 0) {
-                        subtitle += ` • ${note.tags.join(', ')}`;
-                    } else if (note.content) {
-                        // Show content preview (first 50 chars)
-                        const preview = note.content.substring(0, 50).replace(/\n/g, ' ');
-                        subtitle += ` • ${preview}${note.content.length > 50 ? '...' : ''}`;
-                    }
-
-                    results.push({
-                        type: 'note',
-                        title: note.title || 'Untitled Note',
-                        subtitle: subtitle,
-                        noteId: note.id
-                    });
-                }
-            });
-        } catch (e) {
-            Logger.error('Error searching notes:', e);
-        }
-
-        // Display results
-        this.displayGlobalSearchResults(results, resultsContainer);
-    }
-
-    displayGlobalSearchResults(results, container) {
-        if (results.length === 0) {
-            container.innerHTML = '<div class="no-results">No results found</div>';
-            return;
-        }
-
-        container.innerHTML = results.map(result => `
-            <div class="search-result" data-type="${this.escapeHtml(result.type)}" data-url="${this.escapeHtml(result.url || '')}" data-task-id="${this.escapeHtml(result.taskId || '')}" data-note-id="${this.escapeHtml(result.noteId || '')}">
-                <div class="result-title">${this.escapeHtml(result.title)}</div>
-                <div class="result-subtitle">${this.escapeHtml(result.subtitle)}</div>
-            </div>
-        `).join('');
-
-        // Add click handlers
-        container.querySelectorAll('.search-result').forEach(resultEl => {
-            resultEl.addEventListener('click', () => {
-                this.handleSearchResultClick(resultEl);
-                // Close modal
-                const modal = document.querySelector('.global-search-modal');
-                if (modal) {
-                    document.body.removeChild(modal);
-                }
-            });
-        });
-    }
-
-    handleSearchResultClick(resultEl) {
-        const type = resultEl.dataset.type;
-
-        if (type === 'link') {
-            const url = resultEl.dataset.url;
-            if (url) {
-                window.open(url, '_blank');
-            }
-        } else if (type === 'task' || type === 'todo') {
-            // Navigate to todo page with task ID
-            const taskId = resultEl.dataset.taskId;
-            if (taskId) {
-                window.location.href = `todo.html?taskId=${taskId}`;
-            } else {
-                window.location.href = 'todo.html';
-            }
-        } else if (type === 'note') {
-            // Open notes modal and load specific note
-            const noteId = resultEl.dataset.noteId;
-            if (noteId && window.openNotesModal) {
-                window.openNotesModal();
-                // Wait for modal to open, then load the note
-                setTimeout(() => {
-                    if (window.notesUIManager) {
-                        window.notesUIManager.loadNote(noteId);
-                    }
-                }, 150);
-            }
-        }
-    }
-
-    openCommandPalette() {
-        // Check if we're on the todo page (which has its own command palette)
-        if (window.location.pathname.includes('todo.html')) {
-            // The todo page handles its own command palette
-            // This event will be caught by todo.js
-            return;
-        }
-
-        // For dashboard page, navigate to todo.html command palette
-        // Or show a simple dashboard command palette
-        window.location.href = 'todo.html';
-    }
-
     showKeyboardHelp() {
         const helpModal = document.createElement('div');
         helpModal.className = 'modal keyboard-help-modal';
@@ -367,13 +127,13 @@ class KeyboardNavigationManager {
                                 <div class="shortcut-keys">
                                     <kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>K</kbd>
                                 </div>
-                                <span class="shortcut-desc">Command Palette</span>
+                                <span class="shortcut-desc">Command Palette / Search</span>
                             </div>
                             <div class="shortcut-item">
                                 <div class="shortcut-keys">
                                     <kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>F</kbd>
                                 </div>
-                                <span class="shortcut-desc">Global Search</span>
+                                <span class="shortcut-desc">Command Palette / Search</span>
                             </div>
                             ${isTodoPage ? `
                             <div class="shortcut-item">
@@ -550,8 +310,7 @@ class KeyboardNavigationManager {
         modals.forEach(modal => {
             modal.style.display = 'none';
             // Clean up if it's a dynamically created modal
-            if (modal.classList.contains('global-search-modal') ||
-                modal.classList.contains('keyboard-help-modal')) {
+            if (modal.classList.contains('keyboard-help-modal')) {
                 document.body.removeChild(modal);
             }
         });

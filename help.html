@@ -353,6 +353,24 @@
             <h3>Creating Tasks</h3>
             <p>Use the quick add bar at the top of the task list to create new tasks instantly. Just type and press Enter. Tasks are automatically added to the current view or project.</p>
 
+            <h3>Quick Add Syntax</h3>
+            <p>The quick add bar understands inline tokens, so one typed line can set the due date, priority, tags, and project. As you type, preview chips below the input show exactly what was recognized. Example:</p>
+            <p><kbd>Renew passport friday !high #errands @personal</kbd> creates the task "Renew passport", due next Friday, with high priority, tagged <em>errands</em>, in the <em>Personal</em> project.</p>
+            <ul>
+                <li><strong>Priority:</strong> <kbd>!high</kbd>, <kbd>!medium</kbd>, or <kbd>!low</kbd></li>
+                <li><strong>Tags:</strong> <kbd>#tagname</kbd> - add as many as you like (tags must start with a letter)</li>
+                <li><strong>Project:</strong> <kbd>@projectname</kbd> - matches an existing project name (case doesn't matter). If no project matches, the word stays in the task title</li>
+                <li><strong>Due date:</strong>
+                    <ul>
+                        <li><kbd>today</kbd> or <kbd>tomorrow</kbd></li>
+                        <li>A weekday name like <kbd>friday</kbd> or <kbd>fri</kbd> - always means the <em>next</em> occurrence (typing "friday" on a Friday schedules next week)</li>
+                        <li><kbd>next week</kbd> - 7 days from now</li>
+                        <li><kbd>in 3 days</kbd> or <kbd>in 2 weeks</kbd></li>
+                    </ul>
+                </li>
+            </ul>
+            <p>Tokens must be separate words - text like <em>me@personal.com</em> is left alone. Recognized tokens are removed from the task title; everything else becomes the title. The same syntax works in the command palette (<kbd>Ctrl+K</kbd>): type your task and choose "Create task: ...".</p>
+
             <h3>Projects</h3>
             <p>Projects help you organize tasks into categories:</p>
             <ul>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dashboard-v81';
+const CACHE_NAME = 'dashboard-v85';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -13,6 +13,7 @@ const ASSETS_TO_CACHE = [
   '/js/features/tasks/project-enhancements.js',
   '/js/features/tasks/task-details-extensions.js',
   '/js/features/tasks/pomodoro.js',
+  '/js/features/tasks/quick-add-parser.js',
   '/js/features/tasks/analytics.js',
   '/js/features/tasks/tag-colors.js',
   '/js/features/notes/notes.js',
@@ -22,6 +23,8 @@ const ASSETS_TO_CACHE = [
   '/js/core/theme.js',
   '/js/core/logger.js',
   '/js/core/keyboard-nav.js',
+  '/js/core/omnisearch.js',
+  '/js/core/command-palette.js',
   '/js/core/input-validator.js',
   '/js/core/error-handler.js',
   '/js/core/modal-manager.js',
